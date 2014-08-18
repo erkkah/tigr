@@ -3,6 +3,8 @@
 TIGR is a tiny graphics library, for when you just need to
 draw something in a window without any fuss.
 
+TIGR is free to copy with no restrictions; see tigr.h
+
 ### How to set up TIGR ###
 
 1. Grab ** tigr.c ** and ** tigr.h **
