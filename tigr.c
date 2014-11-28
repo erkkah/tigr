@@ -1238,6 +1238,9 @@ int tigrTextHeight(TigrFont *font, const char *text)
 #include <stdlib.h>
 #include <assert.h>
 
+#define WIDGET_SCALE	3
+#define WIDGET_FADE		16
+
 int main(int argc, char *argv[]);
 extern const unsigned char tigrUpscaleVSCode[], tigrUpscalePSCode[];
 
@@ -1245,11 +1248,16 @@ typedef struct {
 	int shown, closed, created;
 	IDirect3DDevice9 *dev;
 	D3DPRESENT_PARAMETERS params;
-	IDirect3DTexture9 *sysTex, *vidTex;
+	IDirect3DTexture9 *sysTex[2], *vidTex[2];
 	IDirect3DVertexShader9 *vs;
 	IDirect3DPixelShader9 *ps;
 	wchar_t *wtitle;
 	DWORD dwStyle;
+	RECT oldPos;
+
+	Tigr *widgets;
+	int widgetsWanted;
+	unsigned char widgetAlpha;
 
 	int flags;
 	int scale;
@@ -1288,6 +1296,40 @@ void tigrError(Tigr *bmp, const char *message, ...)
 	exit(1);
 }
 
+void tigrEnterBorderlessWindowed(Tigr *bmp)
+{
+	// Enter borderless windowed mode.
+	MONITORINFO mi = { sizeof(mi) };
+	TigrWin *win = tigrWin(bmp);
+
+	GetWindowRect((HWND)bmp->handle, &win->oldPos);
+
+	GetMonitorInfo(MonitorFromWindow((HWND)bmp->handle, MONITOR_DEFAULTTONEAREST), &mi);
+	win->dwStyle = WS_VISIBLE | WS_POPUP;
+	SetWindowLong((HWND)bmp->handle, GWL_STYLE, win->dwStyle);
+	SetWindowPos((HWND)bmp->handle, HWND_TOP,
+		mi.rcMonitor.left,
+		mi.rcMonitor.top,
+		mi.rcMonitor.right - mi.rcMonitor.left,
+		mi.rcMonitor.bottom - mi.rcMonitor.top,
+		0);
+}
+
+void tigrLeaveBorderlessWindowed(Tigr *bmp)
+{
+	TigrWin *win = tigrWin(bmp);
+
+	win->dwStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
+	SetWindowLong((HWND)bmp->handle, GWL_STYLE, win->dwStyle);
+
+	SetWindowPos((HWND)bmp->handle, NULL,
+		win->oldPos.left,
+		win->oldPos.top,
+		win->oldPos.right - win->oldPos.left,
+		win->oldPos.bottom - win->oldPos.top,
+		0);
+}
+
 void tigrDxCreate(Tigr *bmp)
 {
 	HRESULT hr;
@@ -1305,9 +1347,13 @@ void tigrDxCreate(Tigr *bmp)
 
 		if (FAILED(hr)
 		 || FAILED(IDirect3DDevice9_CreateTexture(win->dev, bmp->w, bmp->h, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, 
-			D3DPOOL_SYSTEMMEM, &win->sysTex, NULL))
+			D3DPOOL_SYSTEMMEM, &win->sysTex[0], NULL))
 		 || FAILED(IDirect3DDevice9_CreateTexture(win->dev, bmp->w, bmp->h, 1, 0, D3DFMT_A8R8G8B8, 
-			D3DPOOL_DEFAULT, &win->vidTex, NULL)))
+			D3DPOOL_DEFAULT, &win->vidTex[0], NULL))
+		 || FAILED(IDirect3DDevice9_CreateTexture(win->dev, win->widgets->w, win->widgets->h, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, 
+			D3DPOOL_SYSTEMMEM, &win->sysTex[1], NULL))
+		 || FAILED(IDirect3DDevice9_CreateTexture(win->dev, win->widgets->w, win->widgets->h, 1, 0, D3DFMT_A8R8G8B8, 
+			D3DPOOL_DEFAULT, &win->vidTex[1], NULL)))
 		{
 			tigrError(bmp, "Error creating Direct3D 9 textures.\n");
 		}
@@ -1321,22 +1367,139 @@ void tigrDxDestroy(Tigr *bmp)
 	TigrWin *win = tigrWin(bmp);
 	if (win->created)
 	{
-		IDirect3DTexture9_Release(win->sysTex);
-		IDirect3DTexture9_Release(win->vidTex);
+		IDirect3DTexture9_Release(win->sysTex[0]);
+		IDirect3DTexture9_Release(win->vidTex[0]);
+		IDirect3DTexture9_Release(win->sysTex[1]);
+		IDirect3DTexture9_Release(win->vidTex[1]);
 		IDirect3DDevice9_Reset(win->dev, &win->params);
 		win->created = 0;
 	}
 }
 
+void tigrDxUpdate(IDirect3DDevice9 *dev, IDirect3DTexture9 *sysTex, IDirect3DTexture9 *vidTex, Tigr *bmp)
+{
+	D3DLOCKED_RECT rect;
+	TPixel *src, *dest;
+	int y;
+
+	// Lock the system memory texture.
+	IDirect3DTexture9_LockRect(sysTex, 0, &rect, NULL, D3DLOCK_DISCARD);
+
+	// Copy our bitmap into it.
+	src = bmp->pix;
+	for (y=0;y<bmp->h;y++)
+	{
+		dest = (TPixel *)( (char *)rect.pBits + rect.Pitch*y );
+		memcpy(dest, src, bmp->w*sizeof(TPixel));
+		src += bmp->w;
+	}
+
+	IDirect3DTexture9_UnlockRect(sysTex, 0);
+
+	// Update that into somewhere useful.
+	IDirect3DDevice9_UpdateTexture(dev, (IDirect3DBaseTexture9 *)sysTex, (IDirect3DBaseTexture9 *)vidTex);
+}
+
+void tigrDxQuad(TigrWin *win, IDirect3DTexture9 *tex, int ix0, int iy0, int ix1, int iy1)
+{
+	float tri[6][5];
+	float x0 = (float)ix0;
+	float y0 = (float)iy0;
+	float x1 = (float)ix1;
+	float y1 = (float)iy1;
+
+	//          x               y               z              u              v
+	tri[0][0] = x0; tri[0][1] = y0; tri[0][2] = 0; tri[0][3] = 0; tri[0][4] = 0;
+	tri[1][0] = x1; tri[1][1] = y0; tri[1][2] = 0; tri[1][3] = 1; tri[1][4] = 0;
+	tri[2][0] = x0; tri[2][1] = y1; tri[2][2] = 0; tri[2][3] = 0; tri[2][4] = 1;
+
+	tri[3][0] = x1; tri[3][1] = y0; tri[3][2] = 0; tri[3][3] = 1; tri[3][4] = 0;
+	tri[4][0] = x1; tri[4][1] = y1; tri[4][2] = 0; tri[4][3] = 1; tri[4][4] = 1;
+	tri[5][0] = x0; tri[5][1] = y1; tri[5][2] = 0; tri[5][3] = 0; tri[5][4] = 1;
+
+	IDirect3DDevice9_SetTexture(win->dev, 0, (IDirect3DBaseTexture9 *)tex);
+	IDirect3DDevice9_DrawPrimitiveUP(win->dev, D3DPT_TRIANGLELIST, 2, &tri, 5*4);
+}
+
+void tigrDxUpdateWidgets(Tigr *bmp, int dw, int dh)
+{
+	POINT pt;
+	int i, x, clicked=0;
+	char str[8];
+	TPixel col;
+	TPixel off = tigrRGB(255,255,255);
+	TPixel on = tigrRGB(0,200,255);
+	TigrWin *win = tigrWin(bmp);
+	(void)dh;
+
+	tigrClear(win->widgets, tigrRGBA(0,0,0,0));
+
+	if (!(win->dwStyle & WS_POPUP))
+	{
+		win->widgetsWanted = 0;
+		win->widgetAlpha = 0;
+		return;
+	}
+
+	// See if we want to be showing widgets or not.
+	GetCursorPos(&pt);
+	ScreenToClient((HWND)bmp->handle, &pt);
+	if (pt.y == 0)
+		win->widgetsWanted = 1;
+	if (pt.y > win->widgets->h*WIDGET_SCALE)
+		win->widgetsWanted = 0;
+
+	// Track the alpha.
+	if (win->widgetsWanted)
+		win->widgetAlpha = (win->widgetAlpha <= 255-WIDGET_FADE) ? win->widgetAlpha+WIDGET_FADE : 255;
+	else
+		win->widgetAlpha = (win->widgetAlpha >= WIDGET_FADE) ? win->widgetAlpha-WIDGET_FADE : 0;
+
+	// Get relative coords.
+	pt.x -= (dw - win->widgets->w*WIDGET_SCALE);
+	pt.x /= WIDGET_SCALE;
+	pt.y /= WIDGET_SCALE;
+
+	tigrClear(win->widgets, tigrRGBA(0,0,0,win->widgetAlpha));
+
+	// Render it.
+	for (i=0;i<3;i++)
+	{
+		switch(i) {
+			case 0: str[0] = '_'; str[1] = 0; break; // "_" (minimize)
+			case 1: str[0] = 0xEF; str[1] = 0xBF; str[2] = 0xBD; str[3] = 0; break; // "[]" (maximize)
+			case 2: str[0] = 0xC3; str[1] = 0x97; str[2] = 0; break; // "x" (close)
+		}
+		x = win->widgets->w + (i-3)*12;
+		if (i == 2)
+			off = tigrRGB(255,0,0);
+		if (pt.x >= x && pt.x < x+10 && pt.y < win->widgets->h)
+		{
+			col = on;
+			if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+				clicked |= 1<<i;
+		} else {
+			col = off;
+		}
+		col.a = win->widgetAlpha;
+		tigrPrint(win->widgets, tfont, x, 2, col, str);
+	}
+
+	if (clicked & 1)
+		ShowWindow((HWND)bmp->handle, SW_MINIMIZE);
+	if (clicked & 2)
+		tigrLeaveBorderlessWindowed(bmp);
+	if (clicked & 4)
+		SendMessage((HWND)bmp->handle, WM_CLOSE, 0, 0);
+}
+
 void tigrDxPresent(Tigr *bmp)
 {
 	TigrWin *win;
-	D3DLOCKED_RECT rect;
 	HWND hWnd;
 	HRESULT hr;
-	TPixel *src, *dest;
 	RECT rc;
-	int y, dw, dh;
+	int dw, dh;
 
 	win = tigrWin(bmp);
 	hWnd = (HWND)bmp->handle;
@@ -1350,39 +1513,31 @@ void tigrDxPresent(Tigr *bmp)
 		return;
 	}
 
-	IDirect3DDevice9_BeginScene(win->dev);
-
-	// Lock the system memory texture.
-	IDirect3DTexture9_LockRect(win->sysTex, 0, &rect, NULL, D3DLOCK_DISCARD);
-
-	// Copy our bitmap into it.
-	src = bmp->pix;
-	for (y=0;y<bmp->h;y++)
-	{
-		dest = (TPixel *)( (char *)rect.pBits + rect.Pitch*y );
-		memcpy(dest, src, bmp->w*sizeof(TPixel));
-		src += bmp->w;
-	}
-
-	IDirect3DTexture9_UnlockRect(win->sysTex, 0);
-
-	// Update that into somewhere useful.
-	IDirect3DDevice9_UpdateTexture(win->dev, (IDirect3DBaseTexture9 *)win->sysTex, (IDirect3DBaseTexture9 *)win->vidTex);
-
-	// Set up our upscale shader.
-	IDirect3DDevice9_SetVertexShader(win->dev, win->vs);
-	IDirect3DDevice9_SetPixelShader(win->dev, win->ps);
-	IDirect3DDevice9_SetFVF(win->dev, D3DFVF_XYZ|D3DFVF_TEX1);
-	IDirect3DDevice9_SetTexture(win->dev, 0, (IDirect3DBaseTexture9 *)win->vidTex);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-
-	// Get the window size and let the shader know.
+	// Get the window size.
 	GetClientRect( hWnd, &rc );
 	dw = rc.right - rc.left;
 	dh = rc.bottom - rc.top;
+
+	// Update the widget overlay.
+	tigrDxUpdateWidgets(bmp, dw, dh);
+
+	IDirect3DDevice9_BeginScene(win->dev);
+
+	// Upload the pixel data.
+	tigrDxUpdate(win->dev, win->sysTex[0], win->vidTex[0], bmp);
+	tigrDxUpdate(win->dev, win->sysTex[1], win->vidTex[1], win->widgets);
+
+	// Set up our upscale shader.
+	IDirect3DDevice9_SetRenderState(win->dev, D3DRS_ALPHABLENDENABLE, FALSE);
+	IDirect3DDevice9_SetVertexShader(win->dev, win->vs);
+	IDirect3DDevice9_SetPixelShader(win->dev, win->ps);
+	IDirect3DDevice9_SetFVF(win->dev, D3DFVF_XYZ|D3DFVF_TEX1);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+
+	// Let the shader know about the window size.
 	{
 		float dsize[4];
 		dsize[0] = (float)dw;
@@ -1392,27 +1547,18 @@ void tigrDxPresent(Tigr *bmp)
 		IDirect3DDevice9_SetVertexShaderConstantF(win->dev, 0, dsize, 1);
 	}
 
+	// We clear so that a) we fill the border, and b) to let the driver
+	// know it can discard the contents.
+	IDirect3DDevice9_Clear(win->dev, 0, NULL, D3DCLEAR_TARGET, 0, 0, 0);
+
 	// Blit the final image to the screen.
-	{
-		float x0 = (float)win->pos[0];
-		float y0 = (float)win->pos[1];
-		float x1 = (float)win->pos[2];
-		float y1 = (float)win->pos[3];
-		float tri[6][5];
-		//          x               y               z              u              v
-		tri[0][0] = x0; tri[0][1] = y0; tri[0][2] = 0; tri[0][3] = 0; tri[0][4] = 0;
-		tri[1][0] = x1; tri[1][1] = y0; tri[1][2] = 0; tri[1][3] = 1; tri[1][4] = 0;
-		tri[2][0] = x0; tri[2][1] = y1; tri[2][2] = 0; tri[2][3] = 0; tri[2][4] = 1;
+	tigrDxQuad(win, win->vidTex[0], win->pos[0], win->pos[1], win->pos[2], win->pos[3]);
 
-		tri[3][0] = x1; tri[3][1] = y0; tri[3][2] = 0; tri[3][3] = 1; tri[3][4] = 0;
-		tri[4][0] = x1; tri[4][1] = y1; tri[4][2] = 0; tri[4][3] = 1; tri[4][4] = 1;
-		tri[5][0] = x0; tri[5][1] = y1; tri[5][2] = 0; tri[5][3] = 0; tri[5][4] = 1;
-
-		// We clear so that a) we fill the border, and b) to let the driver
-		// know it can discard the contents.
-		IDirect3DDevice9_Clear(win->dev, 0, NULL, D3DCLEAR_TARGET, 0, 0, 0);
-		IDirect3DDevice9_DrawPrimitiveUP(win->dev, D3DPT_TRIANGLELIST, 2, &tri, 5*4);
-	}
+	// Draw the widget overlay.
+	IDirect3DDevice9_SetRenderState(win->dev, D3DRS_ALPHABLENDENABLE, TRUE);
+	IDirect3DDevice9_SetRenderState(win->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+	IDirect3DDevice9_SetRenderState(win->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	tigrDxQuad(win, win->vidTex[1], dw - win->widgets->w*WIDGET_SCALE, 0, dw, win->widgets->h*WIDGET_SCALE);
 
 	// Et fini.
 	IDirect3DDevice9_EndScene(win->dev);
@@ -1529,21 +1675,33 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		return TRUE;
 	case WM_SIZE:
-		if (win && (wParam != SIZE_MINIMIZED))
+		if (win)
 		{
-			dw = LOWORD(lParam);
-			dh = HIWORD(lParam);
-			win->params.BackBufferWidth = dw;
-			win->params.BackBufferHeight = dh;
-			if (win->flags & TIGR_AUTO)
+			if (wParam != SIZE_MINIMIZED)
 			{
-				tigrResize(bmp, dw/win->scale, dh/win->scale);
-			} else {
-				win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh), win->flags);
+				// Detect window size changes and update our bitmap accordingly.
+				dw = LOWORD(lParam);
+				dh = HIWORD(lParam);
+				win->params.BackBufferWidth = dw;
+				win->params.BackBufferHeight = dh;
+				if (win->flags & TIGR_AUTO)
+				{
+					tigrResize(bmp, dw/win->scale, dh/win->scale);
+				} else {
+					win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh), win->flags);
+				}
+				tigrPosition(bmp, win->scale, dw, dh, win->pos);
+				tigrDxDestroy(bmp);
+				tigrDxCreate(bmp);
 			}
-			tigrPosition(bmp, win->scale, dw, dh, win->pos);
-			tigrDxDestroy(bmp);
-			tigrDxCreate(bmp);
+
+			// If someone tried to maximize us (e.g. via shortcut launch options),
+			// prefer instead to be borderless.
+			if (wParam == SIZE_MAXIMIZED)
+			{
+				ShowWindow((HWND)bmp->handle, SW_NORMAL);
+				tigrEnterBorderlessWindowed(bmp);
+			}
 		}
 		return 0;
 	case WM_ACTIVATE:
@@ -1556,15 +1714,34 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CHAR:
 		if (win) {
 			if (wParam == '\r') wParam = '\n';
-			win->lastChar = wParam;
+				win->lastChar = wParam;
 		}
 		return DefWindowProcW(hWnd, message, wParam, lParam);
+	case WM_MENUCHAR:
+		// Disable beep on Alt+Enter
+		if (LOWORD(wParam) == VK_RETURN)
+			return MNC_CLOSE<<16;
+		return DefWindowProcW(hWnd, message, wParam, lParam);
 	case WM_SYSKEYDOWN:
+		if (win)
+		{
+			if (wParam == VK_RETURN)
+			{
+				// Alt+Enter
+				if (win->dwStyle & WS_POPUP)
+					tigrLeaveBorderlessWindowed(bmp);
+				else
+					tigrEnterBorderlessWindowed(bmp);
+				return 0;
+			}
+		}
+		// fall-thru
 	case WM_KEYDOWN:
 		if (win)
 			win->keys[wParam] = 1;
 		return DefWindowProcW(hWnd, message, wParam, lParam);
 	case WM_SYSKEYUP:
+		// fall-thru
 	case WM_KEYUP:
 		if (win)
 			win->keys[wParam] = 0;
@@ -1681,6 +1858,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->lastChar = 0;
 	win->flags = flags;
 
+	win->widgetsWanted = 0;
+	win->widgetAlpha = 0;
+	win->widgets = tigrBitmap(40, 14);
+
 	SetPropW(hWnd, L"Tigr", bmp);
 
 	if (!tigrD3D)
@@ -1707,6 +1888,7 @@ void tigrFree(Tigr *bmp)
 		IDirect3DPixelShader9_Release(win->ps);
 		IDirect3DDevice9_Release(win->dev);
 		free(win->wtitle);
+		tigrFree(win->widgets);
 	}
 	free(bmp->pix);
 	free(bmp);
