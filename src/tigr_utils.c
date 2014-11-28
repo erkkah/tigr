@@ -1,5 +1,8 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "tigr.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void *tigrReadFile(const char *fileName, int *length)
 {

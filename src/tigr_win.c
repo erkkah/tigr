@@ -125,7 +125,11 @@ void tigrDxPresent(Tigr *bmp)
 	dw = rc.right - rc.left;
 	dh = rc.bottom - rc.top;
 	{
-		float dsize[4] = { (float)dw, (float)dh, 0.0f, 0.0f };
+		float dsize[4];
+		dsize[0] = (float)dw;
+		dsize[1] = (float)dh;
+		dsize[2] = 0.0f;
+		dsize[3] = 0.0f;
 		IDirect3DDevice9_SetVertexShaderConstantF(win->dev, 0, dsize, 1);
 	}
 
@@ -135,16 +139,16 @@ void tigrDxPresent(Tigr *bmp)
 		float y0 = (float)win->pos[1];
 		float x1 = (float)win->pos[2];
 		float y1 = (float)win->pos[3];
-		float tri[2*3*5] = {
-		//  x   y     z       u  v
-			x0, y0,   0,      0, 0,
-			x1, y0,   0,      1, 0,
-			x0, y1,   0,      0, 1,
+		float tri[6][5];
+		//          x               y               z              u              v
+		tri[0][0] = x0; tri[0][1] = y0; tri[0][2] = 0; tri[0][3] = 0; tri[0][4] = 0;
+		tri[1][0] = x1; tri[1][1] = y0; tri[1][2] = 0; tri[1][3] = 1; tri[1][4] = 0;
+		tri[2][0] = x0; tri[2][1] = y1; tri[2][2] = 0; tri[2][3] = 0; tri[2][4] = 1;
 
-			x1, y0,   0,      1, 0,
-			x1, y1,   0,      1, 1,
-			x0, y1,   0,      0, 1,
-		};
+		tri[3][0] = x1; tri[3][1] = y0; tri[3][2] = 0; tri[3][3] = 1; tri[3][4] = 0;
+		tri[4][0] = x1; tri[4][1] = y1; tri[4][2] = 0; tri[4][3] = 1; tri[4][4] = 1;
+		tri[5][0] = x0; tri[5][1] = y1; tri[5][2] = 0; tri[5][3] = 0; tri[5][4] = 1;
+
 		// We clear so that a) we fill the border, and b) to let the driver
 		// know it can discard the contents.
 		IDirect3DDevice9_Clear(win->dev, 0, NULL, D3DCLEAR_TARGET, 0, 0, 0);
@@ -214,7 +218,11 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		if (bmp)
 		{
 			MINMAXINFO *info = (MINMAXINFO *)lParam;
-			RECT rc = { 0, 0, bmp->w, bmp->h };
+			RECT rc;
+			rc.left = 0;
+			rc.top = 0;
+			rc.right = bmp->w;
+			rc.bottom = bmp->h;
 			AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 			info->ptMinTrackSize.x = rc.right - rc.left;
 			info->ptMinTrackSize.y = rc.bottom - rc.top;

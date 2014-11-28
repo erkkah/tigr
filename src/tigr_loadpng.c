@@ -1,5 +1,7 @@
 #include "tigr.h"
 #include "tigr_internal.h"
+#include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 typedef struct {
@@ -86,7 +88,8 @@ static void depalette(int w, int h, unsigned char *src, TPixel *dest, const unsi
 	}
 }
 
-#define CHECK(X) if (!(X)) { errno = EINVAL; goto err; }
+#define FAIL() { errno = EINVAL; goto err; }
+#define CHECK(X) if (!(X)) FAIL()
 static int outsize(Tigr *bmp, int bpp) { return (bmp->w+1)*bmp->h * bpp; }
 
 static Tigr *tigrLoadPng(PNG *png)
@@ -112,7 +115,7 @@ static Tigr *tigrLoadPng(PNG *png)
 		case 3: bpp = 1; break; // paletted
 		case 4: bpp = 2; break; // grey+alpha
 		case 6: bpp = 4; break; // RGBA
-		default: CHECK(0);
+		default: FAIL();
 	}
 
 	// Allocate bitmap (+1 width to save room for stupid PNG filter bytes)
@@ -165,10 +168,13 @@ err:
 }
 
 #undef CHECK
+#undef FAIL
 
 Tigr *tigrLoadImageMem(const void *data, int length)
 {
-	PNG png = { (unsigned char *)data, (unsigned char *)data + length };
+	PNG png;
+	png.p = (unsigned char *)data;
+	png.end = (unsigned char *)data + length;
 	return tigrLoadPng(&png);
 }
 

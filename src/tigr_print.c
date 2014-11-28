@@ -1,7 +1,11 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "tigr.h"
 #include "tigr_font.h"
 #include <stdlib.h>
 #include <stdarg.h>
+#include <errno.h>
+#include <stdio.h>
 
 TigrFont tigrStockFont;
 TigrFont *tfont = &tigrStockFont;

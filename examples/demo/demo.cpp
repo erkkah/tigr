@@ -67,7 +67,7 @@ void update(float dt)
 	playerx = oldx; playery = oldy;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
 	// Load our sprite.
 	Tigr *squinkle = tigrLoadImage("squinkle.png");
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		tigrPrint(screen, tfont, 10, 222, tigrRGBA(0xff,0xff,0xff,0xff), "A D + SPACE");
 
 		// Grab any chars and add them to our buffer.
-		while(true) {
+		for (;;) {
 			int c = tigrReadChar(screen);
 			if (c == 0)
 				break;

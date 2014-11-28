@@ -1,4 +1,5 @@
 #include "tigr.h"
+#include <stdlib.h>
 #include <setjmp.h>
 
 typedef struct {
@@ -10,7 +11,8 @@ typedef struct {
 	int tlit, tdist, tlen;
 } State;
 
-#define CHECK(X) if (!(X)) longjmp(s->jmp, 1)
+#define FAIL() longjmp(s->jmp, 1)
+#define CHECK(X) if (!(X)) FAIL()
 
 // Built-in DEFLATE standard tables.
 static char order[] = { 16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
@@ -202,7 +204,7 @@ int tigrInflate(void *out, unsigned outlen, const void *in, unsigned inlen)
 		case 0: stored(s); break;
 		case 1: fixed(s); block(s); break;
 		case 2: dynamic(s); block(s); break;
-		case 3: CHECK(0);
+		case 3: FAIL();
 		}
 	} while(!last);
 
@@ -211,4 +213,4 @@ int tigrInflate(void *out, unsigned outlen, const void *in, unsigned inlen)
 }
 
 #undef CHECK
-
+#undef FAIL
