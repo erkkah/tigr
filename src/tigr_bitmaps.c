@@ -32,6 +32,23 @@ Tigr *tigrBitmap(int w, int h)
 	return tigrBitmap2(w, h, 0);
 }
 
+void tigrResize(Tigr *bmp, int w, int h)
+{
+	int y, cw, ch;
+	TPixel *newpix = (TPixel *)calloc(w*h, sizeof(TPixel));
+	cw = (w < bmp->w) ? w : bmp->w;
+	ch = (h < bmp->h) ? h : bmp->h;
+
+	// Copy any old data across.
+	for (y=0;y<ch;y++)
+		memcpy(newpix+y*w, bmp->pix+y*bmp->w, cw*sizeof(TPixel));
+
+	free(bmp->pix);
+	bmp->pix = newpix;
+	bmp->w = w;
+	bmp->h = h;
+}
+
 int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH)
 {
 	// We want it as big as possible in the window, but still
@@ -48,6 +65,14 @@ int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH)
 		}
 	}
 	return (scale > 1) ? scale : 1;
+}
+
+int tigrEnforceScale(int scale, int flags)
+{
+	if ((flags & TIGR_4X) && scale < 4) scale = 4;
+	if ((flags & TIGR_3X) && scale < 3) scale = 3;
+	if ((flags & TIGR_2X) && scale < 2) scale = 2;
+	return scale;
 }
 
 void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4])

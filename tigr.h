@@ -37,6 +37,13 @@ typedef struct {
 	unsigned char b, g, r, a;
 } TPixel;
 
+// Windows flags.
+#define TIGR_FIXED		0	// window's bitmap is a fixed size (default)
+#define TIGR_AUTO		1	// window's bitmap will automatically resize after each tigrUpdate
+#define TIGR_2X			2	// always enforce (at least) 2X pixel scale
+#define TIGR_3X			4	// always enforce (at least) 3X pixel scale
+#define TIGR_4X			8	// always enforce (at least) 4X pixel scale
+
 // A Tigr bitmap.
 typedef struct Tigr {
 	int w, h;		// width/height (unscaled)

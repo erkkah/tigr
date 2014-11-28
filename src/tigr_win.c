@@ -20,7 +20,9 @@ typedef struct {
 	IDirect3DVertexShader9 *vs;
 	IDirect3DPixelShader9 *ps;
 	wchar_t *wtitle;
+	DWORD dwStyle;
 
+	int flags;
 	int scale;
 	int pos[4];
 	int lastChar;
@@ -219,6 +221,21 @@ void tigrUpdate(Tigr *bmp)
 	}
 }
 
+static BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle)
+{
+	BOOL fRc;
+	RECT rc;
+	SetRectEmpty(&rc);
+	fRc = AdjustWindowRectEx(&rc, dwStyle, fMenu, dwExStyle);
+	if (fRc) {
+		prc->left -= rc.left;
+		prc->top -= rc.top;
+		prc->right -= rc.right;
+		prc->bottom -= rc.bottom;
+		}
+	return fRc;
+}
+
 LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	Tigr *bmp;
@@ -246,13 +263,42 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			RECT rc;
 			rc.left = 0;
 			rc.top = 0;
-			rc.right = bmp->w;
-			rc.bottom = bmp->h;
-			AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+			if (win->flags & TIGR_AUTO)
+			{
+				rc.right = 32;
+				rc.bottom = 32;
+			} else {
+				int minscale = tigrEnforceScale(1, win->flags);
+				rc.right = bmp->w * minscale;
+				rc.bottom = bmp->h * minscale;
+			}
+			AdjustWindowRectEx(&rc, win->dwStyle, FALSE, 0);
 			info->ptMinTrackSize.x = rc.right - rc.left;
 			info->ptMinTrackSize.y = rc.bottom - rc.top;
 		}
 		return 0;
+	case WM_SIZING:
+		if (win)
+		{
+			// Calculate scale-constrained sizes.
+			RECT *rc = (RECT *)lParam;
+			int dx, dy;
+			UnadjustWindowRectEx(rc, win->dwStyle, FALSE, 0);
+			dx = (rc->right - rc->left) % win->scale;
+			dy = (rc->bottom - rc->top) % win->scale;
+			switch (wParam) {
+			case WMSZ_LEFT: rc->left += dx; break;
+			case WMSZ_RIGHT: rc->right -= dx; break;
+			case WMSZ_TOP: rc->top += dy; break;
+			case WMSZ_TOPLEFT: rc->left += dx; rc->top += dy; break;
+			case WMSZ_TOPRIGHT: rc->right -= dx; rc->top += dy; break;
+			case WMSZ_BOTTOM: rc->bottom -= dy; break;
+			case WMSZ_BOTTOMLEFT: rc->left += dx; rc->bottom -= dy; break;
+			case WMSZ_BOTTOMRIGHT: rc->right -= dx; rc->bottom -= dy; break;
+			}
+			AdjustWindowRectEx(rc, win->dwStyle, FALSE, 0);
+		}
+		return TRUE;
 	case WM_SIZE:
 		if (win && (wParam != SIZE_MINIMIZED))
 		{
@@ -260,7 +306,12 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			dh = HIWORD(lParam);
 			win->params.BackBufferWidth = dw;
 			win->params.BackBufferHeight = dh;
-			win->scale = tigrCalcScale(bmp->w, bmp->h, dw, dh);
+			if (win->flags & TIGR_AUTO)
+			{
+				tigrResize(bmp, dw/win->scale, dh/win->scale);
+			} else {
+				win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh), win->flags);
+			}
 			tigrPosition(bmp, win->scale, dw, dh, win->pos);
 			tigrDxDestroy(bmp);
 			tigrDxCreate(bmp);
@@ -349,7 +400,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	TigrWin *win;
 
 	wchar_t *wtitle = unicode(title);
-	(void)flags; // TODO
 
 	// Register a window class.
 	wcex.cbSize			= sizeof(WNDCLASSEXW);
@@ -361,10 +411,18 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	wcex.lpszClassName	= L"TIGR";
 	RegisterClassExW(&wcex);
 
-	// See how big we can make it and still fit on-screen.
-	maxW = GetSystemMetrics(SM_CXSCREEN) * 3/4;
-	maxH = GetSystemMetrics(SM_CYSCREEN) * 3/4;
-	scale = tigrCalcScale(w, h, maxW, maxH);
+	if (flags & TIGR_AUTO)
+	{
+		// Always use a 1:1 pixel size.
+		scale = 1;
+	} else {
+		// See how big we can make it and still fit on-screen.
+		maxW = GetSystemMetrics(SM_CXSCREEN) * 3/4;
+		maxH = GetSystemMetrics(SM_CYSCREEN) * 3/4;
+		scale = tigrCalcScale(w, h, maxW, maxH);
+	}
+
+	scale = tigrEnforceScale(scale, flags);
 
 	// Get the final window size.
 	dwStyle = WS_OVERLAPPEDWINDOW;
@@ -385,12 +443,14 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	// Set up the Windows parts.
 	win = tigrWin(bmp);
+	win->dwStyle = dwStyle;
 	win->wtitle = wtitle;
 	win->shown = 0;
 	win->closed = 0;
 	win->created = 0;
 	win->scale = scale;
 	win->lastChar = 0;
+	win->flags = flags;
 
 	SetPropW(hWnd, L"Tigr", bmp);
 
