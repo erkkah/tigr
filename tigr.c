@@ -143,6 +143,20 @@ void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color)
 	}
 }
 
+void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
+{
+	int x1, y1;
+	if (w <= 0 || h <= 0)
+		return;
+	
+	x1 = x + w-1;
+	y1 = y + h-1;
+	tigrLine(bmp, x, y, x1, y, color);
+	tigrLine(bmp, x1, y, x1, y1, color);
+	tigrLine(bmp, x1, y1, x, y1, color);
+	tigrLine(bmp, x, y1, x, y, color);
+}
+
 TPixel tigrGet(Tigr *bmp, int x, int y)
 {
 	TPixel empty = { 0,0,0,0 };

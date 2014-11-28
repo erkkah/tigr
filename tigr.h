@@ -1,4 +1,4 @@
-// TIGR - TIny GRaphics Library
+// TIGR - TIny GRaphics Library - v1.01
 //        ^^   ^^
 //
 // rawr.
@@ -72,6 +72,9 @@ void tigrClear(Tigr *bmp, TPixel color);
 
 // Fills in a solid rectangle.
 void tigrFill(Tigr *bmp, int x, int y, int w, int h, TPixel color);
+
+// Draws an empty rectangle. (exclusive co-ords)
+void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color);
 
 // Draws a line.
 void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color);
