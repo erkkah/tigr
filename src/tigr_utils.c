@@ -1,6 +1,5 @@
-#define _CRT_SECURE_NO_WARNINGS
-
 #include "tigr.h"
+#include "tigr_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 
