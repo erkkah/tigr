@@ -13,7 +13,7 @@ int main(int argc, char *argv[]);
 extern const unsigned char tigrUpscaleVSCode[], tigrUpscalePSCode[];
 
 typedef struct {
-	int shown, closed;
+	int shown, closed, created;
 	IDirect3DDevice9 *dev;
 	D3DPRESENT_PARAMETERS params;
 	IDirect3DTexture9 *sysTex, *vidTex;
@@ -59,23 +59,42 @@ void tigrError(Tigr *bmp, const char *message, ...)
 
 void tigrDxCreate(Tigr *bmp)
 {
+	HRESULT hr;
 	TigrWin *win = tigrWin(bmp);
 
-	if (FAILED(IDirect3DDevice9_CreateTexture(win->dev, bmp->w, bmp->h, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, 
-		D3DPOOL_SYSTEMMEM, &win->sysTex, NULL))
-	 || FAILED(IDirect3DDevice9_CreateTexture(win->dev, bmp->w, bmp->h, 1, 0, D3DFMT_A8R8G8B8, 
-		D3DPOOL_DEFAULT, &win->vidTex, NULL)))
+	if (!win->created)
 	{
-		tigrError(bmp, "Error creating Direct3D 9 textures.\n");
+		// Check if it's OK to resume work yet.
+		if (IDirect3DDevice9_TestCooperativeLevel(win->dev) == D3DERR_DEVICELOST)
+			return;
+
+		hr = IDirect3DDevice9_Reset(win->dev, &win->params);
+		if (hr == D3DERR_DEVICELOST)
+			return;
+
+		if (FAILED(hr)
+		 || FAILED(IDirect3DDevice9_CreateTexture(win->dev, bmp->w, bmp->h, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, 
+			D3DPOOL_SYSTEMMEM, &win->sysTex, NULL))
+		 || FAILED(IDirect3DDevice9_CreateTexture(win->dev, bmp->w, bmp->h, 1, 0, D3DFMT_A8R8G8B8, 
+			D3DPOOL_DEFAULT, &win->vidTex, NULL)))
+		{
+			tigrError(bmp, "Error creating Direct3D 9 textures.\n");
+		}
+
+		win->created = 1;
 	}
 }
 
 void tigrDxDestroy(Tigr *bmp)
 {
 	TigrWin *win = tigrWin(bmp);
-	IDirect3DTexture9_Release(win->sysTex);
-	IDirect3DTexture9_Release(win->vidTex);
-	IDirect3DDevice9_Reset(win->dev, &win->params);
+	if (win->created)
+	{
+		IDirect3DTexture9_Release(win->sysTex);
+		IDirect3DTexture9_Release(win->vidTex);
+		IDirect3DDevice9_Reset(win->dev, &win->params);
+		win->created = 0;
+	}
 }
 
 void tigrDxPresent(Tigr *bmp)
@@ -90,6 +109,15 @@ void tigrDxPresent(Tigr *bmp)
 
 	win = tigrWin(bmp);
 	hWnd = (HWND)bmp->handle;
+
+	// Make sure we have a device.
+	// If we don't, then sleep to simulate the vsync until it comes back.
+	tigrDxCreate(bmp);
+	if (!win->created)
+	{
+		Sleep(15);
+		return;
+	}
 
 	IDirect3DDevice9_BeginScene(win->dev);
 
@@ -159,12 +187,9 @@ void tigrDxPresent(Tigr *bmp)
 	IDirect3DDevice9_EndScene(win->dev);
 	hr = IDirect3DDevice9_Present(win->dev, NULL, NULL, hWnd, NULL );
 
-	// See if we need to do stuff.
+	// See if we lost our device.
 	if (hr == D3DERR_DEVICELOST)
-	{
 		tigrDxDestroy(bmp);
-		tigrDxCreate(bmp);
-	}
 }
 
 void tigrUpdate(Tigr *bmp)
@@ -229,7 +254,7 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		return 0;
 	case WM_SIZE:
-		if (win)
+		if (win && (wParam != SIZE_MINIMIZED))
 		{
 			dw = LOWORD(lParam);
 			dh = HIWORD(lParam);
@@ -363,6 +388,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->wtitle = wtitle;
 	win->shown = 0;
 	win->closed = 0;
+	win->created = 0;
 	win->scale = scale;
 	win->lastChar = 0;
 
