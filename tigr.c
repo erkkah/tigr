@@ -149,7 +149,7 @@ void tigrFill(Tigr *bmp, int x, int y, int w, int h, TPixel color)
 	td = &bmp->pix[y*bmp->w + x];
 	dt = bmp->w;
 	do {
-		for (i=0;i<dt;i++)
+		for (i=0;i<w;i++)
 			td[i] = color;
 		td += dt;
 	} while(--h);
