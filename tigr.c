@@ -1267,6 +1267,7 @@ typedef struct {
 } TigrWin;
 
 IDirect3D9 *tigrD3D;
+HKEY tigrRegKey;
 
 static wchar_t *unicode(const char *str)
 {
@@ -1578,7 +1579,7 @@ void tigrUpdate(Tigr *bmp)
 	{
 		win->shown = 1;
 		UpdateWindow((HWND)bmp->handle);
-		ShowWindow((HWND)bmp->handle, SW_NORMAL);
+		ShowWindow((HWND)bmp->handle, SW_SHOW);
 	}
 
 	tigrDxPresent(bmp);
@@ -1704,6 +1705,16 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			}
 		}
 		return 0;
+	case WM_WINDOWPOSCHANGED:
+		{
+			// Save our position.
+			WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
+			GetWindowPlacement(hWnd, &wp);
+			if (win->dwStyle & WS_POPUP)
+				wp.showCmd = SW_MAXIMIZE;
+			RegSetValueExW(tigrRegKey, win->wtitle, 0, REG_BINARY, (BYTE *)&wp, sizeof(wp));
+			return DefWindowProcW(hWnd, message, wParam, lParam);
+		}
 	case WM_ACTIVATE:
 		if (win) {
 			memset(win->keys, 0, 256);
@@ -1807,6 +1818,9 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	wchar_t *wtitle = unicode(title);
 
+	// Find our registry key.
+	RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\TIGR", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &tigrRegKey, NULL);
+
 	// Register a window class.
 	wcex.cbSize			= sizeof(WNDCLASSEXW);
 	wcex.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -1873,6 +1887,17 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	tigrDxSetup(bmp);
 	tigrDxCreate(bmp);
+
+	// Try and restore our window position.
+	WINDOWPLACEMENT wp;
+	DWORD wpsize = sizeof(wp);
+	if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE *)&wp, &wpsize) == ERROR_SUCCESS)
+	{
+		if (wp.showCmd == SW_MAXIMIZE)
+			tigrEnterBorderlessWindowed(bmp);
+		else
+			SetWindowPlacement(hWnd, &wp);
+	}
 
 	return bmp;
 }
