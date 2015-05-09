@@ -1153,6 +1153,16 @@ static TigrGlyph *get(TigrFont *font, int code)
 		return &font->glyphs[lo-1];
 }
 
+void tigrSetupFont(TigrFont *font)
+{
+	// Load the stock font if needed.
+	if (font == tfont && !tfont->bitmap)
+	{
+		tfont->bitmap = tigrLoadImageMem(tigr_font, tigr_font_size);
+		tigrLoadGlyphs(tfont, 1252);
+	}
+}
+
 void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const char *text, ...)
 {
 	char tmp[1024];
@@ -1161,12 +1171,7 @@ void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const cha
 	const char *p;
 	int start = x, c;
 
-	// Load the stock font if needed.
-	if (font == tfont && !tfont->bitmap)
-	{
-		tfont->bitmap = tigrLoadImageMem(tigr_font, tigr_font_size);
-		tigrLoadGlyphs(tfont, 1252);
-	}
+	tigrSetupFont(font);
 
 	// Expand the formatting string.
     va_start(args, text);
@@ -1194,6 +1199,8 @@ void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const cha
 
 int tigrTextWidth(TigrFont *font, const char *text)
 {
+	tigrSetupFont(font);
+
 	int x = 0, w = 0, c;
 	while (*text)
 	{
@@ -1210,6 +1217,8 @@ int tigrTextWidth(TigrFont *font, const char *text)
 
 int tigrTextHeight(TigrFont *font, const char *text)
 {
+	tigrSetupFont(font);
+
 	int rowh = get(font, 0)->h;
 	int h = rowh, c;
 	while (*text)
