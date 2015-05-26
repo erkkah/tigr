@@ -29,6 +29,9 @@ typedef struct {
 	Tigr *widgets;
 	int widgetsWanted;
 	unsigned char widgetAlpha;
+	
+	int hblur, vblur;
+	float scanlines, contrast;
 
 	int flags;
 	int scale;
@@ -306,17 +309,26 @@ void tigrDxPresent(Tigr *bmp)
 	IDirect3DDevice9_SetFVF(win->dev, D3DFVF_XYZ|D3DFVF_TEX1);
 	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
 	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
 	// Let the shader know about the window size.
 	{
-		float dsize[4];
-		dsize[0] = (float)dw;
-		dsize[1] = (float)dh;
-		dsize[2] = 0.0f;
-		dsize[3] = 0.0f;
-		IDirect3DDevice9_SetVertexShaderConstantF(win->dev, 0, dsize, 1);
+		float consts[12];
+		consts[0] = (float)dw;
+		consts[1] = (float)dh;
+		consts[2] = 1.0f / dw;
+		consts[3] = 1.0f / dh;
+		consts[4] = (float)bmp->w;
+		consts[5] = (float)bmp->h;
+		consts[6] = 1.0f / bmp->w;
+		consts[7] = 1.0f / bmp->h;
+		consts[8] = win->hblur ? 1.0f : 0.0f;
+		consts[9] = win->vblur ? 1.0f : 0.0f;
+		consts[10] = win->scanlines;
+		consts[11] = win->contrast;
+		IDirect3DDevice9_SetVertexShaderConstantF(win->dev, 0, consts, 3);
+		IDirect3DDevice9_SetPixelShaderConstantF(win->dev, 0, consts, 3);
 	}
 
 	// We clear so that a) we fill the border, and b) to let the driver
@@ -642,6 +654,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->scale = scale;
 	win->lastChar = 0;
 	win->flags = flags;
+	
+	win->hblur = win->vblur = 0;
+	win->scanlines = 0.0f;
+	win->contrast = 1.0f;
 
 	win->widgetsWanted = 0;
 	win->widgetAlpha = 0;
@@ -842,6 +858,15 @@ int tigrReadChar(Tigr *bmp)
 	int c = win->lastChar;
 	win->lastChar = 0;
 	return c;
+}
+
+void tigrSetPostFX(Tigr *bmp, int hblur, int vblur, float scanlines, float contrast)
+{
+	TigrWin *win = tigrWin(bmp);
+	win->hblur = hblur;
+	win->vblur = vblur;
+	win->scanlines = scanlines;
+	win->contrast = contrast;
 }
 
 // We supply our own WinMain and just chain through to the user's

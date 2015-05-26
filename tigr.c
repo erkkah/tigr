@@ -1267,6 +1267,9 @@ typedef struct {
 	Tigr *widgets;
 	int widgetsWanted;
 	unsigned char widgetAlpha;
+	
+	int hblur, vblur;
+	float scanlines, contrast;
 
 	int flags;
 	int scale;
@@ -1544,17 +1547,26 @@ void tigrDxPresent(Tigr *bmp)
 	IDirect3DDevice9_SetFVF(win->dev, D3DFVF_XYZ|D3DFVF_TEX1);
 	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSU, D3DTADDRESS_BORDER);
 	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_ADDRESSV, D3DTADDRESS_BORDER);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	IDirect3DDevice9_SetSamplerState(win->dev, 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
 	// Let the shader know about the window size.
 	{
-		float dsize[4];
-		dsize[0] = (float)dw;
-		dsize[1] = (float)dh;
-		dsize[2] = 0.0f;
-		dsize[3] = 0.0f;
-		IDirect3DDevice9_SetVertexShaderConstantF(win->dev, 0, dsize, 1);
+		float consts[12];
+		consts[0] = (float)dw;
+		consts[1] = (float)dh;
+		consts[2] = 1.0f / dw;
+		consts[3] = 1.0f / dh;
+		consts[4] = (float)bmp->w;
+		consts[5] = (float)bmp->h;
+		consts[6] = 1.0f / bmp->w;
+		consts[7] = 1.0f / bmp->h;
+		consts[8] = win->hblur ? 1.0f : 0.0f;
+		consts[9] = win->vblur ? 1.0f : 0.0f;
+		consts[10] = win->scanlines;
+		consts[11] = win->contrast;
+		IDirect3DDevice9_SetVertexShaderConstantF(win->dev, 0, consts, 3);
+		IDirect3DDevice9_SetPixelShaderConstantF(win->dev, 0, consts, 3);
 	}
 
 	// We clear so that a) we fill the border, and b) to let the driver
@@ -1880,6 +1892,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->scale = scale;
 	win->lastChar = 0;
 	win->flags = flags;
+	
+	win->hblur = win->vblur = 0;
+	win->scanlines = 0.0f;
+	win->contrast = 1.0f;
 
 	win->widgetsWanted = 0;
 	win->widgetAlpha = 0;
@@ -2082,6 +2098,15 @@ int tigrReadChar(Tigr *bmp)
 	return c;
 }
 
+void tigrSetPostFX(Tigr *bmp, int hblur, int vblur, float scanlines, float contrast)
+{
+	TigrWin *win = tigrWin(bmp);
+	win->hblur = hblur;
+	win->vblur = vblur;
+	win->scanlines = scanlines;
+	win->contrast = contrast;
+}
+
 // We supply our own WinMain and just chain through to the user's
 // real entry point. 
 #ifdef UNICODE
@@ -2119,7 +2144,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 //
 // Parameters:
 //
-//   float2 screenSize;
+//   float4 screenSize;
+//   float4 texSize;
 //
 //
 // Registers:
@@ -2127,21 +2153,22 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 //   Name         Reg   Size
 //   ------------ ----- ----
 //   screenSize   c0       1
+//   texSize      c1       1
 //
 
     vs_2_0
-    def c1, -0.5, 2, -1, 0
-    def c2, 1, -1, 0, 0
+    def c2, -0.5, 2, -1, 0
+    def c3, 1, -1, 0, 0
     dcl_position v0
     dcl_texcoord v1
-    add r0.xyz, v0.xyxw, c1.x
+    mul oT0.xy, v1, c1
+    add r0.xyz, v0.xyxw, c2.x
     rcp r1.xw, c0.x
     rcp r1.y, c0.y
     mul r0.xyz, r0, r1.xyww
-    mad r0.xyz, r0, c1.y, c1.z
-    mad oPos.xyw, r0.xyzz, c2.xyzz, c2.zzzx
+    mad r0.xyz, r0, c2.y, c2.z
+    mad oPos.xyw, r0.xyzz, c3.xyzz, c3.zzzx
     mov oPos.z, v0.z
-    mov oT0.xy, v1
 
 // approximately 8 instruction slots used
 #endif
@@ -2149,62 +2176,67 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 const BYTE tigrUpscaleVSCode[] =
 {
       0,   2, 254, 255, 254, 255, 
-     34,   0,  67,  84,  65,  66, 
-     28,   0,   0,   0,  83,   0, 
+     41,   0,  67,  84,  65,  66, 
+     28,   0,   0,   0, 111,   0, 
       0,   0,   0,   2, 254, 255, 
-      1,   0,   0,   0,  28,   0, 
+      2,   0,   0,   0,  28,   0, 
       0,   0,   8, 131,   0,   0, 
-     76,   0,   0,   0,  48,   0, 
+    104,   0,   0,   0,  68,   0, 
       0,   0,   2,   0,   0,   0, 
-      1,   0,   2,   0,  60,   0, 
+      1,   0,   2,   0,  80,   0, 
       0,   0,   0,   0,   0,   0, 
-    115,  99, 114, 101, 101, 110, 
-     83, 105, 122, 101,   0, 171, 
-      1,   0,   3,   0,   1,   0, 
-      2,   0,   1,   0,   0,   0, 
-      0,   0,   0,   0, 118, 115, 
-     95,  50,  95,  48,   0,  77, 
-    105,  99, 114, 111, 115, 111, 
-    102, 116,  32,  40,  82,  41, 
-     32,  72,  76,  83,  76,  32, 
-     83, 104,  97, 100, 101, 114, 
-     32,  67, 111, 109, 112, 105, 
-    108, 101, 114,  32,  57,  46, 
-     50,  57,  46,  57,  53,  50, 
-     46,  51,  49,  49,  49,   0, 
-     81,   0,   0,   5,   1,   0, 
-     15, 160,   0,   0,   0, 191, 
-      0,   0,   0,  64,   0,   0, 
+     96,   0,   0,   0,   2,   0, 
+      1,   0,   1,   0,   6,   0, 
+     80,   0,   0,   0,   0,   0, 
+      0,   0, 115,  99, 114, 101, 
+    101, 110,  83, 105, 122, 101, 
+      0, 171,   1,   0,   3,   0, 
+      1,   0,   4,   0,   1,   0, 
+      0,   0,   0,   0,   0,   0, 
+    116, 101, 120,  83, 105, 122, 
+    101,   0, 118, 115,  95,  50, 
+     95,  48,   0,  77, 105,  99, 
+    114, 111, 115, 111, 102, 116, 
+     32,  40,  82,  41,  32,  72, 
+     76,  83,  76,  32,  83, 104, 
+     97, 100, 101, 114,  32,  67, 
+    111, 109, 112, 105, 108, 101, 
+    114,  32,  57,  46,  50,  57, 
+     46,  57,  53,  50,  46,  51, 
+     49,  49,  49,   0,  81,   0, 
+      0,   5,   2,   0,  15, 160, 
+      0,   0,   0, 191,   0,   0, 
+      0,  64,   0,   0, 128, 191, 
+      0,   0,   0,   0,  81,   0, 
+      0,   5,   3,   0,  15, 160, 
+      0,   0, 128,  63,   0,   0, 
     128, 191,   0,   0,   0,   0, 
-     81,   0,   0,   5,   2,   0, 
-     15, 160,   0,   0, 128,  63, 
-      0,   0, 128, 191,   0,   0, 
-      0,   0,   0,   0,   0,   0, 
-     31,   0,   0,   2,   0,   0, 
-      0, 128,   0,   0,  15, 144, 
-     31,   0,   0,   2,   5,   0, 
-      0, 128,   1,   0,  15, 144, 
-      2,   0,   0,   3,   0,   0, 
-      7, 128,   0,   0, 196, 144, 
-      1,   0,   0, 160,   6,   0, 
-      0,   2,   1,   0,   9, 128, 
-      0,   0,   0, 160,   6,   0, 
-      0,   2,   1,   0,   2, 128, 
-      0,   0,  85, 160,   5,   0, 
-      0,   3,   0,   0,   7, 128, 
-      0,   0, 228, 128,   1,   0, 
-    244, 128,   4,   0,   0,   4, 
+      0,   0,   0,   0,  31,   0, 
+      0,   2,   0,   0,   0, 128, 
+      0,   0,  15, 144,  31,   0, 
+      0,   2,   5,   0,   0, 128, 
+      1,   0,  15, 144,   5,   0, 
+      0,   3,   0,   0,   3, 224, 
+      1,   0, 228, 144,   1,   0, 
+    228, 160,   2,   0,   0,   3, 
       0,   0,   7, 128,   0,   0, 
-    228, 128,   1,   0,  85, 160, 
-      1,   0, 170, 160,   4,   0, 
-      0,   4,   0,   0,  11, 192, 
-      0,   0, 164, 128,   2,   0, 
-    164, 160,   2,   0,  42, 160, 
-      1,   0,   0,   2,   0,   0, 
-      4, 192,   0,   0, 170, 144, 
-      1,   0,   0,   2,   0,   0, 
-      3, 224,   1,   0, 228, 144, 
-    255, 255,   0,   0
+    196, 144,   2,   0,   0, 160, 
+      6,   0,   0,   2,   1,   0, 
+      9, 128,   0,   0,   0, 160, 
+      6,   0,   0,   2,   1,   0, 
+      2, 128,   0,   0,  85, 160, 
+      5,   0,   0,   3,   0,   0, 
+      7, 128,   0,   0, 228, 128, 
+      1,   0, 244, 128,   4,   0, 
+      0,   4,   0,   0,   7, 128, 
+      0,   0, 228, 128,   2,   0, 
+     85, 160,   2,   0, 170, 160, 
+      4,   0,   0,   4,   0,   0, 
+     11, 192,   0,   0, 164, 128, 
+      3,   0, 164, 160,   3,   0, 
+     42, 160,   1,   0,   0,   2, 
+      0,   0,   4, 192,   0,   0, 
+    170, 144, 255, 255,   0,   0
 };
 
 //////// End of inlined file: tigr_upscale_vs.h ////////
@@ -2222,40 +2254,70 @@ const BYTE tigrUpscaleVSCode[] =
 // Parameters:
 //
 //   sampler2D image;
+//   float4 params;
+//   float4 texSize;
 //
 //
 // Registers:
 //
 //   Name         Reg   Size
 //   ------------ ----- ----
+//   texSize      c1       1
+//   params       c2       1
 //   image        s0       1
 //
 
     ps_2_0
+    def c0, 0.5, -0.5, 0, 0
     dcl t0.xy
     dcl_2d s0
-    texld r0, t0, s0
-    mov oC0, r0
+    frc r0.w, t0.y
+    add r0.x, -r0.w, c0.x
+    mov r1.w, c0.x
+    mad r0.x, c2.z, r0.x, r1.w
+    add r0.x, r0.x, r0.x
+    frc r0.yz, t0.zxyw
+    add r0.yz, -r0, t0.zxyw
+    add r0.yz, r0, c0.x
+    lrp r1.xy, c2, t0, r0.yzxw
+    mul r2.x, r1.x, c1.z
+    mul r2.y, r1.y, c1.w
+    texld r2, r2, s0
+    mad r0.xyz, r2, r0.x, c0.y
+    mad r2.xyz, c2.w, r0, r1.w
+    mov oC0, r2
 
-// approximately 2 instruction slots used (1 texture, 1 arithmetic)
+// approximately 15 instruction slots used (1 texture, 14 arithmetic)
 #endif
 
 const BYTE tigrUpscalePSCode[] =
 {
       0,   2, 255, 255, 254, 255, 
-     33,   0,  67,  84,  65,  66, 
-     28,   0,   0,   0,  79,   0, 
+     51,   0,  67,  84,  65,  66, 
+     28,   0,   0,   0, 151,   0, 
       0,   0,   0,   2, 255, 255, 
-      1,   0,   0,   0,  28,   0, 
+      3,   0,   0,   0,  28,   0, 
       0,   0,   8, 131,   0,   0, 
-     72,   0,   0,   0,  48,   0, 
+    144,   0,   0,   0,  88,   0, 
       0,   0,   3,   0,   0,   0, 
-      1,   0,   0,   0,  56,   0, 
+      1,   0,   0,   0,  96,   0, 
       0,   0,   0,   0,   0,   0, 
-    105, 109,  97, 103, 101,   0, 
-    171, 171,   4,   0,  12,   0, 
-      1,   0,   1,   0,   1,   0, 
-      0,   0,   0,   0,   0,   0, 
+    112,   0,   0,   0,   2,   0, 
+      2,   0,   1,   0,  10,   0, 
+    120,   0,   0,   0,   0,   0, 
+      0,   0, 136,   0,   0,   0, 
+      2,   0,   1,   0,   1,   0, 
+      6,   0, 120,   0,   0,   0, 
+      0,   0,   0,   0, 105, 109, 
+     97, 103, 101,   0, 171, 171, 
+      4,   0,  12,   0,   1,   0, 
+      1,   0,   1,   0,   0,   0, 
+      0,   0,   0,   0, 112,  97, 
+    114,  97, 109, 115,   0, 171, 
+      1,   0,   3,   0,   1,   0, 
+      4,   0,   1,   0,   0,   0, 
+      0,   0,   0,   0, 116, 101, 
+    120,  83, 105, 122, 101,   0, 
     112, 115,  95,  50,  95,  48, 
       0,  77, 105,  99, 114, 111, 
     115, 111, 102, 116,  32,  40, 
@@ -2265,16 +2327,55 @@ const BYTE tigrUpscalePSCode[] =
     112, 105, 108, 101, 114,  32, 
      57,  46,  50,  57,  46,  57, 
      53,  50,  46,  51,  49,  49, 
-     49,   0,  31,   0,   0,   2, 
+     49,   0,  81,   0,   0,   5, 
+      0,   0,  15, 160,   0,   0, 
+      0,  63,   0,   0,   0, 191, 
+      0,   0,   0,   0,   0,   0, 
+      0,   0,  31,   0,   0,   2, 
       0,   0,   0, 128,   0,   0, 
       3, 176,  31,   0,   0,   2, 
       0,   0,   0, 144,   0,   8, 
-     15, 160,  66,   0,   0,   3, 
-      0,   0,  15, 128,   0,   0, 
-    228, 176,   0,   8, 228, 160, 
-      1,   0,   0,   2,   0,   8, 
-     15, 128,   0,   0, 228, 128, 
-    255, 255,   0,   0
+     15, 160,  19,   0,   0,   2, 
+      0,   0,   8, 128,   0,   0, 
+     85, 176,   2,   0,   0,   3, 
+      0,   0,   1, 128,   0,   0, 
+    255, 129,   0,   0,   0, 160, 
+      1,   0,   0,   2,   1,   0, 
+      8, 128,   0,   0,   0, 160, 
+      4,   0,   0,   4,   0,   0, 
+      1, 128,   2,   0, 170, 160, 
+      0,   0,   0, 128,   1,   0, 
+    255, 128,   2,   0,   0,   3, 
+      0,   0,   1, 128,   0,   0, 
+      0, 128,   0,   0,   0, 128, 
+     19,   0,   0,   2,   0,   0, 
+      6, 128,   0,   0, 210, 176, 
+      2,   0,   0,   3,   0,   0, 
+      6, 128,   0,   0, 228, 129, 
+      0,   0, 210, 176,   2,   0, 
+      0,   3,   0,   0,   6, 128, 
+      0,   0, 228, 128,   0,   0, 
+      0, 160,  18,   0,   0,   4, 
+      1,   0,   3, 128,   2,   0, 
+    228, 160,   0,   0, 228, 176, 
+      0,   0, 201, 128,   5,   0, 
+      0,   3,   2,   0,   1, 128, 
+      1,   0,   0, 128,   1,   0, 
+    170, 160,   5,   0,   0,   3, 
+      2,   0,   2, 128,   1,   0, 
+     85, 128,   1,   0, 255, 160, 
+     66,   0,   0,   3,   2,   0, 
+     15, 128,   2,   0, 228, 128, 
+      0,   8, 228, 160,   4,   0, 
+      0,   4,   0,   0,   7, 128, 
+      2,   0, 228, 128,   0,   0, 
+      0, 128,   0,   0,  85, 160, 
+      4,   0,   0,   4,   2,   0, 
+      7, 128,   2,   0, 255, 160, 
+      0,   0, 228, 128,   1,   0, 
+    255, 128,   1,   0,   0,   2, 
+      0,   8,  15, 128,   2,   0, 
+    228, 128, 255, 255,   0,   0
 };
 
 //////// End of inlined file: tigr_upscale_ps.h ////////

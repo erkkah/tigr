@@ -66,6 +66,12 @@ int tigrClosed(Tigr *bmp);
 // Displays a window's contents on-screen.
 void tigrUpdate(Tigr *bmp);
 
+// Sets post-FX properties for a window.
+// hblur/vblur = whether to use bilinear filtering along that axis (boolean)
+// scanlines = CRT scanlines effect (0-1)
+// contrast = contrast boost (1 = no change, 2 = 2X contrast, etc)
+void tigrSetPostFX(Tigr *bmp, int hblur, int vblur, float scanlines, float contrast);
+
 
 // Drawing ----------------------------------------------------------------
 
