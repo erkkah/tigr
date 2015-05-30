@@ -45,6 +45,9 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #include <stdlib.h>
 #include <string.h>
 
+// Expands 0-255 into 0-256
+#define EXPAND(X) ((X) + ((X) > 0))
+
 #define CLIP0(X, X2, W) if (X < 0) { W += X; X2 -= X; X = 0; }
 #define CLIP1(X, DW, W) if (X + W > DW) W = DW - X;
 #define CLIP() \
@@ -198,8 +201,18 @@ TPixel tigrGet(Tigr *bmp, int x, int y)
 
 void tigrPlot(Tigr *bmp, int x, int y, TPixel pix)
 {
+	int xa, i, a;
 	if (x >= 0 && y >= 0 && x < bmp->w && y < bmp->h)
-		bmp->pix[y*bmp->w+x] = pix;
+	{
+		xa = EXPAND(pix.a);
+		i = y*bmp->w+x;
+
+		a = xa * EXPAND(pix.a);
+		bmp->pix[i].r += (unsigned char)((pix.r - bmp->pix[i].r)*a >> 16);
+		bmp->pix[i].g += (unsigned char)((pix.g - bmp->pix[i].g)*a >> 16);
+		bmp->pix[i].b += (unsigned char)((pix.b - bmp->pix[i].b)*a >> 16);
+		bmp->pix[i].a += (unsigned char)((pix.a - bmp->pix[i].a)*a >> 16);
+	}
 }
 
 void tigrBlit(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h)
@@ -218,9 +231,6 @@ void tigrBlit(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h
 		td += dt;
 	} while(--h);
 }
-
-// Expands 0-255 into 0-256
-#define EXPAND(X) ((X) + ((X) > 0))
 
 void tigrBlitTint(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint)
 {
