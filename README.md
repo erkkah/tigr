@@ -20,7 +20,7 @@ tasks that 2D programs generally need:
  - Direct access to bitmaps, no locking.
  - Basic drawing helpers (plot, line, blitter).
  - Text output.
- - PNG loader.
+ - PNG loading and saving code.
 
 TIGR is designed to be small and independent.
 A typical 'hello world' is less than 40KB.
