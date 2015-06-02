@@ -186,6 +186,10 @@ int tigrReadChar(Tigr *bmp);
 Tigr *tigrLoadImage(const char *fileName);
 Tigr *tigrLoadImageMem(const void *data, int length);
 
+// Saves a PNG to a file. (fileName is UTF-8)
+// On error, returns zero and sets errno.
+int tigrSaveImage(const char *fileName, Tigr *bmp);
+
 
 // Helpers ----------------------------------------------------------------
 

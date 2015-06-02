@@ -13,6 +13,7 @@ any implied warranty. If it breaks, you get to keep both pieces.
 
 #include "tigr_bitmaps.c"
 #include "tigr_loadpng.c"
+#include "tigr_savepng.c"
 #include "tigr_utils.c"
 #include "tigr_inflate.c"
 #include "tigr_print.c"

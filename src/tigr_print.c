@@ -176,9 +176,9 @@ void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const cha
 
 int tigrTextWidth(TigrFont *font, const char *text)
 {
+	int x = 0, w = 0, c;
 	tigrSetupFont(font);
 
-	int x = 0, w = 0, c;
 	while (*text)
 	{
 		text = tigrDecodeUTF8(text, &c);
@@ -194,10 +194,10 @@ int tigrTextWidth(TigrFont *font, const char *text)
 
 int tigrTextHeight(TigrFont *font, const char *text)
 {
+	int rowh, h, c;
 	tigrSetupFont(font);
 
-	int rowh = get(font, 0)->h;
-	int h = rowh, c;
+	h = rowh = get(font, 0)->h;
 	while (*text)
 	{
 		text = tigrDecodeUTF8(text, &c);
