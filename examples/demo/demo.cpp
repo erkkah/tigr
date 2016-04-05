@@ -1,5 +1,6 @@
 // A small test program to exercise most of TIGR's features.
 
+#define TIGR_IMPLEMENTATION
 #include "tigr.h"
 #include <math.h>
 
@@ -67,7 +68,7 @@ void update(float dt)
 	playerx = oldx; playery = oldy;
 }
 
-int main()
+int main(int, char**)
 {
 	// Load our sprite.
 	Tigr *squinkle = tigrLoadImage("squinkle.png");

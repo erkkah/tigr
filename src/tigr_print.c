@@ -1,10 +1,13 @@
-#include "tigr.h"
 #include "tigr_internal.h"
 #include "tigr_font.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <stdio.h>
+
+#ifdef _MSC_VER
+#define vsnprintf _vsnprintf
+#endif
 
 TigrFont tigrStockFont;
 TigrFont *tfont = &tigrStockFont;
@@ -144,17 +147,17 @@ void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const cha
 {
 	char tmp[1024];
 	TigrGlyph *g;
-    va_list args;
+	va_list args;
 	const char *p;
 	int start = x, c;
 
 	tigrSetupFont(font);
 
 	// Expand the formatting string.
-    va_start(args, text);
-	_vsnprintf(tmp, sizeof(tmp), text, args);
+	va_start(args, text);
+	vsnprintf(tmp, sizeof(tmp), text, args);
 	tmp[sizeof(tmp)-1] = 0;
-    va_end(args);
+	va_end(args);
 
 	// Print each glyph.
 	p = tmp;

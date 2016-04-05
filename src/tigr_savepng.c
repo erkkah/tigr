@@ -1,4 +1,3 @@
-#include "tigr.h"
 #include "tigr_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
