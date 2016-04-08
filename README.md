@@ -34,7 +34,6 @@ See the [TIGR website](https://bitbucket.org/rmitton/tigr/overview) for tutorial
 Here's an example Hello World program. For more information, just read ** tigr.h ** to see the APIs available.
 
 ```
-#define TIGR_IMPLEMENTATION
 #include "tigr.h"
 
 int main(int argc, char *argv[])
