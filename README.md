@@ -1,4 +1,4 @@
-# README #
+# README
 
 TIGR is a tiny graphics library, for when you just need to draw something in a window without any fuss. TIGR doesn't want to do everything. We don't want to bloat your program with hundreds of extra DLLs and megabytes of frameworks.
 
@@ -22,11 +22,10 @@ TIGR is designed to be small and independent. A typical 'hello world' is less th
 TIGR is supplied as a single .h file.
 To use it, you just drop them right into your project. No fancy build systems, no DLL hell, no package managers.
 
-1. Grab ** tigr.h **
+1. Grab  ** tigr.c ** and ** tigr.h **
 2. Throw them into your project.
-3. Include it in one file with TIGR_IMPLEMENTATION defined.
 3. Link with D3D9.LIB (or -ld3d9) on Windows, or -framework OpenGL and -framework Cocoa on OSX
-3. You're done!
+4. You're done!
 
 ### How do I program with TIGR? ###
 

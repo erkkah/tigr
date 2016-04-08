@@ -1,6 +1,5 @@
 // A small test program to exercise most of TIGR's features.
 
-#define TIGR_IMPLEMENTATION
 #include "tigr.h"
 #include <math.h>
 
@@ -68,7 +67,7 @@ void update(float dt)
 	playerx = oldx; playery = oldy;
 }
 
-int main(int, char**)
+int main(int argc, char *argv[])
 {
 	// Load our sprite.
 	Tigr *squinkle = tigrLoadImage("squinkle.png");
@@ -81,7 +80,7 @@ int main(int, char**)
 		tigrError(0, "Cannot load greeting.txt");
 
 	// Make a window and an off-screen backdrop.
-	screen = tigrWindow(320, 240, greeting, 0);
+	screen = tigrWindow(320, 240, greeting, TIGR_2X);
 	backdrop = tigrBitmap(screen->w, screen->h);
 
 	// Fill in the background.
@@ -90,6 +89,9 @@ int main(int, char**)
 	tigrFill(backdrop, 0, 200, 320, 3,  tigrRGB(0, 0, 0));
 	tigrLine(backdrop, 0, 201, 320, 201, tigrRGB(255,255,255));
 
+	// Enable post fx
+	tigrSetPostFX(screen, 1, 1, 1, 2.0f);
+
 	int prevx=0, prevy=0, prev = 0;
 
 	// Maintain a list of characters entered.
@@ -97,7 +99,7 @@ int main(int, char**)
 	for (int n=0;n<16;n++) chars[n] = '_';
 
 	// Repeat till they close the window.
-	while (!tigrClosed(screen))
+	while (!tigrClosed(screen) && !tigrKeyDown(screen, TK_ESCAPE))
 	{
 		// Update the game.
 		float dt = tigrTime();
@@ -117,7 +119,7 @@ int main(int, char**)
 
 		// Composite the backdrop and sprite onto the screen.
 		tigrBlit(screen, backdrop, 0,0,0,0, backdrop->w, backdrop->h);
-		tigrBlitAlpha(screen, squinkle, 
+		tigrBlitAlpha(screen, squinkle,
 			(int)playerx-squinkle->w/2, (int)playery-squinkle->h, 0, 0, squinkle->w, squinkle->h, 1.0f);
 
 		tigrPrint(screen, tfont, 10, 10, tigrRGBA(0xc0,0xd0,0xff,0xc0), greeting);

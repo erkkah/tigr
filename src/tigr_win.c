@@ -20,7 +20,7 @@ TigrInternal *tigrInternal(Tigr *bmp)
 
 int main(int argc, char *argv[]);
 
-#if TIGR_PRESERVE_WINDOW_POSITION
+#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
 HKEY tigrRegKey;
 #endif
 
@@ -299,7 +299,7 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			}
 		}
 		return 0;
-	#if TIGR_PRESERVE_WINDOW_POSITION
+	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
 	case WM_WINDOWPOSCHANGED:
 		{
 			// Save our position.
@@ -373,7 +373,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	wchar_t *wtitle = unicode(title);
 
 	// Find our registry key.
-	#if TIGR_PRESERVE_WINDOW_POSITION
+	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
 	RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\TIGR", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &tigrRegKey, NULL);
 	#endif
 
@@ -444,7 +444,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	tigrGAPICreate(bmp);
 
 	// Try and restore our window position.
-	#if TIGR_PRESERVE_WINDOW_POSITION
+	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
 	WINDOWPLACEMENT wp;
 	DWORD wpsize = sizeof(wp);
 	if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE *)&wp, &wpsize) == ERROR_SUCCESS)

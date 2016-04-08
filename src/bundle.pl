@@ -15,7 +15,7 @@ sub inline
 	return 0 if ($done{$name});
 	$done{$name} = 1;
 	print " - $name\n";
-	#print OUT "//////// Start of inlined file: $name ////////\n\n";
+	print OUT "//////// Start of inlined file: $name ////////\n\n";
 	open my $IN, $name or die "$name: $!\n";
 	while (<$IN>) {
 		if (/^#include \"(.+)\"/ && -f $1 && !inline($1)) {
@@ -25,7 +25,7 @@ sub inline
 		}
 	}
 	close $IN;
-	#print OUT "\n//////// End of inlined file: $name ////////\n\n";
+	print OUT "\n//////// End of inlined file: $name ////////\n\n";
 	return 1;
 }
 

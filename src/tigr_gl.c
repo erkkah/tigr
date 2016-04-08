@@ -2,9 +2,7 @@
 #include <stdio.h> // TODO can we remove this and printf's later?
 
 #ifdef TIGR_GAPI_GL
-#ifdef __APPLE__
-#include <OpenGL/glext.h>
-#else
+#ifndef __APPLE__
 // please provide you own glext.h, you can download latest at https://www.opengl.org/registry/api/GL/glext.h
 #include <glext.h>
 #endif
@@ -185,7 +183,7 @@ void tigrGAPICreate(Tigr *bmp)
 	tigrGL33Init(bmp);
 	#endif
 
-	printf("ogl version %s\n", glGetString(GL_VERSION));
+	//printf("ogl version %s\n", glGetString(GL_VERSION));
 
 	if(!gl->gl_legacy)
 	{
@@ -272,7 +270,7 @@ void tigrGAPIResize(Tigr *bmp, int width, int height)
 void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x1, int y1, int x2, int y2)
 {
 	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, bmp->pix); // it's bgra on windows only?
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, bmp->pix);
 
 	if(!legacy)
 	{
@@ -294,12 +292,16 @@ void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x
 	}
 	else
 	{
+		#ifndef __APPLE__
 		glBegin(GL_QUADS);
 		glTexCoord2f(1.0f, 0.0f); glVertex2i(x2, y1);
 		glTexCoord2f(0.0f, 0.0f); glVertex2i(x1, y1);
 		glTexCoord2f(0.0f, 1.0f); glVertex2i(x1, y2);
 		glTexCoord2f(1.0f, 1.0f); glVertex2i(x2, y2);
 		glEnd();
+		#else
+		assert(0);
+		#endif
 	}
 }
 
@@ -330,10 +332,14 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	}
 	else
 	{
+		#ifndef __APPLE__
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, w, h, 0, -1.0f, 1.0f);
 		glEnable(GL_TEXTURE_2D);
+		#else
+		assert(0);
+		#endif
 	}
 
 	glDisable(GL_BLEND);

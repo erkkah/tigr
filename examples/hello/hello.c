@@ -1,4 +1,3 @@
-#define TIGR_IMPLEMENTATION
 #include "tigr.h"
 
 int main(int argc, char *argv[])

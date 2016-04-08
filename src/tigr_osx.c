@@ -21,7 +21,6 @@
 #include <objc/runtime.h>
 #include <objc/message.h>
 #include <objc/NSObjCRuntime.h>
-#include <OpenGL/gl.h>
 #include <mach/mach_time.h>
 
 // maybe this is available somewhere in objc runtime?
@@ -49,7 +48,7 @@ extern id const NSDefaultRunLoopMode;
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
 //#define ARC_AVAILABLE
-#error cant compile as objective-c code just yet! see autorelease pool todo bellow
+#error can't compile as objective-c code just yet! see autorelease pool todo bellow
 #endif
 
 // ABI is a bit different between platforms
@@ -64,38 +63,22 @@ extern id const NSDefaultRunLoopMode;
 #define abi_objc_msgSend_fpret objc_msgSend
 #endif
 
+#define objc_msgSend_id				((id (*)(id, SEL))objc_msgSend)
+#define objc_msgSend_void			((void (*)(id, SEL))objc_msgSend)
+#define objc_msgSend_void_id		((void (*)(id, SEL, id))objc_msgSend)
+#define objc_msgSend_void_bool		((void (*)(id, SEL, BOOL))objc_msgSend)
+#define objc_msgSend_id_const_char	((id (*)(id, SEL, const char*))objc_msgSend)
+
 bool terminated = false;
 uint32_t windowCount = 0;
 
 // we gonna construct objective-c class by hand in runtime, so wow, so hacker!
-//@interface AppDelegate : NSObject<NSApplicationDelegate>
-//-(NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender;
-//@end
-//@implementation AppDelegate
-//-(NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
-//{
-//	terminated = true;
-//	return NSTerminateCancel;
-//}
-//@end
 NSUInteger applicationShouldTerminate(id self, SEL _sel, id sender)
 {
 	terminated = true;
 	return 0;
 }
 
-//@interface WindowDelegate : NSObject<NSWindowDelegate>
-//-(void)windowWillClose:(NSNotification*)notification;
-//@end
-//@implementation WindowDelegate
-//-(void)windowWillClose:(NSNotification*)notification
-//{
-//	(void)notification;
-//	assert(windowCount);
-//	if(--windowCount == 0)
-//		terminated = true;
-//}
-//@end
 void windowWillClose(id self, SEL _sel, id notification)
 {
 	assert(windowCount);
@@ -114,92 +97,67 @@ void tigrInitOSX()
 	#ifdef ARC_AVAILABLE
 	// TODO and what do we do now? it's a bit too tricky to use @autoreleasepool here
 	#else
-	//NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	//would be nice to use objc_autoreleasePoolPush instead, but it's not publically available in the headers
-	id poolAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSAutoreleasePool"), sel_registerName("alloc"));
-	autoreleasePool = ((id (*)(id, SEL))objc_msgSend)(poolAlloc, sel_registerName("init"));
+	id poolAlloc = objc_msgSend_id((id)objc_getClass("NSAutoreleasePool"), sel_registerName("alloc"));
+	autoreleasePool = objc_msgSend_id(poolAlloc, sel_registerName("init"));
 	#endif
 
-	//[NSApplication sharedApplication];
-	((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
-
-	//[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+	objc_msgSend_id((id)objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
 	((void (*)(id, SEL, NSInteger))objc_msgSend)(NSApp, sel_registerName("setActivationPolicy:"), 0);
 
-	//AppDelegate * dg = [[AppDelegate alloc] init];
 	Class appDelegateClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "AppDelegate", 0);
 	bool resultAddProtoc = class_addProtocol(appDelegateClass, objc_getProtocol("NSApplicationDelegate"));
 	assert(resultAddProtoc);
 	bool resultAddMethod = class_addMethod(appDelegateClass, sel_registerName("applicationShouldTerminate:"), (IMP)applicationShouldTerminate, NSUIntegerEncoding "@:@");
 	assert(resultAddMethod);
-	id dgAlloc = ((id (*)(id, SEL))objc_msgSend)((id)appDelegateClass, sel_registerName("alloc"));
-	id dg = ((id (*)(id, SEL))objc_msgSend)(dgAlloc, sel_registerName("init"));
+	id dgAlloc = objc_msgSend_id((id)appDelegateClass, sel_registerName("alloc"));
+	id dg = objc_msgSend_id(dgAlloc, sel_registerName("init"));
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(dg, sel_registerName("autorelease"));
+	objc_msgSend_void(dg, sel_registerName("autorelease"));
 	#endif
 
-	//[NSApp setDelegate:dg];
-	((void (*)(id, SEL, id))objc_msgSend)(NSApp, sel_registerName("setDelegate:"), dg);
+	objc_msgSend_void_id(NSApp, sel_registerName("setDelegate:"), dg);
+	objc_msgSend_void(NSApp, sel_registerName("finishLaunching"));
 
-	// only needed if we don't use [NSApp run]
-	//[NSApp finishLaunching];
-	((void (*)(id, SEL))objc_msgSend)(NSApp, sel_registerName("finishLaunching"));
-
-	//id menubar = [[NSMenu alloc] init];
-	id menubarAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
-	id menubar = ((id (*)(id, SEL))objc_msgSend)(menubarAlloc, sel_registerName("init"));
+	id menubarAlloc = objc_msgSend_id((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
+	id menubar = objc_msgSend_id(menubarAlloc, sel_registerName("init"));
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(menubar, sel_registerName("autorelease"));
+	objc_msgSend_void(menubar, sel_registerName("autorelease"));
 	#endif
 
-	//id appMenuItem = [[NSMenuItem alloc] init];
-	id appMenuItemAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
-	id appMenuItem = ((id (*)(id, SEL))objc_msgSend)(appMenuItemAlloc, sel_registerName("init"));
+	id appMenuItemAlloc = objc_msgSend_id((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
+	id appMenuItem = objc_msgSend_id(appMenuItemAlloc, sel_registerName("init"));
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(appMenuItem, sel_registerName("autorelease"));
+	objc_msgSend_void(appMenuItem, sel_registerName("autorelease"));
 	#endif
 
-	//[menubar addItem:appMenuItem];
-	((void (*)(id, SEL, id))objc_msgSend)(menubar, sel_registerName("addItem:"), appMenuItem);
-
-	//[NSApp setMainMenu:menubar];
+	objc_msgSend_void_id(menubar, sel_registerName("addItem:"), appMenuItem);
 	((id (*)(id, SEL, id))objc_msgSend)(NSApp, sel_registerName("setMainMenu:"), menubar);
 
-	//id appMenu = [[NSMenu alloc] init];
-	id appMenuAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
-	id appMenu = ((id (*)(id, SEL))objc_msgSend)(appMenuAlloc, sel_registerName("init"));
+	id appMenuAlloc = objc_msgSend_id((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
+	id appMenu = objc_msgSend_id(appMenuAlloc, sel_registerName("init"));
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(appMenu, sel_registerName("autorelease"));
+	objc_msgSend_void(appMenu, sel_registerName("autorelease"));
 	#endif
 
-	//id appName = [[NSProcessInfo processInfo] processName];
-	id processInfo = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSProcessInfo"), sel_registerName("processInfo"));
-	id appName = ((id (*)(id, SEL))objc_msgSend)(processInfo, sel_registerName("processName"));
+	id processInfo = objc_msgSend_id((id)objc_getClass("NSProcessInfo"), sel_registerName("processInfo"));
+	id appName = objc_msgSend_id(processInfo, sel_registerName("processName"));
 
-	//id quitTitle = [@"Quit " stringByAppendingString:appName];
-	id quitTitlePrefixString = ((id (*)(id, SEL, const char*))objc_msgSend)((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), "Quit ");
+	id quitTitlePrefixString = objc_msgSend_id_const_char((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), "Quit ");
 	id quitTitle = ((id (*)(id, SEL, id))objc_msgSend)(quitTitlePrefixString, sel_registerName("stringByAppendingString:"), appName);
 
-	//id quitMenuItem = [[NSMenuItem alloc] initWithTitle:quitTitle action:@selector(terminate:) keyEquivalent:@"q"];
-	id quitMenuItemKey = ((id (*)(id, SEL, const char*))objc_msgSend)((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), "q");
-	id quitMenuItemAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
+	id quitMenuItemKey = objc_msgSend_id_const_char((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), "q");
+	id quitMenuItemAlloc = objc_msgSend_id((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
 	id quitMenuItem = ((id (*)(id, SEL, id, SEL, id))objc_msgSend)(quitMenuItemAlloc, sel_registerName("initWithTitle:action:keyEquivalent:"), quitTitle, sel_registerName("terminate:"), quitMenuItemKey);
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(quitMenuItem, sel_registerName("autorelease"));
+	objc_msgSend_void(quitMenuItem, sel_registerName("autorelease"));
 	#endif
 
-	//[appMenu addItem:quitMenuItem];
-	((void (*)(id, SEL, id))objc_msgSend)(appMenu, sel_registerName("addItem:"), quitMenuItem);
-
-	//[appMenuItem setSubmenu:appMenu];
-	((void (*)(id, SEL, id))objc_msgSend)(appMenuItem, sel_registerName("setSubmenu:"), appMenu);
+	objc_msgSend_void_id(appMenu, sel_registerName("addItem:"), quitMenuItem);
+	objc_msgSend_void_id(appMenuItem, sel_registerName("setSubmenu:"), appMenu);
 
 	tigrOSXInited = true;
 }
-
-#if TIGR_PRESERVE_WINDOW_POSITION
-#error not implemented
-#endif
 
 void tigrError(Tigr *bmp, const char *message, ...)
 {
@@ -221,13 +179,8 @@ void tigrError(Tigr *bmp, const char *message, ...)
 
 NSSize _tigrCocoaWindowSize(id window)
 {
-	//NSView * contentView = [window contentView];
-	id contentView = ((id (*)(id, SEL))objc_msgSend)(window, sel_registerName("contentView"));
-
-	//NSRect rect = [contentView frame];
+	id contentView = objc_msgSend_id(window, sel_registerName("contentView"));
 	NSRect rect = ((NSRect (*)(id, SEL))abi_objc_msgSend_stret)(contentView, sel_registerName("frame"));
-
-	//rect = [contentView convertRectToBacking:rect];
 	rect = ((NSRect (*)(id, SEL, NSRect))abi_objc_msgSend_stret)(contentView, sel_registerName("convertRectToBacking:"), rect);
 
 	return rect.size;
@@ -255,110 +208,78 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	scale = tigrEnforceScale(scale, flags);
 
-	//id window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, w, h) styleMask:NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask backing:NSBackingStoreBuffered defer:NO];
 	NSRect rect = {{0, 0}, {w * scale, h * scale}};
-	id windowAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSWindow"), sel_registerName("alloc"));
+	id windowAlloc = objc_msgSend_id((id)objc_getClass("NSWindow"), sel_registerName("alloc"));
 	id window = ((id (*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(windowAlloc, sel_registerName("initWithContentRect:styleMask:backing:defer:"), rect, 15, 2, NO);
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(window, sel_registerName("autorelease"));
+	objc_msgSend_void(window, sel_registerName("autorelease"));
 	#endif
 
 	// when we are not using ARC, than window will be added to autorelease pool
 	// so if we close it by hand (pressing red button), we don't want it to be released for us
 	// so it will be released by autorelease pool later
-	//[window setReleasedWhenClosed:NO];
-	((void (*)(id, SEL, BOOL))objc_msgSend)(window, sel_registerName("setReleasedWhenClosed:"), NO);
+	objc_msgSend_void_bool(window, sel_registerName("setReleasedWhenClosed:"), NO);
 
 	++windowCount;
 
-	//WindowDelegate * wdg = [[WindowDelegate alloc] init];
 	Class WindowDelegateClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "WindowDelegate", 0);
 	bool resultAddProtoc = class_addProtocol(WindowDelegateClass, objc_getProtocol("NSWindowDelegate"));
 	assert(resultAddProtoc);
 	bool resultAddMethod = class_addMethod(WindowDelegateClass, sel_registerName("windowWillClose:"), (IMP)windowWillClose,  "v@:@");
 	assert(resultAddMethod);
-	id wdgAlloc = ((id (*)(id, SEL))objc_msgSend)((id)WindowDelegateClass, sel_registerName("alloc"));
-	id wdg = ((id (*)(id, SEL))objc_msgSend)(wdgAlloc, sel_registerName("init"));
+	id wdgAlloc = objc_msgSend_id((id)WindowDelegateClass, sel_registerName("alloc"));
+	id wdg = objc_msgSend_id(wdgAlloc, sel_registerName("init"));
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(wdg, sel_registerName("autorelease"));
+	objc_msgSend_void(wdg, sel_registerName("autorelease"));
 	#endif
 
-	//[window setDelegate:wdg];
-	((void (*)(id, SEL, id))objc_msgSend)(window, sel_registerName("setDelegate:"), wdg);
+	objc_msgSend_void_id(window, sel_registerName("setDelegate:"), wdg);
 
-	//NSView * contentView = [window contentView];
-	id contentView = ((id (*)(id, SEL))objc_msgSend)(window, sel_registerName("contentView"));
+	id contentView = objc_msgSend_id(window, sel_registerName("contentView"));
 
 	if(flags & TIGR_RETINA)
-	{
-		// disable this if you don't want retina support
-		//[contentView setWantsBestResolutionOpenGLSurface:YES];
-		((void (*)(id, SEL, BOOL))objc_msgSend)(contentView, sel_registerName("setWantsBestResolutionOpenGLSurface:"), YES);
-	}
+		objc_msgSend_void_bool(contentView, sel_registerName("setWantsBestResolutionOpenGLSurface:"), YES);
 
-	//[window cascadeTopLeftFromPoint:NSMakePoint(20,20)];
 	NSPoint point = {20, 20};
 	((void (*)(id, SEL, NSPoint))objc_msgSend)(window, sel_registerName("cascadeTopLeftFromPoint:"), point);
 
-	//[window setTitle:@"sup"];
-	id titleString = ((id (*)(id, SEL, const char*))objc_msgSend)((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), title);
-	((void (*)(id, SEL, id))objc_msgSend)(window, sel_registerName("setTitle:"), titleString);
+	id titleString = objc_msgSend_id_const_char((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), title);
+	objc_msgSend_void_id(window, sel_registerName("setTitle:"), titleString);
 
-	//NSOpenGLPixelFormatAttribute glAttributes[] =
-	//{
-	//	NSOpenGLPFAColorSize, 24,
-	//	NSOpenGLPFAAlphaSize, 8,
-	//	NSOpenGLPFADoubleBuffer,
-	//	NSOpenGLPFAAccelerated,
-	//	NSOpenGLPFANoRecovery,
-	//	NSOpenGLPFASampleBuffers, 1,
-	//	NSOpenGLPFASamples, 4,
-	//	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
-	//	0
-	//};
 	uint32_t glAttributes[] =
 	{
-		8, 24,
-		11, 8,
-		5,
-		73,
-		72,
-		//55, 1,
-		//56, 4,
-		99, 0x3200,
+		8, 24,			//	NSOpenGLPFAColorSize, 24,
+		11, 8,			//	NSOpenGLPFAAlphaSize, 8,
+		5,				//	NSOpenGLPFADoubleBuffer,
+		73,				//	NSOpenGLPFAAccelerated,
+		//72,			//	NSOpenGLPFANoRecovery,
+		//55, 1,		//	NSOpenGLPFASampleBuffers, 1,
+		//56, 4,		//	NSOpenGLPFASamples, 4,
+		99, 0x3200,		//	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
 		0
 	};
 
-	//NSOpenGLPixelFormat * pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:glAttributes];
-	id pixelFormatAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenGLPixelFormat"), sel_registerName("alloc"));
+	id pixelFormatAlloc = objc_msgSend_id((id)objc_getClass("NSOpenGLPixelFormat"), sel_registerName("alloc"));
 	id pixelFormat = ((id (*)(id, SEL, const uint32_t*))objc_msgSend)(pixelFormatAlloc, sel_registerName("initWithAttributes:"), glAttributes);
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(pixelFormat, sel_registerName("autorelease"));
+	objc_msgSend_void(pixelFormat, sel_registerName("autorelease"));
 	#endif
 
-	//NSOpenGLContext * openGLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
-	id openGLContextAlloc = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenGLContext"), sel_registerName("alloc"));
+	id openGLContextAlloc = objc_msgSend_id((id)objc_getClass("NSOpenGLContext"), sel_registerName("alloc"));
 	id openGLContext = ((id (*)(id, SEL, id, id))objc_msgSend)(openGLContextAlloc, sel_registerName("initWithFormat:shareContext:"), pixelFormat, nil);
 	#ifndef ARC_AVAILABLE
-	((void (*)(id, SEL))objc_msgSend)(openGLContext, sel_registerName("autorelease"));
+	objc_msgSend_void(openGLContext, sel_registerName("autorelease"));
 	#endif
 
-	//[openGLContext setView:contentView];
-	((void (*)(id, SEL, id))objc_msgSend)(openGLContext, sel_registerName("setView:"), contentView);
+	objc_msgSend_void_id(openGLContext, sel_registerName("setView:"), contentView);
+	objc_msgSend_void_id(window, sel_registerName("makeKeyAndOrderFront:"), window);
+	objc_msgSend_void_bool(window, sel_registerName("setAcceptsMouseMovedEvents:"), YES);
 
-	//[window makeKeyAndOrderFront:window];
-	((void (*)(id, SEL, id))objc_msgSend)(window, sel_registerName("makeKeyAndOrderFront:"), window);
-
-	//[window setAcceptsMouseMovedEvents:YES];
-	((void (*)(id, SEL, BOOL))objc_msgSend)(window, sel_registerName("setAcceptsMouseMovedEvents:"), YES);
-
-	//[window setBackgroundColor:[NSColor blackColor]];
-	id blackColor = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSColor"), sel_registerName("blackColor"));
-	((void (*)(id, SEL, id))objc_msgSend)(window, sel_registerName("setBackgroundColor:"), blackColor);
+	id blackColor = objc_msgSend_id((id)objc_getClass("NSColor"), sel_registerName("blackColor"));
+	objc_msgSend_void_id(window, sel_registerName("setBackgroundColor:"), blackColor);
 
 	// TODO do we really need this?
-	//[NSApp activateIgnoringOtherApps:YES];
-	((void (*)(id, SEL, BOOL))objc_msgSend)(NSApp, sel_registerName("activateIgnoringOtherApps:"), YES);
+	objc_msgSend_void_bool(NSApp, sel_registerName("activateIgnoringOtherApps:"), YES);
 
 	// Wrap a bitmap around it.
 	NSSize windowSize = _tigrCocoaWindowSize(window);
@@ -385,9 +306,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
 
-	//[openGLContext makeCurrentContext];
-	((void (*)(id, SEL))objc_msgSend)(openGLContext, sel_registerName("makeCurrentContext"));
-
+	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
 	tigrGAPICreate(bmp);
 	tigrGAPIResize(bmp, bmp->w, bmp->h);
 
@@ -405,8 +324,7 @@ void tigrFree(Tigr *bmp)
 		#ifdef ARC_AVAILABLE
 		// TODO autorelease pool
 		#else
-		//[autoreleasePool drain];
-		((void (*)(id, SEL))objc_msgSend)(autoreleasePool, sel_registerName("drain"));
+		objc_msgSend_void(autoreleasePool, sel_registerName("drain"));
 		#endif
 	}
 	free(bmp->pix);
@@ -646,15 +564,13 @@ void tigrUpdate(Tigr *bmp)
 	id openGLContext;
 	id window;
 	win = tigrInternal(bmp);
-	window = bmp->handle;
-	openGLContext = win->glContext;
+	window = (id)bmp->handle;
+	openGLContext = (id)win->glContext;
 
-	//NSEvent * event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-	id distantPast = ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSDate"), sel_registerName("distantPast"));
+	id distantPast = objc_msgSend_id((id)objc_getClass("NSDate"), sel_registerName("distantPast"));
 	id event = ((id (*)(id, SEL, NSUInteger, id, id, BOOL))objc_msgSend)(NSApp, sel_registerName("nextEventMatchingMask:untilDate:inMode:dequeue:"), NSUIntegerMax, distantPast, NSDefaultRunLoopMode, YES);
 
-	//NSWindow * keyWindow = [NSApp keyWindow];
-	id keyWindow = ((id (*)(id, SEL))objc_msgSend)(NSApp, sel_registerName("keyWindow"));
+	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
 
 	if(keyWindow == window)
 	{
@@ -669,56 +585,41 @@ void tigrUpdate(Tigr *bmp)
 
 	if(event)
 	{
-		//NSEventType eventType = [event type];
 		NSUInteger eventType = ((NSUInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("type"));
 
 		switch(eventType)
 		{
-		//case NSLeftMouseDown:
-		case 1:
+		case 1: // NSLeftMouseDown
 			win->mouseButtons |= 1;
 			break;
-		//case NSLeftMouseUp:
-		case 2:
+		case 2: // NSLeftMouseUp
 			win->mouseButtons &= ~1;
 			break;
-		//case NSRightMouseDown:
-		case 3:
+		case 3: // NSRightMouseDown
 			win->mouseButtons |= 2;
 			break;
-		//case NSRightMouseUp:
-		case 4:
+		case 4: // NSRightMouseUp
 			win->mouseButtons &= ~2;
 			break;
-		//case NSOtherMouseDown:
-		case 25:
+		case 25: // NSOtherMouseDown
 		{
 			// number == 2 is a middle button
-			//NSInteger number = [event buttonNumber];
 			NSInteger number = ((NSInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("buttonNumber"));
 			if(number == 2)
 				win->mouseButtons |= 4;
 			break;
 		}
-		//case NSOtherMouseUp:
-		case 26:
+		case 26: // NSOtherMouseUp
 		{
-			//NSInteger number = [event buttonNumber];
 			NSInteger number = ((NSInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("buttonNumber"));
 			if(number == 2)
 				win->mouseButtons &= ~4;
 			break;
 		}
-		//case NSScrollWheel:
-		//case 22:
+		//case 22: // NSScrollWheel
 		//{
-		//	//CGFloat deltaX = [event scrollingDeltaX];
 		//	CGFloat deltaX = ((CGFloat (*)(id, SEL))abi_objc_msgSend_fpret)(event, sel_registerName("scrollingDeltaX"));
-		//
-		//	//CGFloat deltaY = [event scrollingDeltaY];
 		//	CGFloat deltaY = ((CGFloat (*)(id, SEL))abi_objc_msgSend_fpret)(event, sel_registerName("scrollingDeltaY"));
-		//
-		//	//BOOL precisionScrolling = [event hasPreciseScrollingDeltas];
 		//	BOOL precisionScrolling = ((BOOL (*)(id, SEL))objc_msgSend)(event, sel_registerName("hasPreciseScrollingDeltas"));
 		//
 		//	if(precisionScrolling)
@@ -731,13 +632,11 @@ void tigrUpdate(Tigr *bmp)
 		//		printf("mouse scroll wheel delta %f %f\n", deltaX, deltaY);
 		//	break;
 		//}
-		//case NSFlagsChanged:
-		case 12:
+		case 12: // NSFlagsChanged
 		{
-			//NSEventModifierFlags modifiers = [event modifierFlags];
 			NSUInteger modifiers = ((NSUInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("modifierFlags"));
 
-			// based on NSEventModifierFlags
+			// based on NSEventModifierFlags and NSDeviceIndependentModifierFlagsMask
 			struct
 			{
 				union
@@ -757,7 +656,6 @@ void tigrUpdate(Tigr *bmp)
 				};
 			} keys;
 
-			//keys.mask = (modifiers & NSDeviceIndependentModifierFlagsMask) >> 16;
 			keys.mask = (modifiers & 0xffff0000UL) >> 16;
 
 			// TODO L,R variation of keys?
@@ -769,30 +667,20 @@ void tigrUpdate(Tigr *bmp)
 			win->keys[TK_RWIN] = keys.command;
 			break;
 		}
-		//case NSKeyDown:
-		case 10:
+		case 10: // NSKeyDown
 		{
-			//NSString * inputText = [event characters];
-			id inputText = ((id (*)(id, SEL))objc_msgSend)(event, sel_registerName("characters"));
-
-			//const char * inputTextUTF8 = [inputText UTF8String];
+			id inputText = objc_msgSend_id(event, sel_registerName("characters"));
 			const char * inputTextUTF8 = ((const char* (*)(id, SEL))objc_msgSend)(inputText, sel_registerName("UTF8String"));
 
 			tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
 
-			//uint16_t keyCode = [event keyCode];
 			uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
-
 			win->keys[_tigrKeyFromOSX(keyCode)] = 1;
-
 			break;
 		}
-		//case NSKeyUp:
-		case 11:
+		case 11: // NSKeyUp
 		{
-			//uint16_t keyCode = [event keyCode];
 			uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
-
 			win->keys[_tigrKeyFromOSX(keyCode)] = 0;
 			break;
 		}
@@ -800,23 +688,18 @@ void tigrUpdate(Tigr *bmp)
 			break;
 		}
 
-		//[NSApp sendEvent:event];
-		((void (*)(id, SEL, id))objc_msgSend)(NSApp, sel_registerName("sendEvent:"), event);
+		objc_msgSend_void_id(NSApp, sel_registerName("sendEvent:"), event);
 
 		// if user closes the window we might need to terminate asap
 		if(terminated)
 			return;
 
-		//[NSApp updateWindows];
-		((void (*)(id, SEL))objc_msgSend)(NSApp, sel_registerName("updateWindows"));
+		objc_msgSend_void(NSApp, sel_registerName("updateWindows"));
 	}
 
 	// do runloop stuff
-	//[openGLContext update]; // probably we only need to do it when we resize the window
-	((void (*)(id, SEL))objc_msgSend)(openGLContext, sel_registerName("update"));
-
-	//[openGLContext makeCurrentContext];
-	((void (*)(id, SEL))objc_msgSend)(openGLContext, sel_registerName("makeCurrentContext"));
+	objc_msgSend_void(openGLContext, sel_registerName("update"));
+	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
 
 	NSSize windowSize = _tigrCocoaWindowSize(window);
 
@@ -824,13 +707,11 @@ void tigrUpdate(Tigr *bmp)
 		tigrResize(bmp, windowSize.width / win->scale, windowSize.height / win->scale);
 	else
 		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, windowSize.width, windowSize.height), win->flags);
+
 	tigrPosition(bmp, win->scale, windowSize.width, windowSize.height, win->pos);
 	tigrGAPIResize(bmp, windowSize.width, windowSize.height);
-
 	tigrGAPIPresent(bmp, windowSize.width, windowSize.height);
-
-	//[openGLContext flushBuffer];
-	((void (*)(id, SEL))objc_msgSend)(openGLContext, sel_registerName("flushBuffer"));
+	objc_msgSend_void(openGLContext, sel_registerName("flushBuffer"));
 }
 
 int tigrClosed(Tigr *bmp)
@@ -843,13 +724,11 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 	TigrInternal *win;
 	id window;
 	win = tigrInternal(bmp);
-	window = bmp->handle;
+	window = (id)bmp->handle;
 
-	//NSRect adjustFrame = [[currentWindow contentView] frame];
-	id windowContentView = ((id (*)(id, SEL))objc_msgSend)(window, sel_registerName("contentView"));
+	id windowContentView = objc_msgSend_id(window, sel_registerName("contentView"));
 	NSRect adjustFrame = ((NSRect (*)(id, SEL))abi_objc_msgSend_stret)(windowContentView, sel_registerName("frame"));
 
-	//NSPoint p = [currentWindow mouseLocationOutsideOfEventStream];
 	// NSPoint is small enough to fit a register, so no need for objc_msgSend_stret
 	NSPoint p = ((NSPoint (*)(id, SEL))objc_msgSend)(window, sel_registerName("mouseLocationOutsideOfEventStream"));
 
@@ -861,7 +740,6 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 
 	// map input to pixels
 	NSRect r = {p.x, p.y, 0, 0};
-	//r = [currentWindowContentView convertRectToBacking:r];
 	r = ((NSRect (*)(id, SEL, NSRect))abi_objc_msgSend_stret)(windowContentView, sel_registerName("convertRectToBacking:"), r);
 	p = r.origin;
 
@@ -873,19 +751,18 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 	if(y)
 		*y = p.y;
 
-	//NSWindow * keyWindow = [NSApp keyWindow];
-	id keyWindow = ((id (*)(id, SEL))objc_msgSend)(NSApp, sel_registerName("keyWindow"));
-
 	if(buttons)
+	{
+		id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
 		*buttons = keyWindow != bmp->handle ? 0 : win->mouseButtons;
+	}
 }
 
 int tigrKeyDown(Tigr *bmp, int key)
 {
 	TigrInternal *win;
 	assert(key < 256);
-	//NSWindow * keyWindow = [NSApp keyWindow];
-	id keyWindow = ((id (*)(id, SEL))objc_msgSend)(NSApp, sel_registerName("keyWindow"));
+	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
 	if(keyWindow != bmp->handle)
 		return 0;
 	win = tigrInternal(bmp);
@@ -897,8 +774,7 @@ int tigrKeyHeld(Tigr *bmp, int key)
 {
 	TigrInternal *win;
 	assert(key < 256);
-	//NSWindow * keyWindow = [NSApp keyWindow];
-	id keyWindow = ((id (*)(id, SEL))objc_msgSend)(NSApp, sel_registerName("keyWindow"));
+	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
 	if(keyWindow != bmp->handle)
 		return 0;
 	win = tigrInternal(bmp);

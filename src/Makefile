@@ -1,12 +1,12 @@
-all : ../tigr.h
+all : ../tigr.c
 
-.PHONY : ../tigr.h
+.PHONY : ../tigr.c
 
 tigr_font.h : font.png incbin.pl
 	perl incbin.pl $@ $< tigr_font
 
-../tigr.h : tigr_font.h bundle.pl
-	perl bundle.pl $@ tigr_public.h
+../tigr.c : tigr_font.h bundle.pl
+	perl bundle.pl $@ tigr_amalgamated.c
 
 # We don't rebuild this by default.
 upscale :

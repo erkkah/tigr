@@ -1,4 +1,7 @@
-#pragma once
+// can't use pragma once here because this file probably will endup in .c
+#ifndef __TIGR_INTERNAL_H__
+#define __TIGR_INTERNAL_H__
+
 #define _CRT_SECURE_NO_WARNINGS NOPE
 
 // Creates a new bitmap, with extra payload bytes.
@@ -38,7 +41,7 @@ typedef struct {
 #ifdef _WIN32
 #include <GL/gl.h>
 #else
-#include <OpenGL/gl.h>
+#include <OpenGL/gl3.h>
 #endif
 typedef struct {
 	#ifdef _WIN32
@@ -98,3 +101,6 @@ void tigrGAPICreate(Tigr *bmp);
 void tigrGAPIDestroy(Tigr *bmp);
 void tigrGAPIResize(Tigr *bmp, int width, int height);
 void tigrGAPIPresent(Tigr *bmp, int w, int h);
+
+#endif
+
