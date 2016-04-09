@@ -2824,7 +2824,6 @@ extern id const NSDefaultRunLoopMode;
 #define objc_msgSend_id_const_char	((id (*)(id, SEL, const char*))objc_msgSend)
 
 bool terminated = false;
-uint32_t windowCount = 0;
 
 // we gonna construct objective-c class by hand in runtime, so wow, so hacker!
 NSUInteger applicationShouldTerminate(id self, SEL _sel, id sender)
@@ -2835,13 +2834,47 @@ NSUInteger applicationShouldTerminate(id self, SEL _sel, id sender)
 
 void windowWillClose(id self, SEL _sel, id notification)
 {
-	assert(windowCount);
-	if(--windowCount == 0)
-		terminated = true;
+	NSUInteger value = true;
+	object_setInstanceVariable(self, "closed", (void*)value);
+}
+
+void windowDidBecomeKey(id self, SEL _sel, id notification)
+{
+	TigrInternal * win;
+	Tigr * bmp = 0;
+	object_getInstanceVariable(self, "tigrHandle", (void**)&bmp);
+	win = bmp ? tigrInternal(bmp) : NULL;
+
+	if(win)
+	{
+		memset(win->keys, 0, 256);
+		memset(win->prev, 0, 256);
+		win->lastChar = 0;
+		win->mouseButtons = 0;
+	}
+}
+
+bool _tigrCocoaIsWindowClosed(id window)
+{
+	id wdg = objc_msgSend_id(window, sel_registerName("delegate"));
+	if(!wdg)
+		return false;
+	NSUInteger value = 0;
+	object_getInstanceVariable(wdg, "closed", (void**)&value);
+	return value ? true : false;
 }
 
 static bool tigrOSXInited = false;
 static id autoreleasePool = NULL;
+
+void _tigrCleanupOSX()
+{
+	#ifdef ARC_AVAILABLE
+	// TODO autorelease pool
+	#else
+	objc_msgSend_void(autoreleasePool, sel_registerName("drain"));
+	#endif
+}
 
 void tigrInitOSX()
 {
@@ -2850,10 +2883,12 @@ void tigrInitOSX()
 
 	#ifdef ARC_AVAILABLE
 	// TODO and what do we do now? it's a bit too tricky to use @autoreleasepool here
+	#error TODO this code should be compiled as C for now
 	#else
 	//would be nice to use objc_autoreleasePoolPush instead, but it's not publically available in the headers
 	id poolAlloc = objc_msgSend_id((id)objc_getClass("NSAutoreleasePool"), sel_registerName("alloc"));
 	autoreleasePool = objc_msgSend_id(poolAlloc, sel_registerName("init"));
+	atexit(&_tigrCleanupOSX);
 	#endif
 
 	objc_msgSend_id((id)objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
@@ -2940,6 +2975,20 @@ NSSize _tigrCocoaWindowSize(id window)
 	return rect.size;
 }
 
+TigrInternal * _tigrInternalCocoa(id window)
+{
+	if(!window)
+		return NULL;
+
+	id wdg = objc_msgSend_id(window, sel_registerName("delegate"));
+	if(!wdg)
+		return NULL;
+
+	Tigr * bmp = 0;
+	object_getInstanceVariable(wdg, "tigrHandle", (void**)&bmp);
+	return bmp ? tigrInternal(bmp) : NULL;
+}
+
 Tigr *tigrWindow(int w, int h, const char *title, int flags)
 {
 	int scale;
@@ -2974,12 +3023,16 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	// so it will be released by autorelease pool later
 	objc_msgSend_void_bool(window, sel_registerName("setReleasedWhenClosed:"), NO);
 
-	++windowCount;
-
 	Class WindowDelegateClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "WindowDelegate", 0);
 	bool resultAddProtoc = class_addProtocol(WindowDelegateClass, objc_getProtocol("NSWindowDelegate"));
 	assert(resultAddProtoc);
+	bool resultAddIvar = class_addIvar(WindowDelegateClass, "closed", sizeof(NSUInteger), rint(log2(sizeof(NSUInteger))), NSUIntegerEncoding);
+	assert(resultAddIvar);
+	resultAddIvar = class_addIvar(WindowDelegateClass, "tigrHandle", sizeof(void*), rint(log2(sizeof(void*))), "ˆv");
+	assert(resultAddIvar);
 	bool resultAddMethod = class_addMethod(WindowDelegateClass, sel_registerName("windowWillClose:"), (IMP)windowWillClose,  "v@:@");
+	assert(resultAddMethod);
+	resultAddMethod = class_addMethod(WindowDelegateClass, sel_registerName("windowDidBecomeKey:"), (IMP)windowDidBecomeKey,  "v@:@");
 	assert(resultAddMethod);
 	id wdgAlloc = objc_msgSend_id((id)WindowDelegateClass, sel_registerName("alloc"));
 	id wdg = objc_msgSend_id(wdgAlloc, sel_registerName("init"));
@@ -3040,6 +3093,9 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	bmp = tigrBitmap2(windowSize.width / scale, windowSize.height / scale, sizeof(TigrInternal));
 	bmp->handle = window;
 
+	// Set the handle
+	object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
+
 	// Set up the Windows parts.
 	win = tigrInternal(bmp);
 	win->glContext = openGLContext;
@@ -3072,14 +3128,13 @@ void tigrFree(Tigr *bmp)
 	if(bmp->handle)
 	{
 		TigrInternal * win = tigrInternal(bmp);
+		objc_msgSend_void((id)win->glContext, sel_registerName("makeCurrentContext"));
 		tigrGAPIDestroy(bmp);
 		tigrFree(win->widgets);
 
-		#ifdef ARC_AVAILABLE
-		// TODO autorelease pool
-		#else
-		objc_msgSend_void(autoreleasePool, sel_registerName("drain"));
-		#endif
+		id window = (id)bmp->handle;
+		if(!_tigrCocoaIsWindowClosed(window) && !terminated)
+			objc_msgSend_void(window, sel_registerName("close"));
 	}
 	free(bmp->pix);
 	free(bmp);
@@ -3312,6 +3367,123 @@ uint8_t _tigrKeyFromOSX(uint16_t key)
 	}
 }
 
+void _tigrOnCocoaEvent(id event, id window)
+{
+	if(!event)
+		return;
+
+	TigrInternal * win = _tigrInternalCocoa(window);
+	if(!win) // just pipe the event
+	{
+		objc_msgSend_void_id(NSApp, sel_registerName("sendEvent:"), event);
+		return;
+	}
+
+	NSUInteger eventType = ((NSUInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("type"));
+	switch(eventType)
+	{
+	case 1: // NSLeftMouseDown
+		win->mouseButtons |= 1;
+		break;
+	case 2: // NSLeftMouseUp
+		win->mouseButtons &= ~1;
+		break;
+	case 3: // NSRightMouseDown
+		win->mouseButtons |= 2;
+		break;
+	case 4: // NSRightMouseUp
+		win->mouseButtons &= ~2;
+		break;
+	case 25: // NSOtherMouseDown
+	{
+		// number == 2 is a middle button
+		NSInteger number = ((NSInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("buttonNumber"));
+		if(number == 2)
+			win->mouseButtons |= 4;
+		break;
+	}
+	case 26: // NSOtherMouseUp
+	{
+		NSInteger number = ((NSInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("buttonNumber"));
+		if(number == 2)
+			win->mouseButtons &= ~4;
+		break;
+	}
+	//case 22: // NSScrollWheel
+	//{
+	//	CGFloat deltaX = ((CGFloat (*)(id, SEL))abi_objc_msgSend_fpret)(event, sel_registerName("scrollingDeltaX"));
+	//	CGFloat deltaY = ((CGFloat (*)(id, SEL))abi_objc_msgSend_fpret)(event, sel_registerName("scrollingDeltaY"));
+	//	BOOL precisionScrolling = ((BOOL (*)(id, SEL))objc_msgSend)(event, sel_registerName("hasPreciseScrollingDeltas"));
+	//
+	//	if(precisionScrolling)
+	//	{
+	//		deltaX *= 0.1f; // similar to glfw
+	//		deltaY *= 0.1f;
+	//	}
+	//
+	//	if(fabs(deltaX) > 0.0f || fabs(deltaY) > 0.0f)
+	//		printf("mouse scroll wheel delta %f %f\n", deltaX, deltaY);
+	//	break;
+	//}
+	case 12: // NSFlagsChanged
+	{
+		NSUInteger modifiers = ((NSUInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("modifierFlags"));
+
+		// based on NSEventModifierFlags and NSDeviceIndependentModifierFlagsMask
+		struct
+		{
+			union
+			{
+				struct
+				{
+					uint8_t alpha_shift:1;
+					uint8_t shift:1;
+					uint8_t control:1;
+					uint8_t alternate:1;
+					uint8_t command:1;
+					uint8_t numeric_pad:1;
+					uint8_t help:1;
+					uint8_t function:1;
+				};
+				uint8_t mask;
+			};
+		} keys;
+
+		keys.mask = (modifiers & 0xffff0000UL) >> 16;
+
+		// TODO L,R variation of keys?
+		win->keys[TK_CONTROL] = keys.alpha_shift;
+		win->keys[TK_SHIFT] = keys.shift;
+		win->keys[TK_CONTROL] = keys.control;
+		win->keys[TK_ALT] = keys.alternate;
+		win->keys[TK_LWIN] = keys.command;
+		win->keys[TK_RWIN] = keys.command;
+		break;
+	}
+	case 10: // NSKeyDown
+	{
+		id inputText = objc_msgSend_id(event, sel_registerName("characters"));
+		const char * inputTextUTF8 = ((const char* (*)(id, SEL))objc_msgSend)(inputText, sel_registerName("UTF8String"));
+
+		tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
+
+		uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
+		win->keys[_tigrKeyFromOSX(keyCode)] = 1;
+		break;
+	}
+	case 11: // NSKeyUp
+	{
+		uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
+		win->keys[_tigrKeyFromOSX(keyCode)] = 0;
+		break;
+	}
+	default:
+		break;
+	}
+
+	objc_msgSend_void_id(NSApp, sel_registerName("sendEvent:"), event);
+}
+
 void tigrUpdate(Tigr *bmp)
 {
 	TigrInternal *win;
@@ -3321,137 +3493,19 @@ void tigrUpdate(Tigr *bmp)
 	window = (id)bmp->handle;
 	openGLContext = (id)win->glContext;
 
-	id distantPast = objc_msgSend_id((id)objc_getClass("NSDate"), sel_registerName("distantPast"));
-	id event = ((id (*)(id, SEL, NSUInteger, id, id, BOOL))objc_msgSend)(NSApp, sel_registerName("nextEventMatchingMask:untilDate:inMode:dequeue:"), NSUIntegerMax, distantPast, NSDefaultRunLoopMode, YES);
-
 	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
 
 	if(keyWindow == window)
-	{
 		memcpy(win->prev, win->keys, 256);
-	}
-	else
-	{
-		memcpy(win->prev, win->keys, 256);
-		memset(win->keys, 0, 256);
-		win->mouseButtons = 0;
-	}
 
-	if(event)
-	{
-		NSUInteger eventType = ((NSUInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("type"));
-
-		switch(eventType)
-		{
-		case 1: // NSLeftMouseDown
-			win->mouseButtons |= 1;
-			break;
-		case 2: // NSLeftMouseUp
-			win->mouseButtons &= ~1;
-			break;
-		case 3: // NSRightMouseDown
-			win->mouseButtons |= 2;
-			break;
-		case 4: // NSRightMouseUp
-			win->mouseButtons &= ~2;
-			break;
-		case 25: // NSOtherMouseDown
-		{
-			// number == 2 is a middle button
-			NSInteger number = ((NSInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("buttonNumber"));
-			if(number == 2)
-				win->mouseButtons |= 4;
-			break;
-		}
-		case 26: // NSOtherMouseUp
-		{
-			NSInteger number = ((NSInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("buttonNumber"));
-			if(number == 2)
-				win->mouseButtons &= ~4;
-			break;
-		}
-		//case 22: // NSScrollWheel
-		//{
-		//	CGFloat deltaX = ((CGFloat (*)(id, SEL))abi_objc_msgSend_fpret)(event, sel_registerName("scrollingDeltaX"));
-		//	CGFloat deltaY = ((CGFloat (*)(id, SEL))abi_objc_msgSend_fpret)(event, sel_registerName("scrollingDeltaY"));
-		//	BOOL precisionScrolling = ((BOOL (*)(id, SEL))objc_msgSend)(event, sel_registerName("hasPreciseScrollingDeltas"));
-		//
-		//	if(precisionScrolling)
-		//	{
-		//		deltaX *= 0.1f; // similar to glfw
-		//		deltaY *= 0.1f;
-		//	}
-		//
-		//	if(fabs(deltaX) > 0.0f || fabs(deltaY) > 0.0f)
-		//		printf("mouse scroll wheel delta %f %f\n", deltaX, deltaY);
-		//	break;
-		//}
-		case 12: // NSFlagsChanged
-		{
-			NSUInteger modifiers = ((NSUInteger (*)(id, SEL))objc_msgSend)(event, sel_registerName("modifierFlags"));
-
-			// based on NSEventModifierFlags and NSDeviceIndependentModifierFlagsMask
-			struct
-			{
-				union
-				{
-					struct
-					{
-						uint8_t alpha_shift:1;
-						uint8_t shift:1;
-						uint8_t control:1;
-						uint8_t alternate:1;
-						uint8_t command:1;
-						uint8_t numeric_pad:1;
-						uint8_t help:1;
-						uint8_t function:1;
-					};
-					uint8_t mask;
-				};
-			} keys;
-
-			keys.mask = (modifiers & 0xffff0000UL) >> 16;
-
-			// TODO L,R variation of keys?
-			win->keys[TK_CONTROL] = keys.alpha_shift;
-			win->keys[TK_SHIFT] = keys.shift;
-			win->keys[TK_CONTROL] = keys.control;
-			win->keys[TK_ALT] = keys.alternate;
-			win->keys[TK_LWIN] = keys.command;
-			win->keys[TK_RWIN] = keys.command;
-			break;
-		}
-		case 10: // NSKeyDown
-		{
-			id inputText = objc_msgSend_id(event, sel_registerName("characters"));
-			const char * inputTextUTF8 = ((const char* (*)(id, SEL))objc_msgSend)(inputText, sel_registerName("UTF8String"));
-
-			tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
-
-			uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
-			win->keys[_tigrKeyFromOSX(keyCode)] = 1;
-			break;
-		}
-		case 11: // NSKeyUp
-		{
-			uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
-			win->keys[_tigrKeyFromOSX(keyCode)] = 0;
-			break;
-		}
-		default:
-			break;
-		}
-
-		objc_msgSend_void_id(NSApp, sel_registerName("sendEvent:"), event);
-
-		// if user closes the window we might need to terminate asap
-		if(terminated)
-			return;
-
-		objc_msgSend_void(NSApp, sel_registerName("updateWindows"));
-	}
+	id distantPast = objc_msgSend_id((id)objc_getClass("NSDate"), sel_registerName("distantPast"));
+	id event = ((id (*)(id, SEL, NSUInteger, id, id, BOOL))objc_msgSend)(NSApp, sel_registerName("nextEventMatchingMask:untilDate:inMode:dequeue:"), NSUIntegerMax, distantPast, NSDefaultRunLoopMode, YES);
+	_tigrOnCocoaEvent(event, keyWindow);
+	if(terminated || _tigrCocoaIsWindowClosed(window))
+		return;
 
 	// do runloop stuff
+	objc_msgSend_void(NSApp, sel_registerName("updateWindows"));
 	objc_msgSend_void(openGLContext, sel_registerName("update"));
 	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
 
@@ -3470,7 +3524,7 @@ void tigrUpdate(Tigr *bmp)
 
 int tigrClosed(Tigr *bmp)
 {
-	return terminated; // return 1 if closed
+	return (terminated || _tigrCocoaIsWindowClosed((id)bmp->handle)) ? 1 : 0;
 }
 
 void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
@@ -3521,7 +3575,6 @@ int tigrKeyDown(Tigr *bmp, int key)
 		return 0;
 	win = tigrInternal(bmp);
 	return win->keys[key] && !win->prev[key];
-	return 0;
 }
 
 int tigrKeyHeld(Tigr *bmp, int key)
@@ -3533,7 +3586,6 @@ int tigrKeyHeld(Tigr *bmp, int key)
 		return 0;
 	win = tigrInternal(bmp);
 	return win->keys[key];
-	return 0;
 }
 
 int tigrReadChar(Tigr *bmp)
