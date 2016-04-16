@@ -37,7 +37,7 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #ifdef TIGR_GAPI_D3D9
 #include <d3d9.h>
 typedef struct {
-	int created;
+	int lost;
 	IDirect3DDevice9 *dev;
 	D3DPRESENT_PARAMETERS params;
 	IDirect3DTexture9 *sysTex[2], *vidTex[2];
@@ -108,6 +108,8 @@ TigrInternal *tigrInternal(Tigr *bmp);
 
 void tigrGAPICreate(Tigr *bmp);
 void tigrGAPIDestroy(Tigr *bmp);
+void tigrGAPIBegin(Tigr *bmp);
+void tigrGAPIEnd(Tigr *bmp);
 void tigrGAPIResize(Tigr *bmp, int width, int height);
 void tigrGAPIPresent(Tigr *bmp, int w, int h);
 
@@ -1780,54 +1782,59 @@ extern const unsigned char tigrUpscaleVSCode[], tigrUpscalePSCode[];
 
 void tigrGAPICreate(Tigr *bmp)
 {
-	HRESULT hr;
 	TigrInternal *win = tigrInternal(bmp);
 	D3D9Stuff *d3d = &win->d3d9;
+	DWORD flags;
+	D3DCAPS9 caps;
 
 	if (!tigrD3D)
 	{
 		tigrD3D = Direct3DCreate9(D3D_SDK_VERSION);
 		if (!tigrD3D)
 			tigrError(bmp, "Cannot initialize Direct3D 9.");
-
-		DWORD flags;
-		D3DCAPS9 caps;
-
-		// Initialize D3D
-		ZeroMemory(&d3d->params, sizeof(d3d->params));
-		d3d->params.Windowed				= TRUE;
-		d3d->params.SwapEffect				= D3DSWAPEFFECT_DISCARD;
-		d3d->params.BackBufferFormat		= D3DFMT_A8R8G8B8;
-		d3d->params.EnableAutoDepthStencil	= FALSE;
-		d3d->params.PresentationInterval	= D3DPRESENT_INTERVAL_ONE; // TODO- vsync off if fps suffers?
-		d3d->params.Flags					= 0;
-		d3d->params.BackBufferWidth			= bmp->w;
-		d3d->params.BackBufferHeight		= bmp->h;
-
-		// Check device caps.
-		if (FAILED(IDirect3D9_GetDeviceCaps(tigrD3D, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps)))
-			tigrError(bmp, "Cannot query Direct3D 9 capabilities.\n");
-
-		// Check vertex processing mode. Ideally I'd just always use software,
-		// but some hardware only supports hardware mode (!)
-		flags = D3DCREATE_PUREDEVICE | D3DCREATE_FPU_PRESERVE;
-		if (caps.VertexProcessingCaps != 0)
-			flags |= D3DCREATE_HARDWARE_VERTEXPROCESSING;
-		else
-			flags |= D3DCREATE_SOFTWARE_VERTEXPROCESSING;
-
-		// Create the device.
-		if (IDirect3D9_CreateDevice(tigrD3D, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND)bmp->handle,
-			flags, &d3d->params, &d3d->dev))
-			tigrError(bmp, "Cannot create Direct3D 9 device.\n");
-
-		// Create upscaling shaders.
-		if (FAILED(IDirect3DDevice9_CreateVertexShader(d3d->dev, (DWORD *)tigrUpscaleVSCode, &d3d->vs))
-		 || FAILED(IDirect3DDevice9_CreatePixelShader(d3d->dev, (DWORD *)tigrUpscalePSCode, &d3d->ps)))
-			tigrError(bmp, "Cannot create Direct3D 9 shaders.\n");
 	}
 
-	if (!d3d->created)
+	// Initialize D3D
+	ZeroMemory(&d3d->params, sizeof(d3d->params));
+	d3d->params.Windowed				= TRUE;
+	d3d->params.SwapEffect				= D3DSWAPEFFECT_DISCARD;
+	d3d->params.BackBufferFormat		= D3DFMT_A8R8G8B8;
+	d3d->params.EnableAutoDepthStencil	= FALSE;
+	d3d->params.PresentationInterval	= D3DPRESENT_INTERVAL_ONE; // TODO- vsync off if fps suffers?
+	d3d->params.Flags					= 0;
+	d3d->params.BackBufferWidth			= bmp->w;
+	d3d->params.BackBufferHeight		= bmp->h;
+
+	// Check device caps.
+	if (FAILED(IDirect3D9_GetDeviceCaps(tigrD3D, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps)))
+		tigrError(bmp, "Cannot query Direct3D 9 capabilities.\n");
+
+	// Check vertex processing mode. Ideally I'd just always use software,
+	// but some hardware only supports hardware mode (!)
+	flags = D3DCREATE_PUREDEVICE | D3DCREATE_FPU_PRESERVE;
+	if (caps.VertexProcessingCaps != 0)
+		flags |= D3DCREATE_HARDWARE_VERTEXPROCESSING;
+	else
+		flags |= D3DCREATE_SOFTWARE_VERTEXPROCESSING;
+
+	// Create the device.
+	if (IDirect3D9_CreateDevice(tigrD3D, D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, (HWND)bmp->handle,
+		flags, &d3d->params, &d3d->dev))
+		tigrError(bmp, "Cannot create Direct3D 9 device.\n");
+
+	// Create upscaling shaders.
+	if (FAILED(IDirect3DDevice9_CreateVertexShader(d3d->dev, (DWORD *)tigrUpscaleVSCode, &d3d->vs))
+	 || FAILED(IDirect3DDevice9_CreatePixelShader(d3d->dev, (DWORD *)tigrUpscalePSCode, &d3d->ps)))
+		tigrError(bmp, "Cannot create Direct3D 9 shaders.\n");
+}
+
+void tigrGAPIBegin(Tigr *bmp)
+{
+	HRESULT hr;
+	TigrInternal *win = tigrInternal(bmp);
+	D3D9Stuff *d3d = &win->d3d9;
+
+	if (d3d->lost)
 	{
 		// Check if it's OK to resume work yet.
 		if (IDirect3DDevice9_TestCooperativeLevel(d3d->dev) == D3DERR_DEVICELOST)
@@ -1850,7 +1857,22 @@ void tigrGAPICreate(Tigr *bmp)
 			tigrError(bmp, "Error creating Direct3D 9 textures.\n");
 		}
 
-		d3d->created = 1;
+		d3d->lost = 0;
+	}
+}
+
+void tigrGAPIEnd(Tigr *bmp)
+{
+	TigrInternal *win = tigrInternal(bmp);
+	D3D9Stuff *d3d = &win->d3d9;
+	if (!d3d->lost)
+	{
+		IDirect3DTexture9_Release(d3d->sysTex[0]);
+		IDirect3DTexture9_Release(d3d->vidTex[0]);
+		IDirect3DTexture9_Release(d3d->sysTex[1]);
+		IDirect3DTexture9_Release(d3d->vidTex[1]);
+		IDirect3DDevice9_Reset(d3d->dev, &d3d->params);
+		d3d->lost = 1;
 	}
 }
 
@@ -1859,22 +1881,9 @@ void tigrGAPIDestroy(Tigr *bmp)
 	TigrInternal *win = tigrInternal(bmp);
 	D3D9Stuff *d3d = &win->d3d9;
 
-	if (d3d->created)
-	{
-		IDirect3DTexture9_Release(d3d->sysTex[0]);
-		IDirect3DTexture9_Release(d3d->vidTex[0]);
-		IDirect3DTexture9_Release(d3d->sysTex[1]);
-		IDirect3DTexture9_Release(d3d->vidTex[1]);
-		IDirect3DDevice9_Reset(d3d->dev, &d3d->params);
-		d3d->created = 0;
-	}
-
-	if (tigrD3D)
-	{
-		IDirect3DVertexShader9_Release(d3d->vs);
-		IDirect3DPixelShader9_Release(d3d->ps);
-		IDirect3DDevice9_Release(d3d->dev);
-	}
+	IDirect3DVertexShader9_Release(d3d->vs);
+	IDirect3DPixelShader9_Release(d3d->ps);
+	IDirect3DDevice9_Release(d3d->dev);
 }
 
 void tigrGAPIResize(Tigr *bmp, int width, int height)
@@ -1882,20 +1891,10 @@ void tigrGAPIResize(Tigr *bmp, int width, int height)
 	TigrInternal *win = tigrInternal(bmp);
 	D3D9Stuff *d3d = &win->d3d9;
 
-	if (d3d->created)
-	{
-		IDirect3DTexture9_Release(d3d->sysTex[0]);
-		IDirect3DTexture9_Release(d3d->vidTex[0]);
-		IDirect3DTexture9_Release(d3d->sysTex[1]);
-		IDirect3DTexture9_Release(d3d->vidTex[1]);
-		IDirect3DDevice9_Reset(d3d->dev, &d3d->params);
-		d3d->created = 0;
-	}
-
+	tigrGAPIEnd(bmp);
 	d3d->params.BackBufferWidth = width;
 	d3d->params.BackBufferHeight = height;
-
-	tigrGAPICreate(bmp);
+	tigrGAPIBegin(bmp);
 }
 
 void tigrDxUpdate(IDirect3DDevice9 *dev, IDirect3DTexture9 *sysTex, IDirect3DTexture9 *vidTex, Tigr *bmp)
@@ -1956,11 +1955,13 @@ void tigrGAPIPresent(Tigr *bmp, int dw, int dh)
 
 	// Make sure we have a device.
 	// If we don't, then sleep to simulate the vsync until it comes back.
-	tigrGAPICreate(bmp);
-	if (!d3d->created)
+	if (d3d->lost)
 	{
-		Sleep(15);
-		return;
+		tigrGAPIBegin(bmp);
+		if (d3d->lost) {
+			Sleep(15);
+			return;
+		}
 	}
 
 	IDirect3DDevice9_BeginScene(d3d->dev);
@@ -2009,7 +2010,9 @@ void tigrGAPIPresent(Tigr *bmp, int dw, int dh)
 	IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_ALPHABLENDENABLE, TRUE);
 	IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	tigrDxQuad(d3d->dev, d3d->vidTex[1], dw - win->widgets->w * win->widgetsScale, 0, dw, win->widgets->h * win->widgetsScale);
+	tigrDxQuad(d3d->dev, d3d->vidTex[1], 
+		(int)(dw - win->widgets->w * win->widgetsScale), 0, 
+		dw, (int)(win->widgets->h * win->widgetsScale));
 
 	// Et fini.
 	IDirect3DDevice9_EndScene(d3d->dev);
@@ -2017,7 +2020,7 @@ void tigrGAPIPresent(Tigr *bmp, int dw, int dh)
 
 	// See if we lost our device.
 	if (hr == D3DERR_DEVICELOST)
-		tigrGAPIDestroy(bmp);
+		tigrGAPIEnd(bmp);
 }
 
 #endif
@@ -2466,7 +2469,11 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	DWORD err;
 	Tigr *bmp;
 	TigrInternal *win;
-
+	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
+	WINDOWPLACEMENT wp;
+	DWORD wpsize = sizeof(wp);
+	#endif
+	
 	wchar_t *wtitle = unicode(title);
 
 	// Find our registry key.
@@ -2521,7 +2528,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->shown = 0;
 	win->closed = 0;
 	#ifdef TIGR_GAPI_D3D9
-	win->d3d9.created = 0;
+	win->d3d9.lost = 1;
 	#endif
 	win->scale = scale;
 	win->lastChar = 0;
@@ -2539,11 +2546,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	SetPropW(hWnd, L"Tigr", bmp);
 
 	tigrGAPICreate(bmp);
+	tigrGAPIBegin(bmp);
 
 	// Try and restore our window position.
 	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
-	WINDOWPLACEMENT wp;
-	DWORD wpsize = sizeof(wp);
 	if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE *)&wp, &wpsize) == ERROR_SUCCESS)
 	{
 		if (wp.showCmd == SW_MAXIMIZE)
@@ -2562,6 +2568,7 @@ void tigrFree(Tigr *bmp)
 	{
 		TigrInternal *win = tigrInternal(bmp);
 		DestroyWindow((HWND)bmp->handle);
+		tigrGAPIEnd(bmp);
 		tigrGAPIDestroy(bmp);
 		free(win->wtitle);
 		tigrFree(win->widgets);
@@ -2802,7 +2809,7 @@ extern id const NSDefaultRunLoopMode;
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
 //#define ARC_AVAILABLE
-#error can't compile as objective-c code just yet! see autorelease pool todo bellow
+#error "Can't compile as objective-c code just yet! (see autorelease pool todo below)"
 #endif
 
 // ABI is a bit different between platforms
@@ -3118,6 +3125,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
 	tigrGAPICreate(bmp);
+	tigrGAPIBegin(bmp);
 	tigrGAPIResize(bmp, bmp->w, bmp->h);
 
 	return bmp;
@@ -3129,6 +3137,7 @@ void tigrFree(Tigr *bmp)
 	{
 		TigrInternal * win = tigrInternal(bmp);
 		objc_msgSend_void((id)win->glContext, sel_registerName("makeCurrentContext"));
+		tigrGAPIEnd(bmp);
 		tigrGAPIDestroy(bmp);
 		tigrFree(win->widgets);
 
@@ -3785,7 +3794,6 @@ void tigrCheckProgramErrors(GLuint object)
 
 void tigrGAPICreate(Tigr *bmp)
 {
-	int pixel_format;
 	GLuint vs, fs;
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
@@ -3859,6 +3867,14 @@ void tigrGAPICreate(Tigr *bmp)
 	tigrCheckGLError("initialization");
 }
 
+void tigrGAPIBegin(Tigr *bmp)
+{
+}
+
+void tigrGAPIEnd(Tigr *bmp)
+{
+}
+
 void tigrGAPIDestroy(Tigr *bmp)
 {
 	TigrInternal *win = tigrInternal(bmp);
@@ -3897,10 +3913,10 @@ void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x
 
 	if(!legacy)
 	{
-		float sx = x2 - x1;
-		float sy = y2 - y1;
-		float tx = x1;
-		float ty = y1;
+		float sx = (float)(x2 - x1);
+		float sy = (float)(y2 - y1);
+		float tx = (float)x1;
+		float ty = (float)y1;
 
 		float model[16] =
 		{
@@ -3933,6 +3949,9 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
 
+#ifdef _WIN32
+	wglMakeCurrent(gl->dc, gl->hglrc);
+#endif
 	glViewport(0, 0, w, h);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -3972,7 +3991,9 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	{
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[1], win->widgets, w - win->widgets->w * win->widgetsScale, 0, w, win->widgets->h * win->widgetsScale);
+		tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[1], win->widgets, 
+			(int)(w - win->widgets->w * win->widgetsScale), 0, 
+			w, (int)(win->widgets->h * win->widgetsScale));
 	}
 
 	tigrCheckGLError("present");

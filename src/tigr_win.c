@@ -369,7 +369,11 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	DWORD err;
 	Tigr *bmp;
 	TigrInternal *win;
-
+	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
+	WINDOWPLACEMENT wp;
+	DWORD wpsize = sizeof(wp);
+	#endif
+	
 	wchar_t *wtitle = unicode(title);
 
 	// Find our registry key.
@@ -424,7 +428,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->shown = 0;
 	win->closed = 0;
 	#ifdef TIGR_GAPI_D3D9
-	win->d3d9.created = 0;
+	win->d3d9.lost = 1;
 	#endif
 	win->scale = scale;
 	win->lastChar = 0;
@@ -442,11 +446,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	SetPropW(hWnd, L"Tigr", bmp);
 
 	tigrGAPICreate(bmp);
+	tigrGAPIBegin(bmp);
 
 	// Try and restore our window position.
 	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
-	WINDOWPLACEMENT wp;
-	DWORD wpsize = sizeof(wp);
 	if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE *)&wp, &wpsize) == ERROR_SUCCESS)
 	{
 		if (wp.showCmd == SW_MAXIMIZE)
@@ -465,6 +468,7 @@ void tigrFree(Tigr *bmp)
 	{
 		TigrInternal *win = tigrInternal(bmp);
 		DestroyWindow((HWND)bmp->handle);
+		tigrGAPIEnd(bmp);
 		tigrGAPIDestroy(bmp);
 		free(win->wtitle);
 		tigrFree(win->widgets);

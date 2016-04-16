@@ -162,7 +162,6 @@ void tigrCheckProgramErrors(GLuint object)
 
 void tigrGAPICreate(Tigr *bmp)
 {
-	int pixel_format;
 	GLuint vs, fs;
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
@@ -236,6 +235,14 @@ void tigrGAPICreate(Tigr *bmp)
 	tigrCheckGLError("initialization");
 }
 
+void tigrGAPIBegin(Tigr *bmp)
+{
+}
+
+void tigrGAPIEnd(Tigr *bmp)
+{
+}
+
 void tigrGAPIDestroy(Tigr *bmp)
 {
 	TigrInternal *win = tigrInternal(bmp);
@@ -274,10 +281,10 @@ void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x
 
 	if(!legacy)
 	{
-		float sx = x2 - x1;
-		float sy = y2 - y1;
-		float tx = x1;
-		float ty = y1;
+		float sx = (float)(x2 - x1);
+		float sy = (float)(y2 - y1);
+		float tx = (float)x1;
+		float ty = (float)y1;
 
 		float model[16] =
 		{
@@ -310,6 +317,9 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
 
+#ifdef _WIN32
+	wglMakeCurrent(gl->dc, gl->hglrc);
+#endif
 	glViewport(0, 0, w, h);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -349,7 +359,9 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	{
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[1], win->widgets, w - win->widgets->w * win->widgetsScale, 0, w, win->widgets->h * win->widgetsScale);
+		tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[1], win->widgets, 
+			(int)(w - win->widgets->w * win->widgetsScale), 0, 
+			w, (int)(win->widgets->h * win->widgetsScale));
 	}
 
 	tigrCheckGLError("present");

@@ -28,7 +28,7 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #ifdef TIGR_GAPI_D3D9
 #include <d3d9.h>
 typedef struct {
-	int created;
+	int lost;
 	IDirect3DDevice9 *dev;
 	D3DPRESENT_PARAMETERS params;
 	IDirect3DTexture9 *sysTex[2], *vidTex[2];
@@ -99,6 +99,8 @@ TigrInternal *tigrInternal(Tigr *bmp);
 
 void tigrGAPICreate(Tigr *bmp);
 void tigrGAPIDestroy(Tigr *bmp);
+void tigrGAPIBegin(Tigr *bmp);
+void tigrGAPIEnd(Tigr *bmp);
 void tigrGAPIResize(Tigr *bmp, int width, int height);
 void tigrGAPIPresent(Tigr *bmp, int w, int h);
 

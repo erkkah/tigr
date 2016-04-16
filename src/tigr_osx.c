@@ -48,7 +48,7 @@ extern id const NSDefaultRunLoopMode;
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
 //#define ARC_AVAILABLE
-#error can't compile as objective-c code just yet! see autorelease pool todo bellow
+#error "Can't compile as objective-c code just yet! (see autorelease pool todo below)"
 #endif
 
 // ABI is a bit different between platforms
@@ -364,6 +364,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
 	tigrGAPICreate(bmp);
+	tigrGAPIBegin(bmp);
 	tigrGAPIResize(bmp, bmp->w, bmp->h);
 
 	return bmp;
@@ -375,6 +376,7 @@ void tigrFree(Tigr *bmp)
 	{
 		TigrInternal * win = tigrInternal(bmp);
 		objc_msgSend_void((id)win->glContext, sel_registerName("makeCurrentContext"));
+		tigrGAPIEnd(bmp);
 		tigrGAPIDestroy(bmp);
 		tigrFree(win->widgets);
 
