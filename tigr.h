@@ -1,4 +1,4 @@
-// TIGR - TIny GRaphics Library - v1.2
+// TIGR - TIny GRaphics Library - v1.3
 //        ^^   ^^
 //
 // rawr.
@@ -22,7 +22,7 @@ any implied warranty. If it breaks, you get to keep both pieces.
 extern "C" {
 #endif
 
-// graphics configuration
+// Graphics configuration.
 #ifdef _WIN32
 #define TIGR_GAPI_D3D9
 #else
