@@ -2,15 +2,18 @@
 #include <stdio.h> // TODO can we remove this and printf's later?
 
 #ifdef TIGR_GAPI_GL
-#ifndef __APPLE__
+//#ifndef __APPLE__
 // please provide you own glext.h, you can download latest at https://www.opengl.org/registry/api/GL/glext.h
-#include <glext.h>
-#endif
+//#include <glext.h>
+//#endif
 #ifdef _WIN32
 // please provide you own wglext.h, you can download latest at https://www.opengl.org/registry/api/GL/wglext.h
 #include <wglext.h>
 #endif
-
+#ifdef __linux__
+#define GLX_GLXEXT_PROTOTYPES
+#include <GL/glext.h>
+#endif
 extern const unsigned char tigr_upscale_gl_vs[], tigr_upscale_gl_fs[];
 extern int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size;
 
@@ -320,6 +323,9 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 #ifdef _WIN32
 	wglMakeCurrent(gl->dc, gl->hglrc);
 #endif
+#ifdef __linux__
+	glXMakeCurrent(win->dpy, win->win, win->glc);
+#endif
 	glViewport(0, 0, w, h);
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -368,6 +374,10 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 
 	#ifdef _WIN32
 	if(!SwapBuffers(gl->dc)) {tigrError(bmp, "Cannot swap OpenGL buffers.\n"); return;}
+	#endif
+
+	#ifdef __linux__
+	glXSwapBuffers(win->dpy, win->win);
 	#endif
 }
 

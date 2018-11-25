@@ -37,11 +37,22 @@ typedef struct {
 } D3D9Stuff;
 #endif
 
+#ifdef __linux__
+#include<X11/X.h>
+#include<X11/Xlib.h>
+#endif
+
 #ifdef TIGR_GAPI_GL
+#ifdef __APPLE__
+#include <OpenGL/gl3.h>
+#endif
 #ifdef _WIN32
 #include <GL/gl.h>
-#else
-#include <OpenGL/gl3.h>
+#endif
+#ifdef __linux__
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include<GL/glx.h>
 #endif
 typedef struct {
 	#ifdef _WIN32
@@ -74,6 +85,12 @@ typedef struct {
 	#endif
 	#ifdef __APPLE__
 	void *glContext;
+	#endif
+	#ifdef __linux__
+	Display *dpy;
+	Window win;
+	GLXContext glc;
+	XIC ic;
 	#endif
 
 	Tigr *widgets;
