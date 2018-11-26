@@ -106,8 +106,12 @@ typedef struct {
 	int pos[4];
 	int lastChar;
 	char keys[256], prev[256];
-	#ifdef __APPLE__
+	#if defined(__APPLE__) || defined(__linux__)
 	int mouseButtons;
+	#endif
+	#ifdef __linux__
+	int mouseX;
+	int mouseY;
 	#endif
 } TigrInternal;
 // ----------------------------------------------------------

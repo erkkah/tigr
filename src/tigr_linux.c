@@ -2,11 +2,13 @@
 
 #ifdef __linux__
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<X11/X.h>
-#include<X11/Xlib.h>
-#include<GL/glx.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xlocale.h>
+#include <GL/glx.h>
 
 static Display *dpy;
 static Window root;
@@ -18,11 +20,9 @@ static XIM inputMethod;
 void initX11Stuff() {
 	static int done = 0;
 	if(!done) {
-
 		dpy = XOpenDisplay(NULL);
 		if(dpy == NULL) {
-	        printf("\n\tcannot connect to X server\n\n");
-	        exit(0);
+			tigrError(0, "Cannot connect to X server");
 		}
 
 
@@ -31,16 +31,12 @@ void initX11Stuff() {
 		vi = glXChooseVisual(dpy, 0, att);
 
 	 	if(vi == NULL) {
-	        printf("\n\tno appropriate visual found\n\n");
-	        exit(0);
-	 	} else {
-	 		printf("\n\tvisual %p selected\n", (void *)vi->visualid);
+	 		tigrError(0, "No appropriate visual found");
 	 	}
 
 	 	inputMethod = XOpenIM(dpy, NULL, NULL, NULL);
 	 	if(inputMethod == NULL) {
-	 		printf("Failed to create input method\n");
-	 		exit(0);
+	 		tigrError(0, "Failed to create input method");
 	 	}
 
 		done = 1;
@@ -73,12 +69,21 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 	swa.colormap = cmap;
-	swa.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | StructureNotifyMask;
+	swa.event_mask = ExposureMask | StructureNotifyMask |
+		KeyPressMask | KeyReleaseMask |
+		ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
  
 	xwin = XCreateWindow(dpy, root, 0, 0, w * scale, h * scale, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 
 	XMapWindow(dpy, xwin);
-	XStoreName(dpy, xwin, title);
+
+	XTextProperty prop;
+	int result = Xutf8TextListToTextProperty(dpy, (char**) &title, 1, XUTF8StringStyle, &prop);
+	if(result == Success) {
+		Atom wmName = XInternAtom(dpy, "_NET_WM_NAME", 0);
+		XSetTextProperty(dpy, xwin, &prop, wmName);
+		XFree(prop.value);
+	}
 
     ic = XCreateIC(inputMethod, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, xwin, NULL);
  	if(ic == NULL) {
@@ -236,11 +241,7 @@ uint8_t tigrKeyFromX11(KeySym sym) {
 		case XK_backslash: return TK_BACKSLASH;
 		case XK_bracketright: return TK_RSQUARE;
 		case XK_apostrophe: return TK_TICK;
-
-		default:
-			printf("Unknown key sym: %d\n", (int)sym);
 	}
-
 	return 0;
 }
 
@@ -287,7 +288,7 @@ void tigrUpdate(Tigr *bmp) {
 					KeySym keysym = 0;
 					char inputTextUTF8[10];
 					Status status = 0;
-                	int count = Xutf8LookupString(win->ic, (XKeyPressedEvent*)&event, inputTextUTF8, sizeof(inputTextUTF8), NULL, &status);
+                	int count = Xutf8LookupString(win->ic, &event.xkey, inputTextUTF8, sizeof(inputTextUTF8), NULL, &status);
 
                 	if(status == XLookupChars) {
 						tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
@@ -304,6 +305,36 @@ void tigrUpdate(Tigr *bmp) {
 					uint8_t key = tigrKeyFromX11(keysym);
 					win->keys[key] = 0;
 					tigrUpdateModifiers(win);
+				}
+				break;
+			case MotionNotify:
+				win->mouseX = (event.xmotion.x - win->pos[0]) / win->scale;
+				win->mouseY = (event.xmotion.y - win->pos[1]) / win->scale;
+				break;
+			case ButtonRelease:
+				switch(event.xbutton.button) {
+					case Button1:
+						win->mouseButtons &= ~1;
+						break;
+					case Button2:
+						win->mouseButtons &= ~4;
+						break;
+					case Button3:
+						win->mouseButtons &= ~2;
+						break;
+				}
+				break;
+			case ButtonPress:
+				switch(event.xbutton.button) {
+					case Button1:
+						win->mouseButtons |= 1;
+						break;
+					case Button2:
+						win->mouseButtons |= 4;
+						break;
+					case Button3:
+						win->mouseButtons |= 2;
+						break;
 				}
 				break;
 			case ClientMessage:
@@ -332,6 +363,49 @@ void tigrFree(Tigr *bmp) {
 	}
 	free(bmp->pix);
 	free(bmp);
+}
+
+void tigrError(Tigr *bmp, const char *message, ...)
+{
+	char tmp[1024];
+
+	va_list args;
+	va_start(args, message);
+	vsnprintf(tmp, sizeof(tmp), message, args);
+	tmp[sizeof(tmp)-1] = 0;
+	va_end(args);
+
+	printf("tigr fatal error: %s\n", tmp);
+
+	exit(1);
+}
+
+float tigrTime()
+{
+	static double lastTime = 0;
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+
+	double now = (double)tv.tv_sec + (tv.tv_usec / 1000000.0);
+	double elapsed = lastTime = 0 ? 0 : now - lastTime;
+	lastTime = now;
+
+	return (float) elapsed;
+}
+
+void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
+{
+	TigrInternal *win = tigrInternal(bmp);
+	if(x) {
+		*x = win->mouseX;
+	}
+	if(y) {
+		*y = win->mouseY;
+	}
+	if(buttons) {
+		*buttons = win->mouseButtons;
+	}
 }
 
 #endif // __linux__
