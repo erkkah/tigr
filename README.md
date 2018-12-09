@@ -4,6 +4,8 @@ TIGR is a tiny graphics library, for when you just need to draw something in a w
 
 TIGR is free to copy with no restrictions; see tigr.h
 
+NOTE: This repo contains a fork of TIGR with added Linux support. The original repo lives [here](https://bitbucket.org/rmitton/tigr/overview).
+
 We don't want to supply every possible function you might ever need. There are already plenty of add-on libraries
 for doing sound, XML, 3D, whatever. Our goal is simply to allow you to easily throw together small 2D programs when you need them.
 
@@ -24,12 +26,13 @@ To use it, you just drop them right into your project. No fancy build systems, n
 
 1. Grab  ** tigr.c ** and ** tigr.h **
 2. Throw them into your project.
-3. Link with D3D9.LIB (or -ld3d9) on Windows, or -framework OpenGL and -framework Cocoa on OSX
+3. Link with
+    - D3D9.LIB (or -ld3d9) on Windows
+    - -framework OpenGL and -framework Cocoa on OSX
+    - -lGLU -lGL -lX11 on Linux
 4. You're done!
 
 ### How do I program with TIGR? ###
-
-See the [TIGR website](https://bitbucket.org/rmitton/tigr/overview) for tutorials, documentation, bug reporting, the whole shebang.
 
 Here's an example Hello World program. For more information, just read ** tigr.h ** to see the APIs available.
 

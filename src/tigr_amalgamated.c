@@ -20,4 +20,5 @@
 #include "tigr_upscale_gl_fs.h"
 #include "tigr_win.c"
 #include "tigr_osx.c"
+#include "tigr_linux.c"
 #include "tigr_gl.c"
