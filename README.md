@@ -24,7 +24,7 @@ TIGR is designed to be small and independent. A typical 'hello world' is less th
 TIGR is supplied as a single .h file.
 To use it, you just drop them right into your project. No fancy build systems, no DLL hell, no package managers.
 
-1. Grab  ** tigr.c ** and ** tigr.h **
+1. Grab  **tigr.c** and **tigr.h**
 2. Throw them into your project.
 3. Link with
     - D3D9.LIB (or -ld3d9) on Windows
@@ -34,7 +34,7 @@ To use it, you just drop them right into your project. No fancy build systems, n
 
 ### How do I program with TIGR? ###
 
-Here's an example Hello World program. For more information, just read ** tigr.h ** to see the APIs available.
+Here's an example Hello World program. For more information, just read **tigr.h** to see the APIs available.
 
 ```
 #include "tigr.h"
