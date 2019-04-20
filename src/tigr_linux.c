@@ -72,7 +72,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	swa.event_mask = ExposureMask | StructureNotifyMask |
 		KeyPressMask | KeyReleaseMask |
 		ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
- 
+
 	xwin = XCreateWindow(dpy, root, 0, 0, w * scale, h * scale, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 
 	XMapWindow(dpy, xwin);
@@ -94,7 +94,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(dpy, xwin, &wmDeleteMessage, 1);
- 
+
 	glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
 	glXMakeCurrent(dpy, xwin, glc);
 
@@ -388,7 +388,7 @@ float tigrTime()
 	gettimeofday(&tv, NULL);
 
 	double now = (double)tv.tv_sec + (tv.tv_usec / 1000000.0);
-	double elapsed = lastTime = 0 ? 0 : now - lastTime;
+	double elapsed = lastTime == 0 ? 0 : now - lastTime;
 	lastTime = now;
 
 	return (float) elapsed;
