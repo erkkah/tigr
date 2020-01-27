@@ -22,13 +22,6 @@ any implied warranty. If it breaks, you get to keep both pieces.
 extern "C" {
 #endif
 
-// Graphics configuration.
-#ifdef _WIN32
-#define TIGR_GAPI_D3D9
-#else
-#define TIGR_GAPI_GL
-#endif
-
 // Compiler configuration.
 #ifdef _MSC_VER
 #define TIGR_INLINE static __forceinline
@@ -72,6 +65,10 @@ int tigrClosed(Tigr *bmp);
 
 // Displays a window's contents on-screen.
 void tigrUpdate(Tigr *bmp);
+
+// Optionally should be called before your OpenGL content and before tigrUpdate
+// returns 0 if OpenGL is available, returns <0 on error
+int tigrBeginOpenGL(Tigr *bmp);
 
 // Sets post-FX properties for a window.
 // hblur/vblur = whether to use bilinear filtering along that axis (boolean)

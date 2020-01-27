@@ -1,6 +1,13 @@
 #include "tigr_internal.h"
 #include <assert.h>
 
+#pragma comment(lib, "opengl32.lib") // glViewport
+#pragma comment(lib, "shell32.lib")  // CommandLineToArgvW
+#pragma comment(lib, "user32.lib")   // SetWindowLong
+#pragma comment(lib, "gdi32.lib")    // ChoosePixelFormat
+#pragma comment(lib, "advapi32.lib") // RegSetValueEx
+
+
 // not really windows stuff
 TigrInternal *tigrInternal(Tigr *bmp)
 {
@@ -80,7 +87,7 @@ void tigrLeaveBorderlessWindowed(Tigr *bmp)
 		0);
 }
 
-void tigrDxUpdateWidgets(Tigr *bmp, int dw, int dh)
+void tigrWinUpdateWidgets(Tigr *bmp, int dw, int dh)
 {
 	POINT pt;
 	int i, x, clicked=0;
@@ -172,9 +179,13 @@ void tigrUpdate(Tigr *bmp)
 	dh = rc.bottom - rc.top;
 
 	// Update the widget overlay.
-	tigrDxUpdateWidgets(bmp, dw, dh);
+	tigrWinUpdateWidgets(bmp, dw, dh);
 
-	tigrGAPIPresent(bmp, dw, dh);
+	if (!tigrGAPIBegin(bmp))
+	{
+		tigrGAPIPresent(bmp, dw, dh);
+		tigrGAPIEnd(bmp);
+	}
 
 	memcpy(win->prev, win->keys, 256);
 
@@ -188,6 +199,20 @@ void tigrUpdate(Tigr *bmp)
 		DispatchMessage(&msg);
 	}
 }
+
+int tigrGAPIBegin(Tigr *bmp)
+{
+	TigrInternal *win = tigrInternal(bmp);
+	return wglMakeCurrent(win->gl.dc, win->gl.hglrc) ? 0 : -1;
+	return 0;
+}
+
+int tigrGAPIEnd(Tigr *bmp)
+{
+	(void)bmp;
+	return wglMakeCurrent(NULL, NULL) ? 0 : -1;
+}
+
 
 static BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle)
 {
@@ -222,7 +247,11 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	switch (message)
 	{
 	case WM_PAINT:
-		tigrGAPIPresent(bmp, dw, dh);
+		if (!tigrGAPIBegin(bmp))
+		{
+			tigrGAPIPresent(bmp, dw, dh);
+			tigrGAPIEnd(bmp);
+		}
 		ValidateRect(hWnd, NULL);
 		break;
 	case WM_CLOSE:
@@ -287,7 +316,6 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 					win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh), win->flags);
 				}
 				tigrPosition(bmp, win->scale, dw, dh, win->pos);
-				tigrGAPIResize(bmp, dw, dh);
 			}
 
 			// If someone tried to maximize us (e.g. via shortcut launch options),
@@ -427,9 +455,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->wtitle = wtitle;
 	win->shown = 0;
 	win->closed = 0;
-	#ifdef TIGR_GAPI_D3D9
-	win->d3d9.lost = 1;
-	#endif
 	win->scale = scale;
 	win->lastChar = 0;
 	win->flags = flags;
@@ -446,7 +471,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	SetPropW(hWnd, L"Tigr", bmp);
 
 	tigrGAPICreate(bmp);
-	tigrGAPIBegin(bmp);
 
 	// Try and restore our window position.
 	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
@@ -467,9 +491,8 @@ void tigrFree(Tigr *bmp)
 	if (bmp->handle)
 	{
 		TigrInternal *win = tigrInternal(bmp);
-		DestroyWindow((HWND)bmp->handle);
-		tigrGAPIEnd(bmp);
 		tigrGAPIDestroy(bmp);
+		DestroyWindow((HWND)bmp->handle);
 		free(win->wtitle);
 		tigrFree(win->widgets);
 	}

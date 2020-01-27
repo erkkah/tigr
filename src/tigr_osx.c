@@ -344,7 +344,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	// Set up the Windows parts.
 	win = tigrInternal(bmp);
-	win->glContext = openGLContext;
 	win->shown = 0;
 	win->closed = 0;
 	win->scale = scale;
@@ -358,14 +357,13 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->widgetsScale = 0;
 	win->widgets = tigrBitmap(40, 14);
 	win->gl.gl_legacy = 0;
+	win->gl.glContext = openGLContext;
 	win->mouseButtons = 0;
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
 
 	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
 	tigrGAPICreate(bmp);
-	tigrGAPIBegin(bmp);
-	tigrGAPIResize(bmp, bmp->w, bmp->h);
 
 	return bmp;
 }
@@ -375,8 +373,6 @@ void tigrFree(Tigr *bmp)
 	if(bmp->handle)
 	{
 		TigrInternal * win = tigrInternal(bmp);
-		objc_msgSend_void((id)win->glContext, sel_registerName("makeCurrentContext"));
-		tigrGAPIEnd(bmp);
 		tigrGAPIDestroy(bmp);
 		tigrFree(win->widgets);
 
@@ -739,7 +735,7 @@ void tigrUpdate(Tigr *bmp)
 	id window;
 	win = tigrInternal(bmp);
 	window = (id)bmp->handle;
-	openGLContext = (id)win->glContext;
+	openGLContext = (id)win->gl.glContext;
 
 	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
 
@@ -755,7 +751,7 @@ void tigrUpdate(Tigr *bmp)
 	// do runloop stuff
 	objc_msgSend_void(NSApp, sel_registerName("updateWindows"));
 	objc_msgSend_void(openGLContext, sel_registerName("update"));
-	objc_msgSend_void(openGLContext, sel_registerName("makeCurrentContext"));
+	tigrGAPIBegin(bmp);
 
 	NSSize windowSize = _tigrCocoaWindowSize(window);
 
@@ -765,9 +761,23 @@ void tigrUpdate(Tigr *bmp)
 		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, windowSize.width, windowSize.height), win->flags);
 
 	tigrPosition(bmp, win->scale, windowSize.width, windowSize.height, win->pos);
-	tigrGAPIResize(bmp, windowSize.width, windowSize.height);
 	tigrGAPIPresent(bmp, windowSize.width, windowSize.height);
 	objc_msgSend_void(openGLContext, sel_registerName("flushBuffer"));
+	tigrGAPIEnd(bmp);
+}
+
+int tigrGAPIBegin(Tigr *bmp)
+{
+	TigrInternal *win = tigrInternal(bmp);
+	objc_msgSend_void((id)win->gl.glContext, sel_registerName("makeCurrentContext"));
+	return 0;
+}
+
+int tigrGAPIEnd(Tigr *bmp)
+{
+	(void)bmp;
+	objc_msgSend_void((id)objc_getClass("NSOpenGLContext"), sel_registerName("clearCurrentContext"));
+	return 0;
 }
 
 int tigrClosed(Tigr *bmp)

@@ -1,6 +1,6 @@
 CFLAGS = -I../..
 ifeq ($(OS),Windows_NT)
-	LDFLAGS = -ld3d9
+	LDFLAGS = -lopengl32 -lgdi32
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
