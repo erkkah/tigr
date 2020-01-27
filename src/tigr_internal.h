@@ -4,6 +4,9 @@
 
 #define _CRT_SECURE_NO_WARNINGS NOPE
 
+// Graphics configuration.
+#define TIGR_GAPI_GL
+
 // Creates a new bitmap, with extra payload bytes.
 Tigr *tigrBitmap2(int w, int h, int extra);
 
@@ -23,18 +26,6 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#endif
-
-#ifdef TIGR_GAPI_D3D9
-#include <d3d9.h>
-typedef struct {
-	int lost;
-	IDirect3DDevice9 *dev;
-	D3DPRESENT_PARAMETERS params;
-	IDirect3DTexture9 *sysTex[2], *vidTex[2];
-	IDirect3DVertexShader9 *vs;
-	IDirect3DPixelShader9 *ps;
-} D3D9Stuff;
 #endif
 
 #ifdef __linux__
@@ -59,6 +50,9 @@ typedef struct {
 	HGLRC hglrc;
 	HDC dc;
 	#endif
+	#ifdef __APPLE__
+	void *glContext;
+	#endif
 	GLuint tex[2];
 	GLuint vao;
 	GLuint program;
@@ -66,14 +60,12 @@ typedef struct {
 	GLuint uniform_model;
 	GLuint uniform_parameters;
 	int gl_legacy;
+	int gl_user_opengl_rendering;
 } GLStuff;
 #endif
 
 typedef struct {
 	int shown, closed;
-	#ifdef TIGR_GAPI_D3D9
-	D3D9Stuff d3d9;
-	#endif
 	#ifdef TIGR_GAPI_GL
 	GLStuff gl;
 	#endif
@@ -82,9 +74,6 @@ typedef struct {
 	wchar_t *wtitle;
 	DWORD dwStyle;
 	RECT oldPos;
-	#endif
-	#ifdef __APPLE__
-	void *glContext;
 	#endif
 	#ifdef __linux__
 	Display *dpy;
@@ -120,9 +109,8 @@ TigrInternal *tigrInternal(Tigr *bmp);
 
 void tigrGAPICreate(Tigr *bmp);
 void tigrGAPIDestroy(Tigr *bmp);
-void tigrGAPIBegin(Tigr *bmp);
-void tigrGAPIEnd(Tigr *bmp);
-void tigrGAPIResize(Tigr *bmp, int width, int height);
+int  tigrGAPIBegin(Tigr *bmp);
+int  tigrGAPIEnd(Tigr *bmp);
 void tigrGAPIPresent(Tigr *bmp, int w, int h);
 
 #endif
