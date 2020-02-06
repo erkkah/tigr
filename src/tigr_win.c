@@ -200,9 +200,14 @@ void tigrUpdate(Tigr *bmp)
 	}
 }
 
+typedef BOOL (APIENTRY *PFNWGLSWAPINTERVALFARPROC_)( int );
+static PFNWGLSWAPINTERVALFARPROC_ wglSwapIntervalEXT_ = 0;
+
 int tigrGAPIBegin(Tigr *bmp)
 {
 	TigrInternal *win = tigrInternal(bmp);
+
+	if(wglSwapIntervalEXT_) wglSwapIntervalEXT_(1);
 	return wglMakeCurrent(win->gl.dc, win->gl.hglrc) ? 0 : -1;
 	return 0;
 }
@@ -482,6 +487,8 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 			SetWindowPlacement(hWnd, &wp);
 	}
 	#endif
+
+	wglSwapIntervalEXT_ = (PFNWGLSWAPINTERVALFARPROC_)wglGetProcAddress( "wglSwapIntervalEXT" );
 
 	return bmp;
 }
