@@ -125,7 +125,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
  	tigrGAPICreate(bmp);
 	tigrGAPIBegin(bmp);
-	tigrGAPIResize(bmp, bmp->w, bmp->h);
+	//tigrGAPIResize(bmp, bmp->w, bmp->h);
 
 	return bmp;
 }
@@ -133,6 +133,16 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 int tigrClosed(Tigr *bmp) {
 	TigrInternal *win = tigrInternal(bmp);
 	return win->win == 0;
+}
+
+int tigrGAPIBegin(Tigr *bmp) {
+	TigrInternal *win = tigrInternal(bmp);
+	return glXMakeCurrent(win->dpy, win->win, win->glc) ? 0 : -1;
+}
+
+int tigrGAPIEnd(Tigr *bmp) {
+	(void)bmp;
+	return glXMakeCurrent(NULL, 0, 0) ? 0 : -1;
 }
 
 int tigrKeyDown(Tigr *bmp, int key) {
@@ -266,7 +276,7 @@ void tigrUpdate(Tigr *bmp) {
 		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, gwa.width, gwa.height), win->flags);
 
 	tigrPosition(bmp, win->scale, gwa.width, gwa.height, win->pos);
-	tigrGAPIResize(bmp, gwa.width, gwa.height);
+	//tigrGAPIResize(bmp, gwa.width, gwa.height);
 	tigrGAPIPresent(bmp, gwa.width, gwa.height);
 
 	while(XPending(win->dpy) != 0) {

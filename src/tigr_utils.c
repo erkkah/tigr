@@ -74,6 +74,17 @@ char *tigrEncodeUTF8(char *text, int cp)
 #undef EMIT
 }
 
+int tigrBeginOpenGL(Tigr *bmp)
+{
+   #ifdef TIGR_GAPI_GL
+   TigrInternal *win = tigrInternal(bmp);
+   win->gl.gl_user_opengl_rendering = 1;
+   return tigrGAPIBegin(bmp);
+   #else
+   return -1;
+   #endif
+}
+
 void tigrSetPostFX(Tigr *bmp, int hblur, int vblur, float scanlines, float contrast)
 {
 	TigrInternal *win = tigrInternal(bmp);
