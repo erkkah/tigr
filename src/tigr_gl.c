@@ -3,10 +3,6 @@
 #include <assert.h>
 
 #ifdef TIGR_GAPI_GL
-//#ifndef __APPLE__
-// please provide you own glext.h, you can download latest at https://www.opengl.org/registry/api/GL/glext.h
-//#include <glext.h>
-//#endif
 #ifdef __linux__
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glext.h>
