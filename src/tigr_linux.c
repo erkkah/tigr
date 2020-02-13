@@ -39,6 +39,8 @@ void initX11Stuff() {
 	 		tigrError(0, "Failed to create input method");
 	 	}
 
+		wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+
 		done = 1;
 	}
 }
@@ -130,7 +132,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
  	}
  	XSetICFocus(ic);
 
-	wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(dpy, xwin, &wmDeleteMessage, 1);
 
 	glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
@@ -319,12 +320,9 @@ void tigrUpdate(Tigr *bmp) {
 	tigrGAPIPresent(bmp, gwa.width, gwa.height);
 	glXSwapBuffers(win->dpy, win->win);
 
-	while(XPending(win->dpy) != 0) {
-		XEvent event;
-		XNextEvent(win->dpy, &event);
-		if (XFilterEvent(&event, win->win)) {
-            continue;
-		}
+	XEvent event;
+	int eventMask = ExposureMask | KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask ;	
+	while(XCheckWindowEvent(win->dpy, win->win, eventMask, &event)) {
 
 		switch(event.type) {
 			case Expose:
@@ -389,15 +387,20 @@ void tigrUpdate(Tigr *bmp) {
 						break;
 				}
 				break;
-			case ClientMessage:
-				if(event.xclient.data.l[0] == wmDeleteMessage) {
-				    glXMakeCurrent(win->dpy, None, NULL);
-	                glXDestroyContext(win->dpy, win->glc);
-	                XDestroyWindow(win->dpy, win->win);
-	                win->win = 0;
-				}
 			default:
 				break;
+		}
+	}
+	if (XCheckTypedEvent(win->dpy, ClientMessage, &event)) {
+		if (event.xclient.window == win->win) {
+			if(event.xclient.data.l[0] == wmDeleteMessage) {
+				glXMakeCurrent(win->dpy, None, NULL);
+				glXDestroyContext(win->dpy, win->glc);
+				XDestroyWindow(win->dpy, win->win);
+				win->win = 0;
+			}
+		} else {
+			XPutBackEvent(win->dpy, &event);
 		}
 	}
 }
