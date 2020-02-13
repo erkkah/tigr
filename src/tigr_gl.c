@@ -191,8 +191,9 @@ int tigrGL33Init(Tigr *bmp)
 void tigrCheckGLError(const char *state)
 {
 	GLenum err = glGetError();
-	if(err != GL_NO_ERROR)
+	if(err != GL_NO_ERROR) {
 		printf("got gl error %x when was doing %s\n", err, state);
+	}
 }
 
 void tigrCheckShaderErrors(GLuint object)
@@ -363,9 +364,6 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
 
-#ifdef __linux__
-	glXMakeCurrent(win->dpy, win->win, win->glc);
-#endif
 	glViewport(0, 0, w, h);
 	if (!gl->gl_user_opengl_rendering)
 	{
@@ -407,7 +405,9 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 	else
-			glDisable(GL_BLEND);
+	{
+		glDisable(GL_BLEND);
+	}
 	tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[0], bmp, win->pos[0], win->pos[1], win->pos[2], win->pos[3]);
 
 	if (win->widgetsScale > 0)
@@ -423,10 +423,6 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 
 	#ifdef _WIN32
 	if(!SwapBuffers(gl->dc)) {tigrError(bmp, "Cannot swap OpenGL buffers.\n"); return;}
-	#endif
-
-	#ifdef __linux__
-	glXSwapBuffers(win->dpy, win->win);
 	#endif
 
 	gl->gl_user_opengl_rendering = 0;
