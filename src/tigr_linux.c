@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -25,7 +26,6 @@ void initX11Stuff() {
 			tigrError(0, "Cannot connect to X server");
 		}
 
-
 		root = DefaultRootWindow(dpy);
 
 		vi = glXChooseVisual(dpy, 0, att);
@@ -40,6 +40,44 @@ void initX11Stuff() {
 	 	}
 
 		done = 1;
+	}
+}
+
+static int hasGLXExtension(Display* display, const char* wanted) {
+	const char* extensions = glXQueryExtensionsString(display, DefaultScreen(display));
+	char* mutable = strdup(extensions);
+	char* found = 0;
+
+	for (char* start = mutable; ;start = 0) {
+		found = strtok(start, " ");
+		if (found == 0 || strcmp(found, wanted) == 0) {
+			break;
+		}
+	}
+
+	free(mutable);
+	return found != 0;
+}
+
+static void setupVSync(Display* display, Window win) {
+	if (hasGLXExtension(display, "GLX_EXT_swap_control")) {
+		PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT=
+			(PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalEXT");
+		if (glXSwapIntervalEXT) {
+			glXSwapIntervalEXT(display, win, 1);
+		}
+	} else if (hasGLXExtension(display, "GLX_MESA_swap_control")) {
+		PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA =
+			(PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
+		if (glXSwapIntervalMESA) {
+			glXSwapIntervalMESA(1);
+		}
+	} else if (hasGLXExtension(display, "GLX_SGI_swap_control")) {
+		PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI =
+			(PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
+		if (glXSwapIntervalSGI) {
+			glXSwapIntervalSGI(1);
+		}
 	}
 }
 
@@ -98,6 +136,8 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
 	glXMakeCurrent(dpy, xwin, glc);
 
+	setupVSync(dpy, xwin);
+
 	bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
 	bmp->handle = (void*)xwin;
 
@@ -125,7 +165,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
  	tigrGAPICreate(bmp);
 	tigrGAPIBegin(bmp);
-	//tigrGAPIResize(bmp, bmp->w, bmp->h);
 
 	return bmp;
 }
@@ -276,8 +315,9 @@ void tigrUpdate(Tigr *bmp) {
 		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, gwa.width, gwa.height), win->flags);
 
 	tigrPosition(bmp, win->scale, gwa.width, gwa.height, win->pos);
-	//tigrGAPIResize(bmp, gwa.width, gwa.height);
+	glXMakeCurrent(win->dpy, win->win, win->glc);
 	tigrGAPIPresent(bmp, gwa.width, gwa.height);
+	glXSwapBuffers(win->dpy, win->win);
 
 	while(XPending(win->dpy) != 0) {
 		XEvent event;
@@ -289,7 +329,9 @@ void tigrUpdate(Tigr *bmp) {
 		switch(event.type) {
 			case Expose:
 				XGetWindowAttributes(win->dpy, win->win, &gwa);
+				glXMakeCurrent(win->dpy, win->win, win->glc);
 				tigrGAPIPresent(bmp, gwa.width, gwa.height);
+				glXSwapBuffers(win->dpy, win->win);
 				memset(win->keys, 0, 256);
 				memset(win->prev, 0, 256);
 				break;
