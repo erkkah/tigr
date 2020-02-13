@@ -1819,7 +1819,6 @@ int tigrGAPIBegin(Tigr *bmp)
 {
 	TigrInternal *win = tigrInternal(bmp);
 
-	if(wglSwapIntervalEXT_) wglSwapIntervalEXT_(1);
 	return wglMakeCurrent(win->gl.dc, win->gl.hglrc) ? 0 : -1;
 	return 0;
 }
@@ -2101,6 +2100,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	#endif
 
 	wglSwapIntervalEXT_ = (PFNWGLSWAPINTERVALFARPROC_)wglGetProcAddress( "wglSwapIntervalEXT" );
+	if(wglSwapIntervalEXT_) wglSwapIntervalEXT_(1);
 
 	return bmp;
 }
@@ -3197,6 +3197,7 @@ float tigrTime()
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -3218,7 +3219,6 @@ void initX11Stuff() {
 			tigrError(0, "Cannot connect to X server");
 		}
 
-
 		root = DefaultRootWindow(dpy);
 
 		vi = glXChooseVisual(dpy, 0, att);
@@ -3232,7 +3232,47 @@ void initX11Stuff() {
 	 		tigrError(0, "Failed to create input method");
 	 	}
 
+		wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+
 		done = 1;
+	}
+}
+
+static int hasGLXExtension(Display* display, const char* wanted) {
+	const char* extensions = glXQueryExtensionsString(display, DefaultScreen(display));
+	char* mutable = strdup(extensions);
+	char* found = 0;
+
+	for (char* start = mutable; ;start = 0) {
+		found = strtok(start, " ");
+		if (found == 0 || strcmp(found, wanted) == 0) {
+			break;
+		}
+	}
+
+	free(mutable);
+	return found != 0;
+}
+
+static void setupVSync(Display* display, Window win) {
+	if (hasGLXExtension(display, "GLX_EXT_swap_control")) {
+		PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT=
+			(PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalEXT");
+		if (glXSwapIntervalEXT) {
+			glXSwapIntervalEXT(display, win, 1);
+		}
+	} else if (hasGLXExtension(display, "GLX_MESA_swap_control")) {
+		PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA =
+			(PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
+		if (glXSwapIntervalMESA) {
+			glXSwapIntervalMESA(1);
+		}
+	} else if (hasGLXExtension(display, "GLX_SGI_swap_control")) {
+		PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI =
+			(PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
+		if (glXSwapIntervalSGI) {
+			glXSwapIntervalSGI(1);
+		}
 	}
 }
 
@@ -3285,11 +3325,12 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
  	}
  	XSetICFocus(ic);
 
-	wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(dpy, xwin, &wmDeleteMessage, 1);
 
 	glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
 	glXMakeCurrent(dpy, xwin, glc);
+
+	setupVSync(dpy, xwin);
 
 	bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
 	bmp->handle = (void*)xwin;
@@ -3318,7 +3359,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
  	tigrGAPICreate(bmp);
 	tigrGAPIBegin(bmp);
-	//tigrGAPIResize(bmp, bmp->w, bmp->h);
 
 	return bmp;
 }
@@ -3469,20 +3509,20 @@ void tigrUpdate(Tigr *bmp) {
 		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, gwa.width, gwa.height), win->flags);
 
 	tigrPosition(bmp, win->scale, gwa.width, gwa.height, win->pos);
-	//tigrGAPIResize(bmp, gwa.width, gwa.height);
+	glXMakeCurrent(win->dpy, win->win, win->glc);
 	tigrGAPIPresent(bmp, gwa.width, gwa.height);
+	glXSwapBuffers(win->dpy, win->win);
 
-	while(XPending(win->dpy) != 0) {
-		XEvent event;
-		XNextEvent(win->dpy, &event);
-		if (XFilterEvent(&event, win->win)) {
-            continue;
-		}
+	XEvent event;
+	int eventMask = ExposureMask | KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask ;	
+	while(XCheckWindowEvent(win->dpy, win->win, eventMask, &event)) {
 
 		switch(event.type) {
 			case Expose:
 				XGetWindowAttributes(win->dpy, win->win, &gwa);
+				glXMakeCurrent(win->dpy, win->win, win->glc);
 				tigrGAPIPresent(bmp, gwa.width, gwa.height);
+				glXSwapBuffers(win->dpy, win->win);
 				memset(win->keys, 0, 256);
 				memset(win->prev, 0, 256);
 				break;
@@ -3540,15 +3580,20 @@ void tigrUpdate(Tigr *bmp) {
 						break;
 				}
 				break;
-			case ClientMessage:
-				if(event.xclient.data.l[0] == wmDeleteMessage) {
-				    glXMakeCurrent(win->dpy, None, NULL);
-	                glXDestroyContext(win->dpy, win->glc);
-	                XDestroyWindow(win->dpy, win->win);
-	                win->win = 0;
-				}
 			default:
 				break;
+		}
+	}
+	if (XCheckTypedEvent(win->dpy, ClientMessage, &event)) {
+		if (event.xclient.window == win->win) {
+			if(event.xclient.data.l[0] == wmDeleteMessage) {
+				glXMakeCurrent(win->dpy, None, NULL);
+				glXDestroyContext(win->dpy, win->glc);
+				XDestroyWindow(win->dpy, win->win);
+				win->win = 0;
+			}
+		} else {
+			XPutBackEvent(win->dpy, &event);
 		}
 	}
 }
@@ -3622,10 +3667,6 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 #include <assert.h>
 
 #ifdef TIGR_GAPI_GL
-//#ifndef __APPLE__
-// please provide you own glext.h, you can download latest at https://www.opengl.org/registry/api/GL/glext.h
-//#include <glext.h>
-//#endif
 #ifdef __linux__
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glext.h>
@@ -3810,8 +3851,9 @@ int tigrGL33Init(Tigr *bmp)
 void tigrCheckGLError(const char *state)
 {
 	GLenum err = glGetError();
-	if(err != GL_NO_ERROR)
+	if(err != GL_NO_ERROR) {
 		printf("got gl error %x when was doing %s\n", err, state);
+	}
 }
 
 void tigrCheckShaderErrors(GLuint object)
@@ -3982,9 +4024,6 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
 
-#ifdef __linux__
-	glXMakeCurrent(win->dpy, win->win, win->glc);
-#endif
 	glViewport(0, 0, w, h);
 	if (!gl->gl_user_opengl_rendering)
 	{
@@ -4026,7 +4065,9 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 	else
-			glDisable(GL_BLEND);
+	{
+		glDisable(GL_BLEND);
+	}
 	tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[0], bmp, win->pos[0], win->pos[1], win->pos[2], win->pos[3]);
 
 	if (win->widgetsScale > 0)
@@ -4042,10 +4083,6 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 
 	#ifdef _WIN32
 	if(!SwapBuffers(gl->dc)) {tigrError(bmp, "Cannot swap OpenGL buffers.\n"); return;}
-	#endif
-
-	#ifdef __linux__
-	glXSwapBuffers(win->dpy, win->win);
 	#endif
 
 	gl->gl_user_opengl_rendering = 0;
