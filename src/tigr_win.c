@@ -207,7 +207,6 @@ int tigrGAPIBegin(Tigr *bmp)
 {
 	TigrInternal *win = tigrInternal(bmp);
 
-	if(wglSwapIntervalEXT_) wglSwapIntervalEXT_(1);
 	return wglMakeCurrent(win->gl.dc, win->gl.hglrc) ? 0 : -1;
 	return 0;
 }
@@ -489,6 +488,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	#endif
 
 	wglSwapIntervalEXT_ = (PFNWGLSWAPINTERVALFARPROC_)wglGetProcAddress( "wglSwapIntervalEXT" );
+	if(wglSwapIntervalEXT_) wglSwapIntervalEXT_(1);
 
 	return bmp;
 }
