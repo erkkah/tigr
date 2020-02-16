@@ -42,13 +42,21 @@ typedef CGPoint NSPoint;
 typedef CGSize NSSize;
 typedef CGRect NSRect;
 
+enum {
+	NSKeyDown = 10,
+	NSKeyUp = 11,
+	NSKeyDownMask = 1 << NSKeyDown,
+	NSKeyUpMask = 1 << NSKeyUp
+};
+
 extern id NSApp;
 extern id const NSDefaultRunLoopMode;
+
+#define NSApplicationActivationPolicyRegular 0
 #endif
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
-//#define ARC_AVAILABLE
-#error "Can't compile as objective-c code just yet! (see autorelease pool todo below)"
+#error "Can't compile as objective-c code!
 #endif
 
 // ABI is a bit different between platforms
@@ -113,13 +121,29 @@ bool _tigrCocoaIsWindowClosed(id window)
 static bool tigrOSXInited = false;
 static id autoreleasePool = NULL;
 
+#ifdef DEBUG
+static void _showPools(const char* context) {
+	fprintf(stderr, "NSAutoreleasePool@%s:\n", context);
+	objc_msgSend((id)objc_getClass("NSAutoreleasePool"), sel_registerName("showPools"));
+}
+#define showPools(x) _showPools((x))
+#else
+#define showPools(x)
+#endif
+
+static id pushPool() {
+	id pool = objc_msgSend_id((id)objc_getClass("NSAutoreleasePool"), sel_registerName("alloc"));
+	return objc_msgSend_id(pool, sel_registerName("init"));
+}
+
+static void popPool(id pool) {
+	objc_msgSend_void(pool, sel_registerName("drain"));
+}
+
 void _tigrCleanupOSX()
 {
-	#ifdef ARC_AVAILABLE
-	// TODO autorelease pool
-	#else
-	objc_msgSend_void(autoreleasePool, sel_registerName("drain"));
-	#endif
+	showPools("cleanup");
+	popPool(autoreleasePool);
 }
 
 void tigrInitOSX()
@@ -127,18 +151,14 @@ void tigrInitOSX()
 	if(tigrOSXInited)
 		return;
 
-	#ifdef ARC_AVAILABLE
-	// TODO and what do we do now? it's a bit too tricky to use @autoreleasepool here
-	#error TODO this code should be compiled as C for now
-	#else
-	//would be nice to use objc_autoreleasePoolPush instead, but it's not publically available in the headers
-	id poolAlloc = objc_msgSend_id((id)objc_getClass("NSAutoreleasePool"), sel_registerName("alloc"));
-	autoreleasePool = objc_msgSend_id(poolAlloc, sel_registerName("init"));
 	atexit(&_tigrCleanupOSX);
-	#endif
+
+	autoreleasePool = pushPool();
+
+	showPools("init start");
 
 	objc_msgSend_id((id)objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
-	((void (*)(id, SEL, NSInteger))objc_msgSend)(NSApp, sel_registerName("setActivationPolicy:"), 0);
+	((void (*)(id, SEL, NSInteger))objc_msgSend)(NSApp, sel_registerName("setActivationPolicy:"), NSApplicationActivationPolicyRegular);
 
 	Class appDelegateClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "AppDelegate", 0);
 	bool resultAddProtoc = class_addProtocol(appDelegateClass, objc_getProtocol("NSApplicationDelegate"));
@@ -147,33 +167,21 @@ void tigrInitOSX()
 	assert(resultAddMethod);
 	id dgAlloc = objc_msgSend_id((id)appDelegateClass, sel_registerName("alloc"));
 	id dg = objc_msgSend_id(dgAlloc, sel_registerName("init"));
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(dg, sel_registerName("autorelease"));
-	#endif
 
 	objc_msgSend_void_id(NSApp, sel_registerName("setDelegate:"), dg);
 	objc_msgSend_void(NSApp, sel_registerName("finishLaunching"));
 
 	id menubarAlloc = objc_msgSend_id((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
-	id menubar = objc_msgSend_id(menubarAlloc, sel_registerName("init"));
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(menubar, sel_registerName("autorelease"));
-	#endif
+	id menuBar = objc_msgSend_id(menubarAlloc, sel_registerName("init"));
 
 	id appMenuItemAlloc = objc_msgSend_id((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
 	id appMenuItem = objc_msgSend_id(appMenuItemAlloc, sel_registerName("init"));
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(appMenuItem, sel_registerName("autorelease"));
-	#endif
 
-	objc_msgSend_void_id(menubar, sel_registerName("addItem:"), appMenuItem);
-	((id (*)(id, SEL, id))objc_msgSend)(NSApp, sel_registerName("setMainMenu:"), menubar);
+	objc_msgSend_void_id(menuBar, sel_registerName("addItem:"), appMenuItem);
+	((id (*)(id, SEL, id))objc_msgSend)(NSApp, sel_registerName("setMainMenu:"), menuBar);
 
 	id appMenuAlloc = objc_msgSend_id((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
 	id appMenu = objc_msgSend_id(appMenuAlloc, sel_registerName("init"));
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(appMenu, sel_registerName("autorelease"));
-	#endif
 
 	id processInfo = objc_msgSend_id((id)objc_getClass("NSProcessInfo"), sel_registerName("processInfo"));
 	id appName = objc_msgSend_id(processInfo, sel_registerName("processName"));
@@ -184,14 +192,13 @@ void tigrInitOSX()
 	id quitMenuItemKey = objc_msgSend_id_const_char((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), "q");
 	id quitMenuItemAlloc = objc_msgSend_id((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
 	id quitMenuItem = ((id (*)(id, SEL, id, SEL, id))objc_msgSend)(quitMenuItemAlloc, sel_registerName("initWithTitle:action:keyEquivalent:"), quitTitle, sel_registerName("terminate:"), quitMenuItemKey);
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(quitMenuItem, sel_registerName("autorelease"));
-	#endif
 
 	objc_msgSend_void_id(appMenu, sel_registerName("addItem:"), quitMenuItem);
 	objc_msgSend_void_id(appMenuItem, sel_registerName("setSubmenu:"), appMenu);
 
 	tigrOSXInited = true;
+
+	showPools("init end");
 }
 
 void tigrError(Tigr *bmp, const char *message, ...)
@@ -260,13 +267,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	NSRect rect = {{0, 0}, {w * scale, h * scale}};
 	id windowAlloc = objc_msgSend_id((id)objc_getClass("NSWindow"), sel_registerName("alloc"));
 	id window = ((id (*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(windowAlloc, sel_registerName("initWithContentRect:styleMask:backing:defer:"), rect, 15, 2, NO);
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(window, sel_registerName("autorelease"));
-	#endif
 
-	// when we are not using ARC, than window will be added to autorelease pool
-	// so if we close it by hand (pressing red button), we don't want it to be released for us
-	// so it will be released by autorelease pool later
 	objc_msgSend_void_bool(window, sel_registerName("setReleasedWhenClosed:"), NO);
 
 	Class WindowDelegateClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "WindowDelegate", 0);
@@ -282,9 +283,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	assert(resultAddMethod);
 	id wdgAlloc = objc_msgSend_id((id)WindowDelegateClass, sel_registerName("alloc"));
 	id wdg = objc_msgSend_id(wdgAlloc, sel_registerName("init"));
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(wdg, sel_registerName("autorelease"));
-	#endif
 
 	objc_msgSend_void_id(window, sel_registerName("setDelegate:"), wdg);
 
@@ -314,15 +312,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	id pixelFormatAlloc = objc_msgSend_id((id)objc_getClass("NSOpenGLPixelFormat"), sel_registerName("alloc"));
 	id pixelFormat = ((id (*)(id, SEL, const uint32_t*))objc_msgSend)(pixelFormatAlloc, sel_registerName("initWithAttributes:"), glAttributes);
-	#ifndef ARC_AVAILABLE
 	objc_msgSend_void(pixelFormat, sel_registerName("autorelease"));
-	#endif
 
 	id openGLContextAlloc = objc_msgSend_id((id)objc_getClass("NSOpenGLContext"), sel_registerName("alloc"));
 	id openGLContext = ((id (*)(id, SEL, id, id))objc_msgSend)(openGLContextAlloc, sel_registerName("initWithFormat:shareContext:"), pixelFormat, nil);
-	#ifndef ARC_AVAILABLE
-	objc_msgSend_void(openGLContext, sel_registerName("autorelease"));
-	#endif
 
 	objc_msgSend_void_id(openGLContext, sel_registerName("setView:"), contentView);
 	objc_msgSend_void_id(window, sel_registerName("makeKeyAndOrderFront:"), window);
@@ -377,8 +370,14 @@ void tigrFree(Tigr *bmp)
 		tigrFree(win->widgets);
 
 		id window = (id)bmp->handle;
+
 		if(!_tigrCocoaIsWindowClosed(window) && !terminated)
 			objc_msgSend_void(window, sel_registerName("close"));
+		
+		id wdg = objc_msgSend(window, sel_registerName("delegate"));
+		objc_msgSend_void(wdg, sel_registerName("release"));
+		objc_msgSend_void(win->gl.glContext, sel_registerName("release"));
+		objc_msgSend_void(window, sel_registerName("release"));
 	}
 	free(bmp->pix);
 	free(bmp);
@@ -713,13 +712,13 @@ void _tigrOnCocoaEvent(id event, id window)
 
 		uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
 		win->keys[_tigrKeyFromOSX(keyCode)] = 1;
-		break;
+		return;
 	}
 	case 11: // NSKeyUp
 	{
 		uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
 		win->keys[_tigrKeyFromOSX(keyCode)] = 0;
-		break;
+		return;
 	}
 	default:
 		break;
@@ -730,6 +729,9 @@ void _tigrOnCocoaEvent(id event, id window)
 
 void tigrUpdate(Tigr *bmp)
 {
+	popPool(autoreleasePool);
+	autoreleasePool = pushPool();
+
 	TigrInternal *win;
 	id openGLContext;
 	id window;
@@ -737,16 +739,29 @@ void tigrUpdate(Tigr *bmp)
 	window = (id)bmp->handle;
 	openGLContext = (id)win->gl.glContext;
 
-	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
+	if(terminated || _tigrCocoaIsWindowClosed(window)) {
+		return;
+	}
 
-	if(keyWindow == window)
+	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
+	unsigned long long eventMask = NSUIntegerMax;
+
+	if (keyWindow == window) {
 		memcpy(win->prev, win->keys, 256);
+	} else {
+		eventMask = ~(NSKeyDownMask | NSKeyUpMask);
+	}
 
 	id distantPast = objc_msgSend_id((id)objc_getClass("NSDate"), sel_registerName("distantPast"));
-	id event = ((id (*)(id, SEL, NSUInteger, id, id, BOOL))objc_msgSend)(NSApp, sel_registerName("nextEventMatchingMask:untilDate:inMode:dequeue:"), NSUIntegerMax, distantPast, NSDefaultRunLoopMode, YES);
-	_tigrOnCocoaEvent(event, keyWindow);
-	if(terminated || _tigrCocoaIsWindowClosed(window))
-		return;
+	id event = 0;
+	do {
+		event = ((id (*)(id, SEL, NSUInteger, id, id, BOOL))objc_msgSend)
+			(NSApp, sel_registerName("nextEventMatchingMask:untilDate:inMode:dequeue:"), eventMask, distantPast, NSDefaultRunLoopMode, YES);
+
+		if (event != 0) {
+			_tigrOnCocoaEvent(event, window);
+		}
+	} while (event != 0);
 
 	// do runloop stuff
 	objc_msgSend_void(NSApp, sel_registerName("updateWindows"));
@@ -828,20 +843,14 @@ int tigrKeyDown(Tigr *bmp, int key)
 {
 	TigrInternal *win;
 	assert(key < 256);
-	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
-	if(keyWindow != bmp->handle)
-		return 0;
 	win = tigrInternal(bmp);
-	return win->keys[key] && !win->prev[key];
+	return (win->keys[key] != 0) && (win->prev[key] == 0);
 }
 
 int tigrKeyHeld(Tigr *bmp, int key)
 {
 	TigrInternal *win;
 	assert(key < 256);
-	id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
-	if(keyWindow != bmp->handle)
-		return 0;
 	win = tigrInternal(bmp);
 	return win->keys[key];
 }
