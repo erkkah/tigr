@@ -4,10 +4,9 @@ TIGR is a tiny graphics library, for when you just need to draw something in a w
 
 TIGR is free to copy with no restrictions; see tigr.h
 
-NOTE: This repo contains a fork of TIGR with added Linux support. The original repo lives [here](https://bitbucket.org/rmitton/tigr/overview).
+> NOTE: This repo contains a fork of TIGR with added Linux support. The original repo lives [here](https://bitbucket.org/rmitton/tigr/overview).
 
-We don't want to supply every possible function you might ever need. There are already plenty of add-on libraries
-for doing sound, XML, 3D, whatever. Our goal is simply to allow you to easily throw together small 2D programs when you need them.
+We don't want to supply every possible function you might ever need. There are already plenty of add-on libraries for doing sound, XML, 3D, whatever. Our goal is simply to allow you to easily throw together small 2D programs when you need them.
 
 TIGR's core is a simple framebuffer library. On top of that, we provide a few helpers for the common tasks that 2D programs generally need:
 
@@ -15,19 +14,22 @@ TIGR's core is a simple framebuffer library. On top of that, we provide a few he
  - Direct access to bitmaps, no locking.
  - Basic drawing helpers (plot, line, blitter).
  - Text output.
- - PNG loading and saving code.
+ - PNG loading and saving.
 
 TIGR is designed to be small and independent. A typical 'hello world' is less than 40KB. We don't require you to distribute any additional DLLs; everything is baked right into your program.
+
+TIGR is cross platform, providing a unified API for Windows, OSX and Linux.
 
 ### How to set up TIGR ###
 
 TIGR is supplied as a single .h file.
+
 To use it, you just drop them right into your project. No fancy build systems, no DLL hell, no package managers.
 
 1. Grab  **tigr.c** and **tigr.h**
 2. Throw them into your project.
 3. Link with
-    - D3D9.LIB (or -ld3d9) on Windows
+    - -lopengl32 and -lgdi32 on Windows
     - -framework OpenGL and -framework Cocoa on OSX
     - -lGLU -lGL -lX11 on Linux
 4. You're done!
@@ -52,3 +54,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 ```
+
+### Known issues
+
+If you get GL errors when running on Linux with a Mesa driver, you might need to set `MESA_GL_VERSION_OVERRIDE=3.3` to force OpenGL version.
