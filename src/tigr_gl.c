@@ -307,14 +307,6 @@ void tigrGAPIDestroy(Tigr *bmp)
 	tigrCheckGLError("destroy");
 
 	if(tigrGAPIEnd(bmp) < 0) {tigrError(bmp, "Cannot deactivate OpenGL context.\n"); return;}
-
-	#ifdef _WIN32
-	if(gl->hglrc && !wglDeleteContext(gl->hglrc)) {tigrError(bmp, "Cannot delete OpenGL context.\n"); return;}
-	gl->hglrc = NULL;
-
-	if(gl->dc && !ReleaseDC((HWND)bmp->handle, gl->dc)) {tigrError(bmp, "Cannot release OpenGL device context.\n"); return;}
-	gl->dc = NULL;
-	#endif
 }
 
 void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x1, int y1, int x2, int y2)
@@ -416,10 +408,6 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	}
 
 	tigrCheckGLError("present");
-
-	#ifdef _WIN32
-	if(!SwapBuffers(gl->dc)) {tigrError(bmp, "Cannot swap OpenGL buffers.\n"); return;}
-	#endif
 
 	gl->gl_user_opengl_rendering = 0;
 }

@@ -184,6 +184,7 @@ void tigrUpdate(Tigr *bmp)
 	if (!tigrGAPIBegin(bmp))
 	{
 		tigrGAPIPresent(bmp, dw, dh);
+		SwapBuffers(win->gl.dc);
 		tigrGAPIEnd(bmp);
 	}
 
@@ -254,6 +255,7 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		if (!tigrGAPIBegin(bmp))
 		{
 			tigrGAPIPresent(bmp, dw, dh);
+			SwapBuffers(win->gl.dc);
 			tigrGAPIEnd(bmp);
 		}
 		ValidateRect(hWnd, NULL);
@@ -499,6 +501,17 @@ void tigrFree(Tigr *bmp)
 	{
 		TigrInternal *win = tigrInternal(bmp);
 		tigrGAPIDestroy(bmp);
+
+		if(win->gl.hglrc && !wglDeleteContext(win->gl.hglrc)) {
+			tigrError(bmp, "Cannot delete OpenGL context.\n");
+		}
+		win->gl.hglrc = NULL;
+
+		if(win->gl.dc && !ReleaseDC((HWND)bmp->handle, win->gl.dc)) {
+			tigrError(bmp, "Cannot release OpenGL device context.\n");
+		}
+		win->gl.dc = NULL;
+
 		DestroyWindow((HWND)bmp->handle);
 		free(win->wtitle);
 		tigrFree(win->widgets);
