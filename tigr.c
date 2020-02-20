@@ -2359,7 +2359,7 @@ extern id const NSDefaultRunLoopMode;
 #endif
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
-#error "Can't compile as objective-c code!
+#error "Can't compile as objective-c code!"
 #endif
 
 // ABI is a bit different between platforms
@@ -3240,17 +3240,17 @@ void initX11Stuff() {
 
 static int hasGLXExtension(Display* display, const char* wanted) {
 	const char* extensions = glXQueryExtensionsString(display, DefaultScreen(display));
-	char* mutable = strdup(extensions);
+	char* dup = strdup(extensions);
 	char* found = 0;
 
-	for (char* start = mutable; ;start = 0) {
+	for (char* start = dup; ;start = 0) {
 		found = strtok(start, " ");
 		if (found == 0 || strcmp(found, wanted) == 0) {
 			break;
 		}
 	}
 
-	free(mutable);
+	free(dup);
 	return found != 0;
 }
 
