@@ -1,4 +1,4 @@
-// TIGR - TIny GRaphics Library - v1.4
+// TIGR - TIny GRaphics Library - v1.5
 //        ^^   ^^
 //
 // rawr.
@@ -66,8 +66,8 @@ int tigrClosed(Tigr *bmp);
 // Displays a window's contents on-screen.
 void tigrUpdate(Tigr *bmp);
 
-// Optionally should be called before your OpenGL content and before tigrUpdate
-// returns 0 if OpenGL is available, returns <0 on error
+// Called before doing direct OpenGL calls and before tigrUpdate.
+// Returns non-zero if OpenGL is available.
 int tigrBeginOpenGL(Tigr *bmp);
 
 // Sets post-FX properties for a window.
