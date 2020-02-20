@@ -35,6 +35,7 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 
 #ifdef TIGR_GAPI_GL
 #ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #endif
 #ifdef _WIN32

@@ -376,7 +376,7 @@ void tigrFree(Tigr *bmp)
 		
 		id wdg = objc_msgSend(window, sel_registerName("delegate"));
 		objc_msgSend_void(wdg, sel_registerName("release"));
-		objc_msgSend_void(win->gl.glContext, sel_registerName("release"));
+		objc_msgSend_void((id)win->gl.glContext, sel_registerName("release"));
 		objc_msgSend_void(window, sel_registerName("release"));
 	}
 	free(bmp->pix);
