@@ -56,7 +56,7 @@ extern id const NSDefaultRunLoopMode;
 #endif
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
-#error "Can't compile as objective-c code!
+#error "Can't compile as objective-c code!"
 #endif
 
 // ABI is a bit different between platforms
