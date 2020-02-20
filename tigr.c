@@ -3852,7 +3852,7 @@ void tigrCheckGLError(const char *state)
 {
 	GLenum err = glGetError();
 	if(err != GL_NO_ERROR) {
-		printf("got gl error %x when was doing %s\n", err, state);
+		printf("got GL error %x when doing %s\n", err, state);
 	}
 }
 
