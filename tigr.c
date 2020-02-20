@@ -106,6 +106,7 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 
 #ifdef TIGR_GAPI_GL
 #ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #endif
 #ifdef _WIN32
@@ -2691,7 +2692,7 @@ void tigrFree(Tigr *bmp)
 		
 		id wdg = objc_msgSend(window, sel_registerName("delegate"));
 		objc_msgSend_void(wdg, sel_registerName("release"));
-		objc_msgSend_void(win->gl.glContext, sel_registerName("release"));
+		objc_msgSend_void((id)win->gl.glContext, sel_registerName("release"));
 		objc_msgSend_void(window, sel_registerName("release"));
 	}
 	free(bmp->pix);
