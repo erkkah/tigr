@@ -209,7 +209,6 @@ int tigrGAPIBegin(Tigr *bmp)
 	TigrInternal *win = tigrInternal(bmp);
 
 	return wglMakeCurrent(win->gl.dc, win->gl.hglrc) ? 0 : -1;
-	return 0;
 }
 
 int tigrGAPIEnd(Tigr *bmp)

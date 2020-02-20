@@ -79,9 +79,9 @@ int tigrBeginOpenGL(Tigr *bmp)
    #ifdef TIGR_GAPI_GL
    TigrInternal *win = tigrInternal(bmp);
    win->gl.gl_user_opengl_rendering = 1;
-   return tigrGAPIBegin(bmp);
+   return !tigrGAPIBegin(bmp);
    #else
-   return -1;
+   return 0;
    #endif
 }
 
