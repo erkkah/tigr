@@ -13,12 +13,14 @@
 
 static Display *dpy;
 static Window root;
-static GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 static XVisualInfo *vi;
 static Atom wmDeleteMessage;
 static XIM inputMethod;
+static GLXFBConfig fbConfig;
 
-void initX11Stuff() {
+PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = 0;
+
+static void initX11Stuff() {
 	static int done = 0;
 	if(!done) {
 		dpy = XOpenDisplay(NULL);
@@ -28,11 +30,39 @@ void initX11Stuff() {
 
 		root = DefaultRootWindow(dpy);
 
-		vi = glXChooseVisual(dpy, 0, att);
+		static int attribList[] = {
+        	GLX_RENDER_TYPE, GLX_RGBA_BIT,
+        	GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+        	GLX_DOUBLEBUFFER, 1,
+        	GLX_RED_SIZE, 1,
+        	GLX_GREEN_SIZE, 1,
+        	GLX_BLUE_SIZE, 1,
+        	None
+    	};
 
+    	int fbcCount = 0;
+    	GLXFBConfig *fbc = 
+			glXChooseFBConfig(
+				dpy, DefaultScreen(dpy),
+                attribList, &fbcCount
+			);
+		if (!fbc) {
+			tigrError(0, "Failed to choose FB config");
+		}
+		fbConfig = fbc[0];
+
+		vi = glXGetVisualFromFBConfig(dpy, fbConfig);
 	 	if(vi == NULL) {
 	 		tigrError(0, "No appropriate visual found");
 	 	}
+
+		GLXContext tmpCtx = glXCreateContext(dpy, vi, 0, GL_TRUE);
+		glXCreateContextAttribsARB =
+			(PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddressARB((const GLubyte*)"glXCreateContextAttribsARB");
+		glXDestroyContext(dpy, tmpCtx);
+		if (!glXCreateContextAttribsARB) {
+			tigrError(0, "Failed to get glXCreateContextAttribsARB");
+		}
 
 	 	inputMethod = XOpenIM(dpy, NULL, NULL, NULL);
 	 	if(inputMethod == NULL) {
@@ -135,6 +165,12 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	XSetWMProtocols(dpy, xwin, &wmDeleteMessage, 1);
 
 	glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+	int contextAttributes[] = {
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+		None
+	};
+	glc = glXCreateContextAttribsARB(dpy, fbConfig, NULL, GL_TRUE, contextAttributes);
 	glXMakeCurrent(dpy, xwin, glc);
 
 	setupVSync(dpy, xwin);
