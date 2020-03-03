@@ -54,7 +54,3 @@ int main(int argc, char *argv[])
     return 0;
 }
 ```
-
-### Known issues
-
-If you get GL errors when running on Linux with a Mesa driver, you might need to set `MESA_GL_VERSION_OVERRIDE=3.3` to force OpenGL version.
