@@ -38,7 +38,7 @@ To use it, you just drop them right into your project. No fancy build systems, n
 
 Here's an example Hello World program. For more information, just read **tigr.h** to see the APIs available.
 
-```
+```C
 #include "tigr.h"
 
 int main(int argc, char *argv[])
