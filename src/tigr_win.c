@@ -1,11 +1,11 @@
 #include "tigr_internal.h"
 #include <assert.h>
 
-#pragma comment(lib, "opengl32.lib") // glViewport
-#pragma comment(lib, "shell32.lib")  // CommandLineToArgvW
-#pragma comment(lib, "user32.lib")   // SetWindowLong
-#pragma comment(lib, "gdi32.lib")    // ChoosePixelFormat
-#pragma comment(lib, "advapi32.lib") // RegSetValueEx
+#pragma comment(lib, "opengl32") // glViewport
+#pragma comment(lib, "shell32")  // CommandLineToArgvW
+#pragma comment(lib, "user32")   // SetWindowLong
+#pragma comment(lib, "gdi32")    // ChoosePixelFormat
+#pragma comment(lib, "advapi32") // RegSetValueEx
 
 
 // not really windows stuff
@@ -29,6 +29,12 @@ int main(int argc, char *argv[]);
 
 #ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
 HKEY tigrRegKey;
+#endif
+
+#ifdef __TINYC__
+	#define CP_UTF8 65001
+	int WINAPI MultiByteToWideChar();
+	int WINAPI WideCharToMultiByte();
 #endif
 
 static wchar_t *unicode(const char *str)
