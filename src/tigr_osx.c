@@ -825,7 +825,7 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 	p = r.origin;
 
 	p.x = (p.x - win->pos[0]) / win->scale;
-	p.y = (adjustFrame.size.height - p.y - win->pos[1]) / win->scale;
+	p.y = bmp->h - (p.y - win->pos[1]) / win->scale;
 
 	if(x)
 		*x = p.x;
