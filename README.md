@@ -54,3 +54,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 ```
+
+### Known issues
+
+On OSX, seemingly depending on SDK version and if you use TIGR in an Xcode project, you need to define `OBJC_OLD_DISPATCH_PROTOTYPES` to avoid problems with `objc_msgSend` prototypes.
