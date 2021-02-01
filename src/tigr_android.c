@@ -19,6 +19,12 @@ extern void tigrMain();
 #define LOGE(...) \
     ((void)__android_log_print(ANDROID_LOG_ERROR, "tigr", __VA_ARGS__))
 
+typedef struct inputState {
+    int touchX;
+    int touchY;
+    int pointers;
+} InputState;
+
 static struct android_app* appState = 0;
 static ANativeWindow* window = 0;
 static int windowInstance = 0;
@@ -137,12 +143,22 @@ static void onAppCommand(struct android_app* app, int32_t cmd) {
 }
 
 static int32_t onInputEvent(struct android_app* app, AInputEvent* event) {
+    InputState* state = app->userData;
+
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
-        /*
-    engine->state.x = AMotionEvent_getX(event, 0);
-    engine->state.y = AMotionEvent_getY(event, 0);
-    return 1;
-        */
+        int32_t action = AMotionEvent_getAction(event);
+        int32_t actionCode = action & AMOTION_EVENT_ACTION_MASK;
+
+        state->touchX = AMotionEvent_getX(event, 0);
+        state->touchY = AMotionEvent_getY(event, 0);
+
+        if (actionCode == AMOTION_EVENT_ACTION_DOWN) {
+            state->pointers |= 1;
+        } else if (actionCode == AMOTION_EVENT_ACTION_UP) {
+            state->pointers &= ~1;
+        }
+
+        return 1;
     }
     return 0;
 }
@@ -178,6 +194,10 @@ void android_main(struct android_app* state) {
     state->onAppCmd = onAppCommand;
     state->onInputEvent = onInputEvent;
 
+    InputState inputState = {0, 0, 0};
+
+    state->userData = &inputState;
+
     while (window == 0) {
         if (!processEvents()) {
             return;
@@ -212,14 +232,6 @@ static Tigr* refreshWindow(Tigr* bmp) {
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     EGLContext context =
         eglCreateContext(display, config, NULL, contextAttribs);
-
-    if (w == -1) {
-        w = screenW;
-    }
-
-    if (h == -1) {
-        h = screenH;
-    }
 
     int scale = 1;
     if (flags & TIGR_AUTO) {
@@ -326,6 +338,11 @@ void tigrUpdate(Tigr* bmp) {
     }
 
     bmp = refreshWindow(bmp);
+
+    InputState* inputState = (InputState*) appState->userData;
+    win->mouseX = (inputState->touchX - win->pos[0]) / win->scale;
+    win->mouseY = (inputState->touchY - win->pos[1]) / win->scale;
+    win->mouseButtons = inputState->pointers;
 
     if (win->flags & TIGR_AUTO) {
         tigrResize(bmp, screenW / win->scale, screenH / win->scale);
