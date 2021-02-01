@@ -82,7 +82,7 @@ typedef struct {
 	#endif
 	#ifdef __linux__
 	#if __ANDROID__
-    EGLSurface surface;
+	int instance;
     EGLContext context;
 	#else
 	Display *dpy;
@@ -117,8 +117,6 @@ typedef struct {
 // ----------------------------------------------------------
 
 TigrInternal *tigrInternal(Tigr *bmp);
-
-void tigrDebug(const char *message, ...);
 
 void tigrGAPICreate(Tigr *bmp);
 void tigrGAPIDestroy(Tigr *bmp);

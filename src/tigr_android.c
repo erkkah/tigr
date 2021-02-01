@@ -24,7 +24,6 @@ static ANativeWindow *window = 0;
 static int windowInstance = 0;
 static EGLDisplay display = EGL_NO_DISPLAY;
 static EGLSurface surface = EGL_NO_SURFACE;
-static EGLContext context = EGL_NO_CONTEXT;
 static EGLint screenW = 0;
 static EGLint screenH = 0;
 static EGLConfig config = 0;
@@ -33,7 +32,6 @@ static const EGLint contextAttribs[] = {
     EGL_CONTEXT_MINOR_VERSION, 0,
     EGL_NONE
 };
-
 
 static EGLConfig getGLConfig(EGLDisplay display) {
     EGLConfig config = 0;
@@ -80,7 +78,6 @@ static EGLConfig getGLConfig(EGLDisplay display) {
 }
 
 static void setupOpenGL() {
-    // assert(display == EGL_NO_DISPLAY);
     assert(surface == EGL_NO_SURFACE);
     assert(window != 0);
 
@@ -88,45 +85,31 @@ static void setupOpenGL() {
         LOGD("eglGetDisplay");
         display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
         LOGD("Display: %p", display);
+        EGLBoolean status = eglInitialize(display, NULL, NULL);
+        if (!status) {
+            tigrError(NULL, "Failed to init EGL");
+        }
+        LOGD("getGLConfig");
+        config = getGLConfig(display);
     }
-    EGLBoolean status = eglInitialize(display, NULL, NULL);
-	if (!status) {
-		tigrError(NULL, "Failed to init EGL");
-	}
-
-    LOGD("getGLConfig");
-    config = getGLConfig(display);
 
     LOGD("eglCreateWindowSurface");
     surface = eglCreateWindowSurface(display, config, window, NULL);
     eglQuerySurface(display, surface, EGL_WIDTH, &screenW);
     eglQuerySurface(display, surface, EGL_HEIGHT, &screenH);
     LOGD("Screen is %d x %d", screenW, screenH);
-
-    LOGD("eglCreateContext");
-    context = eglCreateContext(display, config, NULL, contextAttribs);
 }
 
 static void tearDownOpenGL() {
     if (display != EGL_NO_DISPLAY) {
         eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-        if (context != EGL_NO_CONTEXT) {
-            eglDestroyContext(display, context);
-            context = EGL_NO_CONTEXT;
-        }
-
         if (surface != EGL_NO_SURFACE) {
             eglDestroySurface(display, surface);
             surface = EGL_NO_SURFACE;
-        }
-    
-        //eglTerminate(display);
-        //display = EGL_NO_DISPLAY;
+        }    
     }
 }
-
-static Tigr* globalHackWindow = 0;
 
 static void onAppCommand(struct android_app *app, int32_t cmd) {
     switch (cmd) {
@@ -139,32 +122,21 @@ static void onAppCommand(struct android_app *app, int32_t cmd) {
         */
         break;
     case APP_CMD_INIT_WINDOW:
-        tigrDebug("init window");
         if (app->window != NULL) {
             window = app->window;
             windowInstance++;
-            tigrDebug("window instance: %d", windowInstance);
             setupOpenGL();
         }
         break;
     case APP_CMD_TERM_WINDOW:
-        tigrDebug("term window");
-        tigrGAPIDestroy(globalHackWindow);
         tearDownOpenGL();
         window = 0;
         break;
     case APP_CMD_GAINED_FOCUS:
-        tigrDebug("gained focus");
         break;
     case APP_CMD_LOST_FOCUS:
-        tigrDebug("lost focus");
         // engine->animating = 0;
         // engine_draw_frame(engine);
-        break;
-    case APP_CMD_DESTROY:
-        tigrDebug("destroy");
-        eglTerminate(display);
-        display = EGL_NO_DISPLAY;
         break;
     default:
         break;
@@ -182,7 +154,7 @@ return 1;
     return 0;
 }
 
-static void processEvents() {
+static int processEvents() {
     int ident;
     int events;
     struct android_poll_source *source;
@@ -201,9 +173,11 @@ static void processEvents() {
         if (appState->destroyRequested != 0) {
             eglTerminate(display);
             display = EGL_NO_DISPLAY;
-            return;
+            return 0;
         }
     }
+
+    return 1;
 }
 
 void android_main(struct android_app *state) {
@@ -211,13 +185,12 @@ void android_main(struct android_app *state) {
     state->onAppCmd = onAppCommand;
     state->onInputEvent = onInputEvent;
 
-    LOGD("launching app, waiting for window");
-
     while (window == 0) {
-		processEvents();
+		if (!processEvents()) {
+            return;
+        }
     }
 
-    LOGD("got window, launching tigrMain");
     tigrMain();
 }
 
@@ -231,7 +204,6 @@ static Tigr* refreshWindow(Tigr* bmp) {
     LOGD("Refreshing window");
 
     win->instance = windowInstance;
-    win->context = context;
 
 	int scale = 1;
     if (win->flags & TIGR_AUTO) {
@@ -243,13 +215,6 @@ static Tigr* refreshWindow(Tigr* bmp) {
     }
 
     win->scale = tigrEnforceScale(scale, win->flags);
-
-    if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
-        LOGE("Unable to eglMakeCurrent");
-        return 0;
-    }
-
-    tigrGAPICreate(bmp);
 
     return bmp;
 }
@@ -307,8 +272,6 @@ Tigr* tigrWindow(int w, int h, const char *title, int flags) {
 
     tigrGAPICreate(bmp);
 
-    globalHackWindow = bmp;
-
     return bmp;
 }
 
@@ -362,7 +325,10 @@ void tigrUpdate(Tigr *bmp) {
     TigrInternal *win = tigrInternal(bmp);
     memcpy(win->prev, win->keys, 256);
 
-	processEvents();
+	if (!processEvents()) {
+        win->closed = 1;
+        return;
+    }
 
     if (window == 0) {
         return;
@@ -391,6 +357,10 @@ void tigrFree(Tigr *bmp) {
 
         eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         if (win->context != EGL_NO_CONTEXT) {
+            // Win closed means app windows has closed, and the call would fail.
+            if (!win->closed) {
+                tigrGAPIDestroy(bmp);
+            }
             eglDestroyContext(display, win->context);
         }
 
@@ -412,18 +382,6 @@ void tigrError(Tigr *bmp, const char *message, ...) {
     LOGE("tigr fatal error: %s\n", tmp);
 
     exit(1);
-}
-
-void tigrDebug(const char *message, ...) {
-    char tmp[1024];
-
-    va_list args;
-    va_start(args, message);
-    vsnprintf(tmp, sizeof(tmp), message, args);
-    tmp[sizeof(tmp) - 1] = 0;
-    va_end(args);
-
-    LOGD("%s", tmp);
 }
 
 float tigrTime() {
