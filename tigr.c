@@ -9,7 +9,8 @@
 #define __TIGR_UPSCALE_GL_VS_H__
 
 const unsigned char tigr_upscale_gl_vs[] = {
-   "#version 330 core\n"
+   "#version 300 es\n"
+   "precision mediump float;\n"
    "\n"
    "layout (location = 0) in vec2 pos_in;\n"
    "layout (location = 1) in vec2 uv_in;\n"
@@ -38,7 +39,8 @@ int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
 #define __TIGR_UPSCALE_GL_FS_H__
 
 const unsigned char tigr_upscale_gl_fs[] = {
-   "#version 330 core\n"
+   "#version 300 es\n"
+   "precision mediump float;\n"
    "\n"
    "in vec2 uv;\n"
    "\n"
@@ -49,7 +51,7 @@ const unsigned char tigr_upscale_gl_fs[] = {
    "\n"
    "void main()\n"
    "{\n"
-   "   vec2 tex_size = textureSize(image, 0);\n"
+   "   vec2 tex_size = vec2(textureSize(image, 0));\n"
    "   vec2 uv_blur = mix(floor(uv * tex_size) + 0.5, uv * tex_size, parameters.xy) / tex_size;\n"
    "   vec4 c = texture(image, uv_blur);\n"
    "   c.rgb *= mix(0.5, 1.0 - fract(uv.y * tex_size.y), parameters.z) * 2.0; //scanline\n"
@@ -99,7 +101,7 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #include <windows.h>
 #endif
 
-#ifdef __linux__
+#if __linux__ && !__ANDROID__
 #include<X11/X.h>
 #include<X11/Xlib.h>
 #endif
@@ -112,10 +114,14 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #ifdef _WIN32
 #include <GL/gl.h>
 #endif
-#ifdef __linux__
+#if __linux__ && !__ANDROID__
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include<GL/glx.h>
+#endif
+#if __ANDROID__
+#include <EGL/egl.h>
+#include <GLES3/gl3.h>
 #endif
 typedef struct {
 	#ifdef _WIN32
@@ -148,11 +154,17 @@ typedef struct {
 	RECT oldPos;
 	#endif
 	#ifdef __linux__
+	#if __ANDROID__
+    EGLSurface surface;
+    EGLContext context;
+	#else
 	Display *dpy;
 	Window win;
 	GLXContext glc;
 	XIC ic;
-	#endif
+	#endif // __ANDROID__
+	#endif // __linux__
+	
 
 	Tigr *widgets;
 	int widgetsWanted;
@@ -178,6 +190,8 @@ typedef struct {
 // ----------------------------------------------------------
 
 TigrInternal *tigrInternal(Tigr *bmp);
+
+void tigrDebug(const char *message, ...);
 
 void tigrGAPICreate(Tigr *bmp);
 void tigrGAPIDestroy(Tigr *bmp);
@@ -3212,7 +3226,7 @@ float tigrTime()
 
 //#include "tigr_internal.h"
 
-#ifdef __linux__
+#if __linux__ && !__ANDROID__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -3683,6 +3697,19 @@ void tigrError(Tigr *bmp, const char *message, ...)
 	exit(1);
 }
 
+void tigrDebug(const char *message, ...)
+{
+	char tmp[1024];
+
+	va_list args;
+	va_start(args, message);
+	vsnprintf(tmp, sizeof(tmp), message, args);
+	tmp[sizeof(tmp)-1] = 0;
+	va_end(args);
+
+	printf("%s\n", tmp);
+}
+
 float tigrTime()
 {
 	static double lastTime = 0;
@@ -3711,20 +3738,399 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 	}
 }
 
-#endif // __linux__
+#endif // __linux__ && !__ANDROID__
 
 //////// End of inlined file: tigr_linux.c ////////
+
+//////// Start of inlined file: tigr_android.c ////////
+
+//#include "tigr_internal.h"
+
+#ifdef __ANDROID__
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+
+#include <android/log.h>
+#include <android_native_app_glue.h>
+
+extern void tigrMain();
+
+#define LOGD(...)                                                              \
+    ((void)__android_log_print(ANDROID_LOG_DEBUG, "tigr", __VA_ARGS__))
+#define LOGI(...)                                                              \
+    ((void)__android_log_print(ANDROID_LOG_INFO, "tigr", __VA_ARGS__))
+#define LOGE(...)                                                              \
+    ((void)__android_log_print(ANDROID_LOG_ERROR, "tigr", __VA_ARGS__))
+
+static EGLDisplay getGLDisplay() {
+    static EGLDisplay display = EGL_NO_DISPLAY;
+    if (display != EGL_NO_DISPLAY) {
+        return display;
+    }
+
+    display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    EGLBoolean status = eglInitialize(display, NULL, NULL);
+	if (!status) {
+		tigrError(NULL, "Failed to init EGL");
+	}
+    return display;
+}
+
+static EGLConfig getGLConfig(EGLDisplay display) {
+    static EGLConfig config = 0;
+    if (config != 0) {
+        return config;
+    }
+
+    const EGLint attribs[] = {EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+                              EGL_BLUE_SIZE,    8,
+                              EGL_GREEN_SIZE,   8,
+                              EGL_RED_SIZE,     8,
+                              EGL_NONE};
+    EGLint numConfigs;
+
+    eglChooseConfig(display, attribs, NULL, 0, &numConfigs);
+    EGLConfig *supportedConfigs =
+        (EGLConfig *)malloc(sizeof(EGLConfig) * numConfigs);
+    eglChooseConfig(display, attribs, supportedConfigs, numConfigs,
+                    &numConfigs);
+
+    int i = 0;
+    for (; i < numConfigs; i++) {
+        EGLConfig *cfg = supportedConfigs[i];
+        EGLint r, g, b, d;
+        if (eglGetConfigAttrib(display, cfg, EGL_RED_SIZE, &r) &&
+            eglGetConfigAttrib(display, cfg, EGL_GREEN_SIZE, &g) &&
+            eglGetConfigAttrib(display, cfg, EGL_BLUE_SIZE, &b) &&
+            eglGetConfigAttrib(display, cfg, EGL_DEPTH_SIZE, &d) && r == 8 &&
+            g == 8 && b == 8 && d == 0) {
+
+            config = supportedConfigs[i];
+            break;
+        }
+    }
+
+    if (i == numConfigs) {
+        config = supportedConfigs[0];
+    }
+
+    if (config == NULL) {
+        LOGE("Unable to initialize EGLConfig");
+    }
+
+    free(supportedConfigs);
+
+    return config;
+}
+
+static ANativeWindow *window = 0;
+static struct android_app *appState = 0;
+
+static void onAppCommand(struct android_app *app, int32_t cmd) {
+    switch (cmd) {
+    case APP_CMD_SAVE_STATE:
+        /*
+    // The system has asked us to save our current state.  Do so.
+    engine->app->savedState = malloc(sizeof(struct saved_state));
+    *((struct saved_state*)engine->app->savedState) = engine->state;
+    engine->app->savedStateSize = sizeof(struct saved_state);
+        */
+        break;
+    case APP_CMD_INIT_WINDOW:
+        if (app->window != NULL) {
+            window = app->window;
+        }
+        break;
+    case APP_CMD_TERM_WINDOW:
+        eglTerminate(getGLDisplay());
+        break;
+    case APP_CMD_GAINED_FOCUS:
+        break;
+    case APP_CMD_LOST_FOCUS:
+        // engine->animating = 0;
+        // engine_draw_frame(engine);
+        break;
+    default:
+        break;
+    }
+}
+
+static int32_t onInputEvent(struct android_app *app, AInputEvent *event) {
+    if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
+        /*
+engine->state.x = AMotionEvent_getX(event, 0);
+engine->state.y = AMotionEvent_getY(event, 0);
+return 1;
+        */
+    }
+    return 0;
+}
+
+static void processEvents() {
+    int ident;
+    int events;
+    struct android_poll_source *source;
+
+    while ((ident = ALooper_pollAll(0, NULL, &events, (void **)&source)) >= 0) {
+        // Process this event.
+        if (source != NULL) {
+            source->process(appState, source);
+        }
+
+        // If a sensor has data, process it now.
+        if (ident == LOOPER_ID_USER) {
+        }
+
+        // Check if we are exiting.
+        if (appState->destroyRequested != 0) {
+            eglTerminate(getGLDisplay());
+            return;
+        }
+    }
+}
+
+void android_main(struct android_app *state) {
+    appState = state;
+    state->onAppCmd = onAppCommand;
+    state->onInputEvent = onInputEvent;
+
+    LOGD("launching app, waiting for window");
+
+    while (window == 0) {
+		processEvents();
+    }
+
+    LOGD("got window, launching tigrMain");
+    tigrMain();
+}
+
+Tigr *tigrWindow(int w, int h, const char *title, int flags) {
+    EGLDisplay display = getGLDisplay();
+	LOGD("Got display: %p", display);
+    EGLConfig config = getGLConfig(display);
+	LOGD("Got config: %p", config);
+    EGLSurface surface = eglCreateWindowSurface(display, config, window, NULL);
+	LOGD("Got surface: %p", surface);
+	const EGLint attribs[] = {
+		EGL_CONTEXT_MAJOR_VERSION, 3,
+		EGL_CONTEXT_MINOR_VERSION, 0,
+		EGL_NONE
+	};
+    EGLContext context = eglCreateContext(display, config, NULL, attribs);
+	LOGD("Got context: %p", context);
+
+    if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+        LOGE("Unable to eglMakeCurrent");
+        return 0;
+    }
+
+    EGLint screenW, screenH;
+    eglQuerySurface(display, surface, EGL_WIDTH, &screenW);
+    eglQuerySurface(display, surface, EGL_HEIGHT, &screenH);
+
+	LOGD("Screen is %d x %d", screenW, screenH);
+
+	int scale = 1;
+    if (flags & TIGR_AUTO) {
+        // Always use a 1:1 pixel size.
+        scale = 1;
+    } else {
+        // See how big we can make it and still fit on-screen.
+        scale = tigrCalcScale(w, h, screenW, screenH);
+    }
+
+    scale = tigrEnforceScale(scale, flags);
+
+    Tigr* bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
+    bmp->handle = (void *)window;
+
+    TigrInternal *win = tigrInternal(bmp);
+    win->surface = surface;
+    win->context = context;
+
+    win->shown = 0;
+    win->closed = 0;
+    win->scale = scale;
+
+    win->lastChar = 0;
+    win->flags = flags;
+    win->hblur = win->vblur = 0;
+    win->scanlines = 0.0f;
+    win->contrast = 1.0f;
+    win->widgetsWanted = 0;
+    win->widgetAlpha = 0;
+    win->widgetsScale = 0;
+    win->widgets = tigrBitmap(40, 14);
+    win->gl.gl_legacy = 0;
+
+    tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
+    tigrGAPICreate(bmp);
+    tigrGAPIBegin(bmp);
+
+    return bmp;
+}
+
+int tigrClosed(Tigr *bmp) {
+    TigrInternal *win = tigrInternal(bmp);
+    return win->closed;
+}
+
+int tigrGAPIBegin(Tigr *bmp) {
+    TigrInternal *win = tigrInternal(bmp);
+    if (eglMakeCurrent(getGLDisplay(), win->surface, win->surface,
+                       win->context) == EGL_FALSE) {
+        return -1;
+    }
+    return 0;
+}
+
+int tigrGAPIEnd(Tigr *bmp) {
+    (void)bmp;
+    eglMakeCurrent(getGLDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE,
+                   EGL_NO_CONTEXT);
+    return 0;
+}
+
+int tigrKeyDown(Tigr *bmp, int key) {
+    TigrInternal *win;
+    assert(key < 256);
+    win = tigrInternal(bmp);
+    return win->keys[key] && !win->prev[key];
+}
+
+int tigrKeyHeld(Tigr *bmp, int key) {
+    TigrInternal *win;
+    assert(key < 256);
+    win = tigrInternal(bmp);
+    return win->keys[key];
+}
+
+int tigrReadChar(Tigr *bmp) {
+    TigrInternal *win = tigrInternal(bmp);
+    int c = win->lastChar;
+    win->lastChar = 0;
+    return c;
+}
+
+static void tigrUpdateModifiers(TigrInternal *win) {
+    win->keys[TK_SHIFT] = win->keys[TK_LSHIFT] || win->keys[TK_RSHIFT];
+    win->keys[TK_CONTROL] = win->keys[TK_LCONTROL] || win->keys[TK_RCONTROL];
+    win->keys[TK_ALT] = win->keys[TK_LALT] || win->keys[TK_RALT];
+}
+
+void tigrUpdate(Tigr *bmp) {
+    TigrInternal *win = tigrInternal(bmp);
+    memcpy(win->prev, win->keys, 256);
+
+	processEvents();
+
+    int width = ANativeWindow_getWidth(window);
+    int height = ANativeWindow_getHeight(window);
+
+    if (win->flags & TIGR_AUTO) {
+        tigrResize(bmp, width / win->scale, height / win->scale);
+    } else {
+        win->scale = tigrEnforceScale(
+            tigrCalcScale(bmp->w, bmp->h, width, height), win->flags);
+    }
+
+    tigrPosition(bmp, win->scale, width, height, win->pos);
+    tigrGAPIPresent(bmp, width, height);
+    eglSwapBuffers(getGLDisplay(), win->surface);
+}
+
+void tigrFree(Tigr *bmp) {
+    if (bmp->handle) {
+        EGLDisplay display = getGLDisplay();
+        TigrInternal *win = tigrInternal(bmp);
+
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        if (win->context != EGL_NO_CONTEXT) {
+            eglDestroyContext(display, win->context);
+        }
+        if (win->surface != EGL_NO_SURFACE) {
+            eglDestroySurface(display, win->surface);
+        }
+
+        win->context = EGL_NO_CONTEXT;
+        win->surface = EGL_NO_SURFACE;
+    }
+    free(bmp->pix);
+    free(bmp);
+}
+
+void tigrError(Tigr *bmp, const char *message, ...) {
+    char tmp[1024];
+
+    va_list args;
+    va_start(args, message);
+    vsnprintf(tmp, sizeof(tmp), message, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
+
+    LOGE("tigr fatal error: %s\n", tmp);
+
+    exit(1);
+}
+
+void tigrDebug(const char *message, ...) {
+    char tmp[1024];
+
+    va_list args;
+    va_start(args, message);
+    vsnprintf(tmp, sizeof(tmp), message, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
+
+    LOGD("%s", tmp);
+}
+
+float tigrTime() {
+    static double lastTime = 0;
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    double now = (double)tv.tv_sec + (tv.tv_usec / 1000000.0);
+    double elapsed = lastTime == 0 ? 0 : now - lastTime;
+    lastTime = now;
+
+    return (float)elapsed;
+}
+
+void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons) {
+    TigrInternal *win = tigrInternal(bmp);
+    if (x) {
+        *x = win->mouseX;
+    }
+    if (y) {
+        *y = win->mouseY;
+    }
+    if (buttons) {
+        *buttons = win->mouseButtons;
+    }
+}
+
+#endif // __ANDROID__
+
+//////// End of inlined file: tigr_android.c ////////
 
 //////// Start of inlined file: tigr_gl.c ////////
 
 //#include "tigr_internal.h"
-#include <stdio.h> // TODO can we remove this and printf's later?
 #include <assert.h>
 
 #ifdef TIGR_GAPI_GL
-#ifdef __linux__
+#if __linux__
+#if __ANDROID__
+#include <GLES3/gl3.h>
+#else
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glext.h>
+#endif
 #endif
 extern const unsigned char tigr_upscale_gl_vs[], tigr_upscale_gl_fs[];
 extern int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size;
@@ -3907,7 +4313,7 @@ void tigrCheckGLError(const char *state)
 {
 	GLenum err = glGetError();
 	if(err != GL_NO_ERROR) {
-		printf("got GL error %x when doing %s\n", err, state);
+		tigrError(NULL, "got GL error %x when doing %s\n", err, state);
 	}
 }
 
@@ -3919,7 +4325,7 @@ void tigrCheckShaderErrors(GLuint object)
 	if(!success)
 	{
 		glGetShaderInfoLog(object, sizeof(info), NULL, info);
-		printf("shader compile error : %s\n", info);
+		tigrError(NULL, "shader compile error : %s\n", info);
 	}
 }
 
@@ -3931,7 +4337,7 @@ void tigrCheckProgramErrors(GLuint object)
 	if(!success)
 	{
 		glGetProgramInfoLog(object, sizeof(info), NULL, info);
-		printf("shader link error : %s\n", info);
+		tigrError(NULL, "shader link error : %s\n", info);
 	}
 }
 
@@ -3956,8 +4362,6 @@ void tigrGAPICreate(Tigr *bmp)
 		return;
 	tigrGL33Init(bmp);
 	#endif
-
-	//printf("ogl version %s\n", glGetString(GL_VERSION));
 
 	if(!gl->gl_legacy)
 	{
@@ -4031,7 +4435,7 @@ void tigrGAPIDestroy(Tigr *bmp)
 void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x1, int y1, int x2, int y2)
 {
 	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, bmp->pix);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp->pix);
 
 	if(!legacy)
 	{
@@ -4053,7 +4457,7 @@ void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x
 	}
 	else
 	{
-		#ifndef __APPLE__
+		#if !(__APPLE__  || __ANDROID__)
 		glBegin(GL_QUADS);
 		glTexCoord2f(1.0f, 0.0f); glVertex2i(x2, y1);
 		glTexCoord2f(0.0f, 0.0f); glVertex2i(x1, y1);
@@ -4096,7 +4500,7 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	}
 	else
 	{
-		#ifndef __APPLE__
+		#if !(__APPLE__  || __ANDROID__)
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, w, h, 0, -1.0f, 1.0f);

@@ -1,11 +1,14 @@
 #include "tigr_internal.h"
-#include <stdio.h> // TODO can we remove this and printf's later?
 #include <assert.h>
 
 #ifdef TIGR_GAPI_GL
-#ifdef __linux__
+#if __linux__
+#if __ANDROID__
+#include <GLES3/gl3.h>
+#else
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glext.h>
+#endif
 #endif
 extern const unsigned char tigr_upscale_gl_vs[], tigr_upscale_gl_fs[];
 extern int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size;
@@ -188,7 +191,7 @@ void tigrCheckGLError(const char *state)
 {
 	GLenum err = glGetError();
 	if(err != GL_NO_ERROR) {
-		printf("got GL error %x when doing %s\n", err, state);
+		tigrError(NULL, "got GL error %x when doing %s\n", err, state);
 	}
 }
 
@@ -200,7 +203,7 @@ void tigrCheckShaderErrors(GLuint object)
 	if(!success)
 	{
 		glGetShaderInfoLog(object, sizeof(info), NULL, info);
-		printf("shader compile error : %s\n", info);
+		tigrError(NULL, "shader compile error : %s\n", info);
 	}
 }
 
@@ -212,7 +215,7 @@ void tigrCheckProgramErrors(GLuint object)
 	if(!success)
 	{
 		glGetProgramInfoLog(object, sizeof(info), NULL, info);
-		printf("shader link error : %s\n", info);
+		tigrError(NULL, "shader link error : %s\n", info);
 	}
 }
 
@@ -237,8 +240,6 @@ void tigrGAPICreate(Tigr *bmp)
 		return;
 	tigrGL33Init(bmp);
 	#endif
-
-	//printf("ogl version %s\n", glGetString(GL_VERSION));
 
 	if(!gl->gl_legacy)
 	{
@@ -312,7 +313,7 @@ void tigrGAPIDestroy(Tigr *bmp)
 void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x1, int y1, int x2, int y2)
 {
 	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_BGRA, GL_UNSIGNED_BYTE, bmp->pix);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp->pix);
 
 	if(!legacy)
 	{
@@ -334,7 +335,7 @@ void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x
 	}
 	else
 	{
-		#ifndef __APPLE__
+		#if !(__APPLE__  || __ANDROID__)
 		glBegin(GL_QUADS);
 		glTexCoord2f(1.0f, 0.0f); glVertex2i(x2, y1);
 		glTexCoord2f(0.0f, 0.0f); glVertex2i(x1, y1);
@@ -377,7 +378,7 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 	}
 	else
 	{
-		#ifndef __APPLE__
+		#if !(__APPLE__  || __ANDROID__)
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, w, h, 0, -1.0f, 1.0f);

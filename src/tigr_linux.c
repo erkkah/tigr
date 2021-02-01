@@ -1,6 +1,6 @@
 #include "tigr_internal.h"
 
-#ifdef __linux__
+#if __linux__ && !__ANDROID__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -471,6 +471,19 @@ void tigrError(Tigr *bmp, const char *message, ...)
 	exit(1);
 }
 
+void tigrDebug(const char *message, ...)
+{
+	char tmp[1024];
+
+	va_list args;
+	va_start(args, message);
+	vsnprintf(tmp, sizeof(tmp), message, args);
+	tmp[sizeof(tmp)-1] = 0;
+	va_end(args);
+
+	printf("%s\n", tmp);
+}
+
 float tigrTime()
 {
 	static double lastTime = 0;
@@ -499,4 +512,4 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 	}
 }
 
-#endif // __linux__
+#endif // __linux__ && !__ANDROID__

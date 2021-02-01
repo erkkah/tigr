@@ -2,7 +2,8 @@
 #define __TIGR_UPSCALE_GL_VS_H__
 
 const unsigned char tigr_upscale_gl_vs[] = {
-   "#version 330 core\n"
+   "#version 300 es\n"
+   "precision mediump float;\n"
    "\n"
    "layout (location = 0) in vec2 pos_in;\n"
    "layout (location = 1) in vec2 uv_in;\n"
