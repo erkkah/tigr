@@ -28,7 +28,7 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #include <windows.h>
 #endif
 
-#ifdef __linux__
+#if __linux__ && !__ANDROID__
 #include<X11/X.h>
 #include<X11/Xlib.h>
 #endif
@@ -41,10 +41,14 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #ifdef _WIN32
 #include <GL/gl.h>
 #endif
-#ifdef __linux__
+#if __linux__ && !__ANDROID__
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include<GL/glx.h>
+#endif
+#if __ANDROID__
+#include <EGL/egl.h>
+#include <GLES3/gl3.h>
 #endif
 typedef struct {
 	#ifdef _WIN32
@@ -77,11 +81,17 @@ typedef struct {
 	RECT oldPos;
 	#endif
 	#ifdef __linux__
+	#if __ANDROID__
+    EGLSurface surface;
+    EGLContext context;
+	#else
 	Display *dpy;
 	Window win;
 	GLXContext glc;
 	XIC ic;
-	#endif
+	#endif // __ANDROID__
+	#endif // __linux__
+	
 
 	Tigr *widgets;
 	int widgetsWanted;
@@ -107,6 +117,8 @@ typedef struct {
 // ----------------------------------------------------------
 
 TigrInternal *tigrInternal(Tigr *bmp);
+
+void tigrDebug(const char *message, ...);
 
 void tigrGAPICreate(Tigr *bmp);
 void tigrGAPIDestroy(Tigr *bmp);

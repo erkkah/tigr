@@ -2,7 +2,8 @@
 #define __TIGR_UPSCALE_GL_FS_H__
 
 const unsigned char tigr_upscale_gl_fs[] = {
-   "#version 330 core\n"
+   "#version 300 es\n"
+   "precision mediump float;\n"
    "\n"
    "in vec2 uv;\n"
    "\n"
@@ -13,7 +14,7 @@ const unsigned char tigr_upscale_gl_fs[] = {
    "\n"
    "void main()\n"
    "{\n"
-   "   vec2 tex_size = textureSize(image, 0);\n"
+   "   vec2 tex_size = vec2(textureSize(image, 0));\n"
    "   vec2 uv_blur = mix(floor(uv * tex_size) + 0.5, uv * tex_size, parameters.xy) / tex_size;\n"
    "   vec4 c = texture(image, uv_blur);\n"
    "   c.rgb *= mix(0.5, 1.0 - fract(uv.y * tex_size.y), parameters.z) * 2.0; //scanline\n"

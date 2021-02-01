@@ -33,10 +33,10 @@ extern "C" {
 
 // This struct contains one pixel.
 typedef struct {
-	unsigned char b, g, r, a;
+	unsigned char r, g, b, a;
 } TPixel;
 
-// Windows flags.
+// Window flags.
 #define TIGR_FIXED		0	// window's bitmap is a fixed size (default)
 #define TIGR_AUTO		1	// window's bitmap will automatically resize after each tigrUpdate
 #define TIGR_2X			2	// always enforce (at least) 2X pixel scale
