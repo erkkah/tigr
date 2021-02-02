@@ -278,8 +278,9 @@ void tigrGAPICreate(Tigr *bmp)
 	}
 
 	// create textures
-	if(gl->gl_legacy)
+	if(gl->gl_legacy) {
 		glEnable(GL_TEXTURE_2D);
+	}
 	glGenTextures(2, gl->tex);
 	for(int i = 0; i < 2; ++i) {
 		glBindTexture(GL_TEXTURE_2D, gl->tex[i]);

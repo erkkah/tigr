@@ -8,6 +8,7 @@
 #include <sys/time.h>
 
 #include <android/log.h>
+#include <android/window.h>
 #include <android_native_app_glue.h>
 
 extern void tigrMain();
@@ -191,6 +192,9 @@ static int processEvents() {
 
 void android_main(struct android_app* state) {
     appState = state;
+
+    ANativeActivity_setWindowFlags(state->activity, AWINDOW_FLAG_FULLSCREEN, 0);
+
     state->onAppCmd = onAppCommand;
     state->onInputEvent = onInputEvent;
 
@@ -263,7 +267,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
-    win->widgets = tigrBitmap(40, 14);
+    win->widgets = 0;
     win->gl.gl_legacy = 0;
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
