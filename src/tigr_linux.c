@@ -196,7 +196,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	win->widgetsWanted = 0;
 	win->widgetAlpha = 0;
 	win->widgetsScale = 0;
-	win->widgets = tigrBitmap(40, 14);
+	win->widgets = 0;
 	win->gl.gl_legacy = 0;
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);

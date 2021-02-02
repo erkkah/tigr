@@ -2682,7 +2682,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->widgetsWanted = 0;
 	win->widgetAlpha = 0;
 	win->widgetsScale = 0;
-	win->widgets = tigrBitmap(40, 14);
+	win->widgets = 0;
 	win->gl.gl_legacy = 0;
 	win->gl.glContext = openGLContext;
 	win->mouseButtons = 0;
@@ -3420,7 +3420,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	win->widgetsWanted = 0;
 	win->widgetAlpha = 0;
 	win->widgetsScale = 0;
-	win->widgets = tigrBitmap(40, 14);
+	win->widgets = 0;
 	win->gl.gl_legacy = 0;
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
@@ -3739,6 +3739,7 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 #include <sys/time.h>
 
 #include <android/log.h>
+#include <android/window.h>
 #include <android_native_app_glue.h>
 
 extern void tigrMain();
@@ -3922,6 +3923,9 @@ static int processEvents() {
 
 void android_main(struct android_app* state) {
     appState = state;
+
+    ANativeActivity_setWindowFlags(state->activity, AWINDOW_FLAG_FULLSCREEN, 0);
+
     state->onAppCmd = onAppCommand;
     state->onInputEvent = onInputEvent;
 
@@ -3964,14 +3968,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     EGLContext context =
         eglCreateContext(display, config, NULL, contextAttribs);
 
-    if (w == -1) {
-        w = screenW;
-    }
-
-    if (h == -1) {
-        h = screenH;
-    }
-
     int scale = 1;
     if (flags & TIGR_AUTO) {
         // Always use a 1:1 pixel size.
@@ -4002,7 +3998,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
-    win->widgets = tigrBitmap(40, 14);
+    win->widgets = 0;
     win->gl.gl_legacy = 0;
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
@@ -4443,8 +4439,9 @@ void tigrGAPICreate(Tigr *bmp)
 	}
 
 	// create textures
-	if(gl->gl_legacy)
+	if(gl->gl_legacy) {
 		glEnable(GL_TEXTURE_2D);
+	}
 	glGenTextures(2, gl->tex);
 	for(int i = 0; i < 2; ++i) {
 		glBindTexture(GL_TEXTURE_2D, gl->tex[i]);
