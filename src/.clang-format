@@ -3,3 +3,6 @@ IndentWidth: 4
 AllowAllArgumentsOnNextLine: true
 Cpp11BracedListStyle: false
 ColumnLimit: 120
+AllowShortFunctionsOnASingleLine: None
+AllowShortLambdasOnASingleLine: None
+SortIncludes: false
