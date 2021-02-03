@@ -3319,6 +3319,43 @@ float tigrTime() {
 
 //////// End of inlined file: tigr_osx.c ////////
 
+//////// Start of inlined file: tigr_android.h ////////
+
+#ifndef TIGR_ANDROID_H
+#define TIGR_ANDROID_H
+#ifdef __ANDROID__
+
+#include <android/input.h>
+#include <android/native_window.h>
+
+typedef enum {
+    AE_INPUT,
+    AE_WINDOW_CREATED,
+    AE_WINDOW_DESTROYED,
+    AE_ACTIVITY_DESTROYED,
+} AndroidEventType;
+
+typedef struct {
+    AndroidEventType type;
+    AInputEvent* inputEvent;
+    ANativeWindow* window;
+} AndroidEvent;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int android_pollEvent(int (*eventHandler)(AndroidEvent, void*), void*);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // __ANDROID__
+#endif  // TIGR_ANDROID_H
+
+//////// End of inlined file: tigr_android.h ////////
+
 //////// Start of inlined file: tigr_linux.c ////////
 
 //#include "tigr_internal.h"
@@ -3838,24 +3875,21 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 #include <sys/time.h>
 
 #include <android/log.h>
-#include <android/window.h>
-#include <android_native_app_glue.h>
-
-extern void tigrMain(struct android_app* app);
+#include <android/native_window.h>
 
 #define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "tigr", __VA_ARGS__))
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "tigr", __VA_ARGS__))
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "tigr", __VA_ARGS__))
 
-typedef struct inputState {
+typedef struct {
     int touchX;
     int touchY;
     int pointers;
 } InputState;
 
-static struct android_app* appState = 0;
 static ANativeWindow* window = 0;
 static int windowInstance = 0;
+static InputState inputState = { 0, 0, 0 };
 static EGLDisplay display = EGL_NO_DISPLAY;
 static EGLSurface surface = EGL_NO_SURFACE;
 static EGLint screenW = 0;
@@ -3930,102 +3964,65 @@ static void tearDownOpenGL() {
     }
 }
 
-static void onAppCommand(struct android_app* app, int32_t cmd) {
-    switch (cmd) {
-        case APP_CMD_SAVE_STATE:
-            /*
-        // The system has asked us to save our current state.  Do so.
-        engine->app->savedState = malloc(sizeof(struct saved_state));
-        *((struct saved_state*)engine->app->savedState) = engine->state;
-        engine->app->savedStateSize = sizeof(struct saved_state);
-            */
-            break;
-        case APP_CMD_INIT_WINDOW:
-            if (app->window != NULL) {
-                window = app->window;
-                windowInstance++;
-                setupOpenGL();
-            }
-            break;
-        case APP_CMD_TERM_WINDOW:
-            tearDownOpenGL();
-            window = 0;
-            break;
-        case APP_CMD_GAINED_FOCUS:
-            break;
-        case APP_CMD_LOST_FOCUS:
-            // engine->animating = 0;
-            // engine_draw_frame(engine);
-            break;
-        default:
-            break;
-    }
-}
-
-static int32_t onInputEvent(struct android_app* app, AInputEvent* event) {
-    InputState* state = app->userData;
-
+static int processInputEvent(AInputEvent* event) {
     if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
         int32_t action = AMotionEvent_getAction(event);
         int32_t actionCode = action & AMOTION_EVENT_ACTION_MASK;
 
-        state->touchX = AMotionEvent_getX(event, 0);
-        state->touchY = AMotionEvent_getY(event, 0);
+        inputState.touchX = AMotionEvent_getX(event, 0);
+        inputState.touchY = AMotionEvent_getY(event, 0);
 
         if (actionCode == AMOTION_EVENT_ACTION_DOWN) {
-            state->pointers |= 1;
+            inputState.pointers |= 1;
         } else if (actionCode == AMOTION_EVENT_ACTION_UP) {
-            state->pointers &= ~1;
+            inputState.pointers &= ~1;
         }
-
         return 1;
     }
     return 0;
 }
 
-static int processEvents() {
-    int ident;
-    int events;
-    struct android_poll_source* source;
+static int handleEvent(AndroidEvent event, void* donePtr) {
+    int* done = donePtr;
 
-    while ((ident = ALooper_pollAll(0, NULL, &events, (void**)&source)) >= 0) {
-        // Process this event.
-        if (source != NULL) {
-            source->process(appState, source);
-        }
+    switch (event.type) {
+        case AE_WINDOW_CREATED:
+            window = event.window;
+            windowInstance++;
+            setupOpenGL();
+            break;
 
-        // If a sensor has data, process it now.
-        if (ident == LOOPER_ID_USER) {
-        }
+        case AE_WINDOW_DESTROYED:
+            tearDownOpenGL();
+            window = 0;
+            break;
 
-        // Check if we are exiting.
-        if (appState->destroyRequested != 0) {
+        case AE_INPUT:
+            return processInputEvent(event.inputEvent);
+
+        case AE_ACTIVITY_DESTROYED:
             eglTerminate(display);
             display = EGL_NO_DISPLAY;
+            *done = 1;
+
+        default:
+            LOGE("Unhandled event type: %d", event.type);
             return 0;
-        }
     }
 
     return 1;
 }
 
-void android_main(struct android_app* app) {
-    appState = app;
+static int processEvents() {
+    int done = 0;
 
-    app->onAppCmd = onAppCommand;
-    app->onInputEvent = onInputEvent;
-
-    InputState inputState = { 0, 0, 0 };
-
-    app->userData = &inputState;
-
-    while (window == 0) {
-        if (!processEvents()) {
-            return;
+    while (android_pollEvent(handleEvent, &done)) {
+        if (done) {
+            return 0;
         }
     }
 
-    tigrMain(app);
+    return 1;
 }
 
 static Tigr* refreshWindow(Tigr* bmp) {
@@ -4051,6 +4048,12 @@ static Tigr* refreshWindow(Tigr* bmp) {
 }
 
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
+    while (window == NULL) {
+        if (!processEvents()) {
+            return NULL;
+        }
+    }
+
     EGLContext context = eglCreateContext(display, config, NULL, contextAttribs);
 
     int scale = 1;
@@ -4159,10 +4162,9 @@ void tigrUpdate(Tigr* bmp) {
 
     bmp = refreshWindow(bmp);
 
-    InputState* inputState = (InputState*)appState->userData;
-    win->mouseX = (inputState->touchX - win->pos[0]) / win->scale;
-    win->mouseY = (inputState->touchY - win->pos[1]) / win->scale;
-    win->mouseButtons = inputState->pointers;
+    win->mouseX = (inputState.touchX - win->pos[0]) / win->scale;
+    win->mouseY = (inputState.touchY - win->pos[1]) / win->scale;
+    win->mouseButtons = inputState.pointers;
 
     if (win->flags & TIGR_AUTO) {
         tigrResize(bmp, screenW / win->scale, screenH / win->scale);

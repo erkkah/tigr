@@ -12,6 +12,7 @@
 #include "tigr_print.c"
 #include "tigr_win.c"
 #include "tigr_osx.c"
+#include "tigr_android.h"
 #include "tigr_linux.c"
 #include "tigr_android.c"
 #include "tigr_gl.c"
