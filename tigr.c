@@ -3841,14 +3841,11 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 #include <android/window.h>
 #include <android_native_app_glue.h>
 
-extern void tigrMain();
+extern void tigrMain(struct android_app* app);
 
-#define LOGD(...) \
-    ((void)__android_log_print(ANDROID_LOG_DEBUG, "tigr", __VA_ARGS__))
-#define LOGI(...) \
-    ((void)__android_log_print(ANDROID_LOG_INFO, "tigr", __VA_ARGS__))
-#define LOGE(...) \
-    ((void)__android_log_print(ANDROID_LOG_ERROR, "tigr", __VA_ARGS__))
+#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "tigr", __VA_ARGS__))
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "tigr", __VA_ARGS__))
+#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "tigr", __VA_ARGS__))
 
 typedef struct inputState {
     int touchX;
@@ -3864,25 +3861,18 @@ static EGLSurface surface = EGL_NO_SURFACE;
 static EGLint screenW = 0;
 static EGLint screenH = 0;
 static EGLConfig config = 0;
-static const EGLint contextAttribs[] = { EGL_CONTEXT_MAJOR_VERSION, 3,
-                                         EGL_CONTEXT_MINOR_VERSION, 0,
-                                         EGL_NONE };
+static const EGLint contextAttribs[] = { EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 0, EGL_NONE };
 
 static EGLConfig getGLConfig(EGLDisplay display) {
     EGLConfig config = 0;
 
-    const EGLint attribs[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-                               EGL_BLUE_SIZE,    8,
-                               EGL_GREEN_SIZE,   8,
-                               EGL_RED_SIZE,     8,
+    const EGLint attribs[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_RED_SIZE, 8,
                                EGL_NONE };
     EGLint numConfigs;
 
     eglChooseConfig(display, attribs, NULL, 0, &numConfigs);
-    EGLConfig* supportedConfigs =
-        (EGLConfig*)malloc(sizeof(EGLConfig) * numConfigs);
-    eglChooseConfig(display, attribs, supportedConfigs, numConfigs,
-                    &numConfigs);
+    EGLConfig* supportedConfigs = (EGLConfig*)malloc(sizeof(EGLConfig) * numConfigs);
+    eglChooseConfig(display, attribs, supportedConfigs, numConfigs, &numConfigs);
 
     int i = 0;
     for (; i < numConfigs; i++) {
@@ -3891,8 +3881,7 @@ static EGLConfig getGLConfig(EGLDisplay display) {
         if (eglGetConfigAttrib(display, cfg, EGL_RED_SIZE, &r) &&
             eglGetConfigAttrib(display, cfg, EGL_GREEN_SIZE, &g) &&
             eglGetConfigAttrib(display, cfg, EGL_BLUE_SIZE, &b) &&
-            eglGetConfigAttrib(display, cfg, EGL_DEPTH_SIZE, &d) && r == 8 &&
-            g == 8 && b == 8 && d == 0) {
+            eglGetConfigAttrib(display, cfg, EGL_DEPTH_SIZE, &d) && r == 8 && g == 8 && b == 8 && d == 0) {
             config = supportedConfigs[i];
             break;
         }
@@ -4020,17 +4009,15 @@ static int processEvents() {
     return 1;
 }
 
-void android_main(struct android_app* state) {
-    appState = state;
+void android_main(struct android_app* app) {
+    appState = app;
 
-    ANativeActivity_setWindowFlags(state->activity, AWINDOW_FLAG_FULLSCREEN, 0);
+    app->onAppCmd = onAppCommand;
+    app->onInputEvent = onInputEvent;
 
-    state->onAppCmd = onAppCommand;
-    state->onInputEvent = onInputEvent;
+    InputState inputState = { 0, 0, 0 };
 
-    InputState inputState = {0, 0, 0};
-
-    state->userData = &inputState;
+    app->userData = &inputState;
 
     while (window == 0) {
         if (!processEvents()) {
@@ -4038,7 +4025,7 @@ void android_main(struct android_app* state) {
         }
     }
 
-    tigrMain();
+    tigrMain(app);
 }
 
 static Tigr* refreshWindow(Tigr* bmp) {
@@ -4064,8 +4051,7 @@ static Tigr* refreshWindow(Tigr* bmp) {
 }
 
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
-    EGLContext context =
-        eglCreateContext(display, config, NULL, contextAttribs);
+    EGLContext context = eglCreateContext(display, config, NULL, contextAttribs);
 
     int scale = 1;
     if (flags & TIGR_AUTO) {
@@ -4173,7 +4159,7 @@ void tigrUpdate(Tigr* bmp) {
 
     bmp = refreshWindow(bmp);
 
-    InputState* inputState = (InputState*) appState->userData;
+    InputState* inputState = (InputState*)appState->userData;
     win->mouseX = (inputState->touchX - win->pos[0]) / win->scale;
     win->mouseY = (inputState->touchY - win->pos[1]) / win->scale;
     win->mouseButtons = inputState->pointers;
@@ -4181,8 +4167,7 @@ void tigrUpdate(Tigr* bmp) {
     if (win->flags & TIGR_AUTO) {
         tigrResize(bmp, screenW / win->scale, screenH / win->scale);
     } else {
-        win->scale = tigrEnforceScale(
-            tigrCalcScale(bmp->w, bmp->h, screenW, screenH), win->flags);
+        win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, screenW, screenH), win->flags);
     }
 
     tigrPosition(bmp, win->scale, screenW, screenH, win->pos);
