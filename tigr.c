@@ -3327,6 +3327,7 @@ float tigrTime() {
 
 #include <android/input.h>
 #include <android/native_window.h>
+#include <EGL/egl.h>
 
 typedef enum {
     AE_INPUT,
@@ -3346,6 +3347,7 @@ extern "C" {
 #endif
 
 int android_pollEvent(int (*eventHandler)(AndroidEvent, void*), void*);
+void android_swap(EGLDisplay display, EGLSurface surface);
 
 #ifdef __cplusplus
 }
@@ -4175,7 +4177,7 @@ void tigrUpdate(Tigr* bmp) {
     tigrPosition(bmp, win->scale, screenW, screenH, win->pos);
     tigrGAPIBegin(bmp);
     tigrGAPIPresent(bmp, screenW, screenH);
-    eglSwapBuffers(display, surface);
+    android_swap(display, surface);
     tigrGAPIEnd(bmp);
 }
 

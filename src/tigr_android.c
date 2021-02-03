@@ -308,7 +308,7 @@ void tigrUpdate(Tigr* bmp) {
     tigrPosition(bmp, win->scale, screenW, screenH, win->pos);
     tigrGAPIBegin(bmp);
     tigrGAPIPresent(bmp, screenW, screenH);
-    eglSwapBuffers(display, surface);
+    android_swap(display, surface);
     tigrGAPIEnd(bmp);
 }
 
