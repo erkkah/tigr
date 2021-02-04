@@ -25,6 +25,7 @@ extern "C" {
 
 int android_pollEvent(int (*eventHandler)(AndroidEvent, void*), void*);
 void android_swap(EGLDisplay display, EGLSurface surface);
+void* android_loadAsset(const char* filename, int* outLength);
 
 #ifdef __cplusplus
 }

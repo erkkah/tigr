@@ -30,6 +30,15 @@ static EGLint screenH = 0;
 static EGLConfig config = 0;
 static const EGLint contextAttribs[] = { EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 0, EGL_NONE };
 
+void* tigrReadFile(const char* fileName, int* length) {
+    if (length != 0) {
+        *length = 0;
+    }
+
+    void* asset = android_loadAsset(fileName, length);
+    return asset;
+}
+
 static EGLConfig getGLConfig(EGLDisplay display) {
     EGLConfig config = 0;
 
