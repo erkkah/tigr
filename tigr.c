@@ -3903,7 +3903,7 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include <android/log.h>
 #include <android/native_window.h>
@@ -3926,6 +3926,7 @@ static EGLSurface surface = EGL_NO_SURFACE;
 static EGLint screenW = 0;
 static EGLint screenH = 0;
 static EGLConfig config = 0;
+
 static const EGLint contextAttribs[] = { EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 0, EGL_NONE };
 
 void* tigrReadFile(const char* fileName, int* length) {
@@ -3975,7 +3976,7 @@ static EGLConfig getGLConfig(EGLDisplay display) {
 }
 
 static void setupOpenGL() {
-    assert(surface == EGL_NO_SURFACE);
+    // assert(surface == EGL_NO_SURFACE);
     assert(window != 0);
 
     if (display == EGL_NO_DISPLAY) {
@@ -4256,10 +4257,10 @@ void tigrError(Tigr* bmp, const char* message, ...) {
 float tigrTime() {
     static double lastTime = 0;
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
 
-    double now = (double)tv.tv_sec + (tv.tv_usec / 1000000.0);
+    double now = (double)ts.tv_sec + (ts.tv_nsec / 1000000000.0);
     double elapsed = lastTime == 0 ? 0 : now - lastTime;
     lastTime = now;
 
