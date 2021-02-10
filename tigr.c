@@ -3935,6 +3935,7 @@ static struct {
     EGLint screenW;
     EGLint screenH;
     EGLConfig config;
+    double lastTime;
     int closed;
 } gState = {
     .window = 0,
@@ -3944,6 +3945,7 @@ static struct {
     .screenW = 0,
     .screenH = 0,
     .config = 0,
+    .lastTime = 0,
     .closed = 0,
 };
 
@@ -3994,6 +3996,7 @@ void tigr_android_create() {
     gState.window = 0;
     gState.inputState.pointers = 0;
     gState.surface = EGL_NO_SURFACE;
+    gState.lastTime = 0;
 
     if (gState.display == EGL_NO_DISPLAY) {
         gState.display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -4296,14 +4299,12 @@ void tigrError(Tigr* bmp, const char* message, ...) {
 }
 
 float tigrTime() {
-    static double lastTime = 0;
-
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     double now = (double)ts.tv_sec + (ts.tv_nsec / 1000000000.0);
-    double elapsed = lastTime == 0 ? 0 : now - lastTime;
-    lastTime = now;
+    double elapsed = gState.lastTime == 0 ? 0 : now - gState.lastTime;
+    gState.lastTime = now;
 
     return (float)elapsed;
 }
