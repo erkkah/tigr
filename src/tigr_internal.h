@@ -82,7 +82,6 @@ typedef struct {
 	#endif
 	#ifdef __linux__
 	#if __ANDROID__
-	int instance;
     EGLContext context;
 	#else
 	Display *dpy;
