@@ -1,4 +1,4 @@
-# README
+# TIGR - TIny GRaphics library
 
 TIGR is a tiny graphics library, for when you just need to draw something in a window without any fuss. TIGR doesn't want to do everything. We don't want to bloat your program with hundreds of extra DLLs and megabytes of frameworks.
 
