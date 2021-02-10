@@ -1,4 +1,4 @@
-// TIGR - TIny GRaphics Library - v1.5
+// TIGR - TIny GRaphics Library - v1.6
 //        ^^   ^^
 //
 // rawr.
