@@ -10,7 +10,7 @@ typedef enum {
     AE_INPUT,
     AE_WINDOW_CREATED,
     AE_WINDOW_DESTROYED,
-    AE_ACTIVITY_DESTROYED,
+    AE_CLOSE,
 } AndroidEventType;
 
 typedef struct {
@@ -23,9 +23,14 @@ typedef struct {
 extern "C" {
 #endif
 
-int android_pollEvent(int (*eventHandler)(AndroidEvent, void*), void*);
-void android_swap(EGLDisplay display, EGLSurface surface);
-void* android_loadAsset(const char* filename, int* outLength);
+/// Calls from TiGr to Android side, render thread
+extern int android_pollEvent(int (*eventHandler)(AndroidEvent, void*), void*);
+extern void android_swap(EGLDisplay display, EGLSurface surface);
+extern void* android_loadAsset(const char* filename, int* outLength);
+
+/// Calls from Android to TiGr side, main thread
+void tigr_android_create();
+void tigr_android_destroy();
 
 #ifdef __cplusplus
 }

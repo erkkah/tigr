@@ -10,7 +10,11 @@
 #include <android/log.h>
 #include <android/native_window.h>
 
-#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "tigr", __VA_ARGS__))
+#ifndef NDEBUG
+#   define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "tigr", __VA_ARGS__))
+#else
+#   define LOGD(...)  ((void)0)
+#endif
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "tigr", __VA_ARGS__))
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "tigr", __VA_ARGS__))
 
@@ -20,25 +24,28 @@ typedef struct {
     int pointers;
 } InputState;
 
-static ANativeWindow* window = 0;
-static int windowInstance = 0;
-static InputState inputState = { 0, 0, 0 };
-static EGLDisplay display = EGL_NO_DISPLAY;
-static EGLSurface surface = EGL_NO_SURFACE;
-static EGLint screenW = 0;
-static EGLint screenH = 0;
-static EGLConfig config = 0;
+/// Global state
+static struct {
+    ANativeWindow* window;
+    InputState inputState;
+    EGLDisplay display;
+    EGLSurface surface;
+    EGLint screenW;
+    EGLint screenH;
+    EGLConfig config;
+    int closed;
+} gState = {
+    .window = 0,
+    .inputState = {0, 0, 0},
+    .display = EGL_NO_DISPLAY,
+    .surface = EGL_NO_SURFACE,
+    .screenW = 0,
+    .screenH = 0,
+    .config = 0,
+    .closed = 0,
+};
 
 static const EGLint contextAttribs[] = { EGL_CONTEXT_MAJOR_VERSION, 3, EGL_CONTEXT_MINOR_VERSION, 0, EGL_NONE };
-
-void* tigrReadFile(const char* fileName, int* length) {
-    if (length != 0) {
-        *length = 0;
-    }
-
-    void* asset = android_loadAsset(fileName, length);
-    return asset;
-}
 
 static EGLConfig getGLConfig(EGLDisplay display) {
     EGLConfig config = 0;
@@ -69,7 +76,7 @@ static EGLConfig getGLConfig(EGLDisplay display) {
     }
 
     if (config == NULL) {
-        LOGE("Unable to initialize EGLConfig");
+        tigrError(NULL, "Unable to initialize EGLConfig");
     }
 
     free(supportedConfigs);
@@ -77,32 +84,53 @@ static EGLConfig getGLConfig(EGLDisplay display) {
     return config;
 }
 
-static void setupOpenGL() {
-    // assert(surface == EGL_NO_SURFACE);
-    assert(window != 0);
 
-    if (display == EGL_NO_DISPLAY) {
-        display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-        EGLBoolean status = eglInitialize(display, NULL, NULL);
+/// Android interface, called from main thread
+
+void tigr_android_create() {
+    gState.closed = 0;
+    gState.window = 0;
+    gState.inputState.pointers = 0;
+    gState.surface = EGL_NO_SURFACE;
+
+    if (gState.display == EGL_NO_DISPLAY) {
+        gState.display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+        EGLBoolean status = eglInitialize(gState.display, NULL, NULL);
         if (!status) {
             tigrError(NULL, "Failed to init EGL");
         }
-        config = getGLConfig(display);
+        gState.config = getGLConfig(gState.display);
     }
+}
 
-    surface = eglCreateWindowSurface(display, config, window, NULL);
-    eglQuerySurface(display, surface, EGL_WIDTH, &screenW);
-    eglQuerySurface(display, surface, EGL_HEIGHT, &screenH);
-    LOGD("Screen is %d x %d", screenW, screenH);
+void tigr_android_destroy() {
+    eglTerminate(gState.display);
+    gState.display = EGL_NO_DISPLAY;
+}
+
+
+/// Internals ///
+
+static void setupOpenGL() {
+    LOGD("setupOpenGL");
+    assert(gState.surface == EGL_NO_SURFACE);
+    assert(gState.window != 0);
+
+    gState.surface = eglCreateWindowSurface(gState.display, gState.config, gState.window, NULL);
+    assert(gState.surface != 0);
+    eglQuerySurface(gState.display, gState.surface, EGL_WIDTH, &gState.screenW);
+    eglQuerySurface(gState.display, gState.surface, EGL_HEIGHT, &gState.screenH);
+    LOGD("Screen is %d x %d", gState.screenW, gState.screenH);
 }
 
 static void tearDownOpenGL() {
-    if (display != EGL_NO_DISPLAY) {
-        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    LOGD("tearDownOpenGL");
+    if (gState.display != EGL_NO_DISPLAY) {
+        eglMakeCurrent(gState.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-        if (surface != EGL_NO_SURFACE) {
-            eglDestroySurface(display, surface);
-            surface = EGL_NO_SURFACE;
+        if (gState.surface != EGL_NO_SURFACE) {
+            eglDestroySurface(gState.display, gState.surface);
+            gState.surface = EGL_NO_SURFACE;
         }
     }
 }
@@ -112,41 +140,37 @@ static int processInputEvent(AInputEvent* event) {
         int32_t action = AMotionEvent_getAction(event);
         int32_t actionCode = action & AMOTION_EVENT_ACTION_MASK;
 
-        inputState.touchX = AMotionEvent_getX(event, 0);
-        inputState.touchY = AMotionEvent_getY(event, 0);
+        gState.inputState.touchX = AMotionEvent_getX(event, 0);
+        gState.inputState.touchY = AMotionEvent_getY(event, 0);
 
         if (actionCode == AMOTION_EVENT_ACTION_DOWN) {
-            inputState.pointers |= 1;
+            gState.inputState.pointers |= 1;
         } else if (actionCode == AMOTION_EVENT_ACTION_UP) {
-            inputState.pointers &= ~1;
+            gState.inputState.pointers &= ~1;
         }
         return 1;
     }
     return 0;
 }
 
-static int handleEvent(AndroidEvent event, void* donePtr) {
-    int* done = donePtr;
-
+static int handleEvent(AndroidEvent event, void* userData) {
     switch (event.type) {
         case AE_WINDOW_CREATED:
-            window = event.window;
-            windowInstance++;
+            gState.window = event.window;
             setupOpenGL();
             break;
 
         case AE_WINDOW_DESTROYED:
             tearDownOpenGL();
-            window = 0;
+            gState.window = 0;
             break;
 
         case AE_INPUT:
             return processInputEvent(event.inputEvent);
 
-        case AE_ACTIVITY_DESTROYED:
-            eglTerminate(display);
-            display = EGL_NO_DISPLAY;
-            *done = 1;
+        case AE_CLOSE:
+            gState.closed = 1;
+            break;
 
         default:
             LOGE("Unhandled event type: %d", event.type);
@@ -157,10 +181,12 @@ static int handleEvent(AndroidEvent event, void* donePtr) {
 }
 
 static int processEvents() {
-    int done = 0;
+    if (gState.closed) {
+        return 0;
+    }
 
-    while (android_pollEvent(handleEvent, &done)) {
-        if (done) {
+    while (android_pollEvent(handleEvent, 0)) {
+        if (gState.closed) {
             return 0;
         }
     }
@@ -169,12 +195,16 @@ static int processEvents() {
 }
 
 static Tigr* refreshWindow(Tigr* bmp) {
-    TigrInternal* win = tigrInternal(bmp);
-    if (win->instance == windowInstance) {
+    if (bmp->handle == gState.window) {
         return bmp;
     }
 
-    win->instance = windowInstance;
+    bmp->handle = gState.window;
+    if (gState.window == 0) {
+        return 0;
+    }
+
+    TigrInternal* win = tigrInternal(bmp);
 
     int scale = 1;
     if (win->flags & TIGR_AUTO) {
@@ -182,7 +212,7 @@ static Tigr* refreshWindow(Tigr* bmp) {
         scale = 1;
     } else {
         // See how big we can make it and still fit on-screen.
-        scale = tigrCalcScale(bmp->w, bmp->h, screenW, screenH);
+        scale = tigrCalcScale(bmp->w, bmp->h, gState.screenW, gState.screenH);
     }
 
     win->scale = tigrEnforceScale(scale, win->flags);
@@ -190,14 +220,17 @@ static Tigr* refreshWindow(Tigr* bmp) {
     return bmp;
 }
 
+
+/// TiGr interface implementation, called from render thread ///
+
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
-    while (window == NULL) {
+    while (gState.window == NULL) {
         if (!processEvents()) {
             return NULL;
         }
     }
 
-    EGLContext context = eglCreateContext(display, config, NULL, contextAttribs);
+    EGLContext context = eglCreateContext(gState.display, gState.config, NULL, contextAttribs);
 
     int scale = 1;
     if (flags & TIGR_AUTO) {
@@ -205,16 +238,15 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
         scale = 1;
     } else {
         // See how big we can make it and still fit on-screen.
-        scale = tigrCalcScale(w, h, screenW, screenH);
+        scale = tigrCalcScale(w, h, gState.screenW, gState.screenH);
     }
 
     scale = tigrEnforceScale(scale, flags);
 
     Tigr* bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
-    bmp->handle = (void*)window;
+    bmp->handle = (void*)gState.window;
 
     TigrInternal* win = tigrInternal(bmp);
-    win->instance = windowInstance;
     win->context = context;
 
     win->shown = 0;
@@ -234,7 +266,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
 
-    if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+    if (eglMakeCurrent(gState.display, gState.surface, gState.surface, context) == EGL_FALSE) {
         LOGE("Unable to eglMakeCurrent");
         return 0;
     }
@@ -250,8 +282,11 @@ int tigrClosed(Tigr* bmp) {
 }
 
 int tigrGAPIBegin(Tigr* bmp) {
+    assert(gState.display != EGL_NO_DISPLAY);
+    assert(gState.surface != EGL_NO_SURFACE);
+    
     TigrInternal* win = tigrInternal(bmp);
-    if (eglMakeCurrent(display, surface, surface, win->context) == EGL_FALSE) {
+    if (eglMakeCurrent(gState.display, gState.surface, gState.surface, win->context) == EGL_FALSE) {
         return -1;
     }
     return 0;
@@ -259,7 +294,7 @@ int tigrGAPIBegin(Tigr* bmp) {
 
 int tigrGAPIEnd(Tigr* bmp) {
     (void)bmp;
-    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglMakeCurrent(gState.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     return 0;
 }
 
@@ -299,41 +334,43 @@ void tigrUpdate(Tigr* bmp) {
         return;
     }
 
-    if (window == 0) {
+    if (gState.window == 0) {
         return;
     }
 
     bmp = refreshWindow(bmp);
-
-    win->mouseX = (inputState.touchX - win->pos[0]) / win->scale;
-    win->mouseY = (inputState.touchY - win->pos[1]) / win->scale;
-    win->mouseButtons = inputState.pointers;
-
-    if (win->flags & TIGR_AUTO) {
-        tigrResize(bmp, screenW / win->scale, screenH / win->scale);
-    } else {
-        win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, screenW, screenH), win->flags);
+    if (bmp == 0) {
+        return;
     }
 
-    tigrPosition(bmp, win->scale, screenW, screenH, win->pos);
+    win->mouseX = (gState.inputState.touchX - win->pos[0]) / win->scale;
+    win->mouseY = (gState.inputState.touchY - win->pos[1]) / win->scale;
+    win->mouseButtons = gState.inputState.pointers;
+
+    if (win->flags & TIGR_AUTO) {
+        tigrResize(bmp, gState.screenW / win->scale, gState.screenH / win->scale);
+    } else {
+        win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, gState.screenW, gState.screenH), win->flags);
+    }
+
+    tigrPosition(bmp, win->scale, gState.screenW, gState.screenH, win->pos);
     tigrGAPIBegin(bmp);
-    tigrGAPIPresent(bmp, screenW, screenH);
-    android_swap(display, surface);
+    tigrGAPIPresent(bmp, gState.screenW, gState.screenH);
+    android_swap(gState.display, gState.surface);
     tigrGAPIEnd(bmp);
 }
 
 void tigrFree(Tigr* bmp) {
     if (bmp->handle) {
-        EGLDisplay display = display;
         TigrInternal* win = tigrInternal(bmp);
 
-        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        eglMakeCurrent(gState.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         if (win->context != EGL_NO_CONTEXT) {
             // Win closed means app windows has closed, and the call would fail.
             if (!win->closed) {
                 tigrGAPIDestroy(bmp);
             }
-            eglDestroyContext(display, win->context);
+            eglDestroyContext(gState.display, win->context);
         }
 
         win->context = EGL_NO_CONTEXT;
@@ -380,6 +417,15 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
     if (buttons) {
         *buttons = win->mouseButtons;
     }
+}
+
+void* tigrReadFile(const char* fileName, int* length) {
+    if (length != 0) {
+        *length = 0;
+    }
+
+    void* asset = android_loadAsset(fileName, length);
+    return asset;
 }
 
 #endif  // __ANDROID__
