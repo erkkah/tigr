@@ -2245,7 +2245,7 @@ int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints)
 	if (maxPoints > 0) {
 		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
 	}
-	return buttons;
+	return buttons ? 1 : 0;
 }
 
 static int tigrWinVK(int key)
@@ -3323,7 +3323,7 @@ int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints) {
 	if (maxPoints > 0) {
 		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
 	}
-	return buttons;
+	return buttons ? 1 : 0;
 }
 
 int tigrKeyDown(Tigr* bmp, int key) {
@@ -3924,7 +3924,7 @@ int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints)
 	if (maxPoints > 0) {
 		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
 	}
-	return buttons;
+	return buttons ? 1 : 0;
 }
 
 #endif // __linux__ && !__ANDROID__
