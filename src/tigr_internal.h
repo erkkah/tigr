@@ -69,6 +69,8 @@ typedef struct {
 } GLStuff;
 #endif
 
+#define MAX_TOUCH_POINTS 10
+
 typedef struct {
 	int shown, closed;
 	#ifdef TIGR_GAPI_GL
@@ -91,7 +93,6 @@ typedef struct {
 	#endif // __ANDROID__
 	#endif // __linux__
 	
-
 	Tigr *widgets;
 	int widgetsWanted;
 	unsigned char widgetAlpha;
@@ -111,7 +112,11 @@ typedef struct {
 	#ifdef __linux__
 	int mouseX;
 	int mouseY;
-	#endif
+	#endif // __linux__
+	#ifdef __ANDROID__
+	int numTouchPoints;
+	TigrTouchPoint touchPoints[MAX_TOUCH_POINTS];
+	#endif // __ANDROID__
 } TigrInternal;
 // ----------------------------------------------------------
 

@@ -499,4 +499,13 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 	}
 }
 
+int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints)
+{
+	int buttons = 0;
+	if (maxPoints > 0) {
+		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
+	}
+	return buttons ? 1 : 0;
+}
+
 #endif // __linux__ && !__ANDROID__
