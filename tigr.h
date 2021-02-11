@@ -172,6 +172,15 @@ typedef enum {
 // Returns mouse input for a window.
 void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons);
 
+typedef struct {
+	int x;
+	int y;
+} TigrTouchPoint;
+
+// Reads touch input for a window.
+// Returns number of touch points read.
+int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints);
+
 // Reads the keyboard for a window.
 // Returns non-zero if a key is pressed/held.
 // tigrKeyDown tests for the initial press, tigrKeyHeld repeats each frame.

@@ -572,6 +572,15 @@ void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
 	if (GetAsyncKeyState(VK_RBUTTON) & 0x8000) *buttons |= 4;
 }
 
+int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints)
+{
+	int buttons = 0;
+	if (maxPoints > 0) {
+		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
+	}
+	return buttons ? 1 : 0;
+}
+
 static int tigrWinVK(int key)
 {
 	if (key >= 'A' && key <= 'Z') return key;

@@ -20,9 +20,8 @@
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "tigr", __VA_ARGS__))
 
 typedef struct {
-    int touchX;
-    int touchY;
-    int pointers;
+    TigrTouchPoint points[MAX_TOUCH_POINTS];
+    int numPoints;
 } InputState;
 
 /// Global state
@@ -38,7 +37,9 @@ static struct {
     int closed;
 } gState = {
     .window = 0,
-    .inputState = { 0, 0, 0 },
+    .inputState = {
+        .numPoints = 0,
+    },
     .display = EGL_NO_DISPLAY,
     .surface = EGL_NO_SURFACE,
     .screenW = 0,
@@ -92,7 +93,7 @@ static EGLConfig getGLConfig(EGLDisplay display) {
 void tigr_android_create() {
     gState.closed = 0;
     gState.window = 0;
-    gState.inputState.pointers = 0;
+    gState.inputState.numPoints = 0;
     gState.surface = EGL_NO_SURFACE;
     gState.lastTime = 0;
 
@@ -171,14 +172,27 @@ static int processInputEvent(AInputEvent* event) {
         int32_t action = AMotionEvent_getAction(event);
         int32_t actionCode = action & AMOTION_EVENT_ACTION_MASK;
 
-        gState.inputState.touchX = AMotionEvent_getX(event, 0);
-        gState.inputState.touchY = AMotionEvent_getY(event, 0);
         size_t touchPoints = AMotionEvent_getPointerCount(event);
+        size_t releasedIndex = -1;
+        if (actionCode == AMOTION_EVENT_ACTION_POINTER_UP) {
+            releasedIndex =
+                (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+        }
+        size_t targetPointCount = 0;
 
-        if (actionCode == AMOTION_EVENT_ACTION_DOWN) {
-            gState.inputState.pointers = touchPoints;
-        } else if (actionCode == AMOTION_EVENT_ACTION_UP) {
-            gState.inputState.pointers = 0;
+        for (size_t i = 0; i < touchPoints && i < MAX_TOUCH_POINTS; i++) {
+            if (i == releasedIndex) {
+                continue;
+            }
+            gState.inputState.points[targetPointCount].x = AMotionEvent_getX(event, i);
+            gState.inputState.points[targetPointCount].y = AMotionEvent_getY(event, i);
+            targetPointCount++;
+        }
+
+        if (actionCode == AMOTION_EVENT_ACTION_UP || actionCode == AMOTION_EVENT_ACTION_CANCEL) {
+            gState.inputState.numPoints = 0;
+        } else {
+            gState.inputState.numPoints = targetPointCount;
         }
         return 1;
     }
@@ -360,6 +374,14 @@ static void tigrUpdateModifiers(TigrInternal* win) {
     win->keys[TK_ALT] = win->keys[TK_LALT] || win->keys[TK_RALT];
 }
 
+static int toWindowX(TigrInternal* win, int x) {
+    return (x - win->pos[0]) / win->scale;
+}
+
+static int toWindowY(TigrInternal* win, int y) {
+    return (y - win->pos[1]) / win->scale;
+}
+
 void tigrUpdate(Tigr* bmp) {
     TigrInternal* win = tigrInternal(bmp);
     memcpy(win->prev, win->keys, 256);
@@ -378,9 +400,18 @@ void tigrUpdate(Tigr* bmp) {
         return;
     }
 
-    win->mouseX = (gState.inputState.touchX - win->pos[0]) / win->scale;
-    win->mouseY = (gState.inputState.touchY - win->pos[1]) / win->scale;
-    win->mouseButtons = gState.inputState.pointers;
+    win->numTouchPoints = gState.inputState.numPoints;
+    for (int i = 0; i < win->numTouchPoints; i++) {
+        win->touchPoints[i].x = toWindowX(win, gState.inputState.points[i].x);
+        win->touchPoints[i].y = toWindowY(win, gState.inputState.points[i].y);
+    }
+
+    win->mouseButtons = win->numTouchPoints;
+    if (win->mouseButtons > 0) {
+        win->mouseX = win->touchPoints[0].x;
+        win->mouseY = win->touchPoints[0].y;
+        ;
+    }
 
     if (win->flags & TIGR_AUTO) {
         tigrResize(bmp, gState.screenW / win->scale, gState.screenH / win->scale);
@@ -450,6 +481,14 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
     if (buttons) {
         *buttons = win->mouseButtons;
     }
+}
+
+int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
+    TigrInternal* win = tigrInternal(bmp);
+    for (int i = 0; i < maxPoints && i < win->numTouchPoints; i++) {
+        points[i] = win->touchPoints[i];
+    }
+    return maxPoints < win->numTouchPoints ? maxPoints : win->numTouchPoints;
 }
 
 void* tigrReadFile(const char* fileName, int* length) {
