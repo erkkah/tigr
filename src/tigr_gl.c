@@ -10,8 +10,8 @@
 #include <GL/glext.h>
 #endif
 #endif
-extern const unsigned char tigr_upscale_gl_vs[], tigr_upscale_gl_fs[];
-extern int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size;
+extern const char tigr_upscale_gl_vs[], tigr_upscale_gl_fs[], tigr_default_fx_gl_fs[];
+extern const int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size, tigr_default_fx_gl_fs_size;
 
 #ifdef _WIN32
 
@@ -219,9 +219,47 @@ void tigrCheckProgramErrors(GLuint object)
 	}
 }
 
+void tigrCreateShaderProgram(GLStuff* gl, const char* fxSource, int fxSize) {
+	if (gl->program != 0) {
+		glDeleteProgram(gl->program);
+		gl->program = 0;
+	}
+
+	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+	const char *vs_source = (const char*)&tigr_upscale_gl_vs;
+	glShaderSource(vs, 1, &vs_source, &tigr_upscale_gl_vs_size);
+	glCompileShader(vs);
+	tigrCheckShaderErrors(vs);
+
+	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	const char* fs_sources[] = {
+		(const char*)tigr_upscale_gl_fs,
+		fxSource,
+	};
+	const int fs_lengths[] = {
+		tigr_upscale_gl_fs_size,
+		fxSize,
+	};
+	glShaderSource(fs, 2, fs_sources, fs_lengths);
+	glCompileShader(fs);
+	tigrCheckShaderErrors(fs);
+
+
+	gl->program = glCreateProgram();
+	glAttachShader(gl->program, vs);
+	glAttachShader(gl->program, fs);
+	glLinkProgram(gl->program);
+	tigrCheckProgramErrors(gl->program);
+	glDeleteShader(vs);
+	glDeleteShader(fs);
+
+	gl->uniform_projection = glGetUniformLocation(gl->program, "projection");
+	gl->uniform_model = glGetUniformLocation(gl->program, "model");
+	gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
+}
+
 void tigrGAPICreate(Tigr *bmp)
 {
-	GLuint vs, fs;
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
 	GLuint VBO;
@@ -253,28 +291,9 @@ void tigrGAPICreate(Tigr *bmp)
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
-
+	
 		// create program
-		vs = glCreateShader(GL_VERTEX_SHADER);
-		const char *vs_source = (const char*)&tigr_upscale_gl_vs;
-		glShaderSource(vs, 1, &vs_source, &tigr_upscale_gl_vs_size);
-		glCompileShader(vs);
-		tigrCheckShaderErrors(vs);
-		fs = glCreateShader(GL_FRAGMENT_SHADER);
-		const char *fs_source = (const char*)&tigr_upscale_gl_fs;
-		glShaderSource(fs, 1, &fs_source, &tigr_upscale_gl_fs_size);
-		glCompileShader(fs);
-		tigrCheckShaderErrors(fs);
-		gl->program = glCreateProgram();
-		glAttachShader(gl->program, vs);
-		glAttachShader(gl->program, fs);
-		glLinkProgram(gl->program);
-		tigrCheckProgramErrors(gl->program);
-		glDeleteShader(vs);
-		glDeleteShader(fs);
-		gl->uniform_projection = glGetUniformLocation(gl->program, "projection");
-		gl->uniform_model = glGetUniformLocation(gl->program, "model");
-		gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
+		tigrCreateShaderProgram(gl, tigr_default_fx_gl_fs, tigr_default_fx_gl_fs_size);
 	}
 
 	// create textures
@@ -375,7 +394,7 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 		glBindVertexArray(gl->vao);
 		glUseProgram(gl->program);
 		glUniformMatrix4fv(gl->uniform_projection, 1, GL_FALSE, projection);
-		glUniform4f(gl->uniform_parameters, win->hblur ? 1.0f : 0.0f, win->vblur ? 1.0f : 0.0f, win->scanlines, win->contrast);
+		glUniform4f(gl->uniform_parameters, win->p1, win->p2, win->p3, win->p4);
 	}
 	else
 	{

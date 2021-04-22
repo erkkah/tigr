@@ -337,9 +337,8 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->scale = scale;
     win->lastChar = 0;
     win->flags = flags;
-    win->hblur = win->vblur = 0;
-    win->scanlines = 0.0f;
-    win->contrast = 1.0f;
+	win->p1 = win->p2 = win->p3 = 0;
+	win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;

@@ -114,10 +114,18 @@ int tigrBeginOpenGL(Tigr* bmp) {
 #endif
 }
 
-void tigrSetPostFX(Tigr* bmp, int hblur, int vblur, float scanlines, float contrast) {
+void tigrSetPostShader(Tigr *bmp, const char* code, int size) {
+#ifdef TIGR_GAPI_GL
     TigrInternal* win = tigrInternal(bmp);
-    win->hblur = hblur;
-    win->vblur = vblur;
-    win->scanlines = scanlines;
-    win->contrast = contrast;
+    GLStuff *gl= &win->gl;
+    tigrCreateShaderProgram(gl, code, size);
+#endif
+}
+
+void tigrSetPostFX(Tigr* bmp, float p1, float p2, float p3, float p4) {
+    TigrInternal* win = tigrInternal(bmp);
+    win->p1 = p1;
+    win->p2 = p2;
+    win->p3 = p3;
+    win->p4 = p4;
 }
