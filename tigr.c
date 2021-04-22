@@ -8,30 +8,40 @@
 #ifndef __TIGR_UPSCALE_GL_VS_H__
 #define __TIGR_UPSCALE_GL_VS_H__
 
-const unsigned char tigr_upscale_gl_vs[] = {
+//////// Start of inlined file: tigr_glsl_hdr.h ////////
+
+#ifndef __TIGR_GLSL_HDR_H__
+#define __TIGR_GLSL_HDR_H__
+
 #if __ANDROID__
+#define GLSL_VERSION_HEADER \
     "#version 300 es\n"
     "precision mediump float;\n"
 #else
+#define GLSL_VERSION_HEADER \
     "#version 330 core\n"
 #endif
-    "\n"
-    "layout (location = 0) in vec2 pos_in;\n"
-    "layout (location = 1) in vec2 uv_in;\n"
-    "\n"
-    "out vec2 uv;\n"
-    "\n"
-    "uniform mat4 model;\n"
-    "uniform mat4 projection;\n"
-    "\n"
-    "void main()\n"
-    "{\n"
-    "   uv = uv_in;\n"
-    "   gl_Position = projection * model * vec4(pos_in, 0.0, 1.0);\n"
-    "}\n"
+
+#endif // __TIGR_GLSL_HDR_H__
+
+//////// End of inlined file: tigr_glsl_hdr.h ////////
+
+
+const char tigr_upscale_gl_vs[] = {
+    GLSL_VERSION_HEADER
+    "layout (location = 0) in vec2 pos_in;"
+    "layout (location = 1) in vec2 uv_in;"
+    "out vec2 uv;"
+    "uniform mat4 model;"
+    "uniform mat4 projection;"
+    "void main()"
+    "{"
+    "   uv = uv_in;"
+    "   gl_Position = projection * model * vec4(pos_in, 0.0, 1.0);"
+    "}"
 };
 
-int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
+const int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
 
 #endif
 
@@ -42,35 +52,36 @@ int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
 #ifndef __TIGR_UPSCALE_GL_FS_H__
 #define __TIGR_UPSCALE_GL_FS_H__
 
-const unsigned char tigr_upscale_gl_fs[] = {
-#if __ANDROID__
-    "#version 300 es\n"
-    "precision mediump float;\n"
-#else
-    "#version 330 core\n"
-#endif
-    "\n"
-    "in vec2 uv;\n"
-    "\n"
-    "out vec4 color;\n"
-    "\n"
-    "uniform sampler2D image;\n"
-    "uniform vec4 parameters;\n"
-    "\n"
-    "void main()\n"
-    "{\n"
-    "   vec2 tex_size = vec2(textureSize(image, 0));\n"
-    "   vec2 uv_blur = mix(floor(uv * tex_size) + 0.5, uv * tex_size, "
-    "parameters.xy) / tex_size;\n"
-    "   vec4 c = texture(image, uv_blur);\n"
-    "   c.rgb *= mix(0.5, 1.0 - fract(uv.y * tex_size.y), parameters.z) * 2.0; "
-    "//scanline\n"
-    "   c = mix(vec4(0.5), c, parameters.w); //contrast \n"
-    "   color = c;\n"
+//#include "tigr_glsl_hdr.h"
+
+const char tigr_upscale_gl_fs[] = {
+    GLSL_VERSION_HEADER
+    "in vec2 uv;"
+    "out vec4 color;"
+    "uniform sampler2D image;"
+    "uniform vec4 parameters;"
+    "void fxShader(out vec4 color, in vec2 coord);"
+    "void main()"
+    "{"
+    "   fxShader(color, uv);"
     "}\n"
 };
 
-int tigr_upscale_gl_fs_size = (int)sizeof(tigr_upscale_gl_fs) - 1;
+const int tigr_upscale_gl_fs_size = (int)sizeof(tigr_upscale_gl_fs) - 1;
+
+const char tigr_default_fx_gl_fs[] = {
+    "void fxShader(out vec4 color, in vec2 uv) {"
+    "   vec2 tex_size = vec2(textureSize(image, 0));"
+    "   vec2 uv_blur = mix(floor(uv * tex_size) + 0.5, uv * tex_size, parameters.xy) / tex_size;"
+    "   vec4 c = texture(image, uv_blur);"
+    "   c.rgb *= mix(0.5, 1.0 - fract(uv.y * tex_size.y), parameters.z) * 2.0; //scanline\n"
+    "   c = mix(vec4(0.5), c, parameters.w); //contrast\n"
+    "   color = c;"
+    "}"
+};
+
+const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
+
 
 #endif
 
@@ -149,6 +160,7 @@ typedef struct {
 	GLuint uniform_parameters;
 	int gl_legacy;
 	int gl_user_opengl_rendering;
+	const char* fxShader;
 } GLStuff;
 #endif
 
@@ -181,8 +193,11 @@ typedef struct {
 	unsigned char widgetAlpha;
 	float widgetsScale;
 
+	float p1, p2, p3, p4;
+	/*
 	int hblur, vblur;
 	float scanlines, contrast;
+	*/
 
 	int flags;
 	int scale;
@@ -846,134 +861,6 @@ int tigrSaveImage(const char *fileName, Tigr *bmp)
 }
 
 //////// End of inlined file: tigr_savepng.c ////////
-
-//////// Start of inlined file: tigr_utils.c ////////
-
-//#include "tigr_internal.h"
-#include <stdio.h>
-#include <stdlib.h>
-
-#ifndef __ANDROID__
-
-void* tigrReadFile(const char* fileName, int* length) {
-    // TODO - unicode?
-    FILE* file;
-    char* data;
-    size_t len;
-
-    if (length)
-        *length = 0;
-
-    file = fopen(fileName, "rb");
-    if (!file)
-        return NULL;
-
-    fseek(file, 0, SEEK_END);
-    len = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    data = (char*)malloc(len + 1);
-    if (!data) {
-        fclose(file);
-        return NULL;
-    }
-
-    if (fread(data, 1, len, file) != len) {
-        free(data);
-        fclose(file);
-        return NULL;
-    }
-    data[len] = '\0';
-    fclose(file);
-
-    if (length)
-        *length = len;
-
-    return data;
-}
-
-#endif  // __ANDROID__
-
-// Reads a single UTF8 codepoint.
-const char* tigrDecodeUTF8(const char* text, int* cp) {
-    unsigned char c = *text++;
-    int extra = 0, min = 0;
-    *cp = 0;
-    if (c >= 0xf0) {
-        *cp = c & 0x07;
-        extra = 3;
-        min = 0x10000;
-    } else if (c >= 0xe0) {
-        *cp = c & 0x0f;
-        extra = 2;
-        min = 0x800;
-    } else if (c >= 0xc0) {
-        *cp = c & 0x1f;
-        extra = 1;
-        min = 0x80;
-    } else if (c >= 0x80) {
-        *cp = 0xfffd;
-    } else {
-        *cp = c;
-    }
-    while (extra--) {
-        c = *text++;
-        if ((c & 0xc0) != 0x80) {
-            *cp = 0xfffd;
-            break;
-        }
-        (*cp) = ((*cp) << 6) | (c & 0x3f);
-    }
-    if (*cp < min) {
-        *cp = 0xfffd;
-    }
-    return text;
-}
-
-char* tigrEncodeUTF8(char* text, int cp) {
-    if (cp < 0 || cp > 0x10ffff) {
-        cp = 0xfffd;
-    }
-
-#define EMIT(X, Y, Z) *text++ = X | ((cp >> Y) & Z)
-    if (cp < 0x80) {
-        EMIT(0x00, 0, 0x7f);
-    } else if (cp < 0x800) {
-        EMIT(0xc0, 6, 0x1f);
-        EMIT(0x80, 0, 0x3f);
-    } else if (cp < 0x10000) {
-        EMIT(0xe0, 12, 0xf);
-        EMIT(0x80, 6, 0x3f);
-        EMIT(0x80, 0, 0x3f);
-    } else {
-        EMIT(0xf0, 18, 0x7);
-        EMIT(0x80, 12, 0x3f);
-        EMIT(0x80, 6, 0x3f);
-        EMIT(0x80, 0, 0x3f);
-    }
-    return text;
-#undef EMIT
-}
-
-int tigrBeginOpenGL(Tigr* bmp) {
-#ifdef TIGR_GAPI_GL
-    TigrInternal* win = tigrInternal(bmp);
-    win->gl.gl_user_opengl_rendering = 1;
-    return tigrGAPIBegin(bmp) == 0;
-#else
-    return 0;
-#endif
-}
-
-void tigrSetPostFX(Tigr* bmp, int hblur, int vblur, float scanlines, float contrast) {
-    TigrInternal* win = tigrInternal(bmp);
-    win->hblur = hblur;
-    win->vblur = vblur;
-    win->scanlines = scanlines;
-    win->contrast = contrast;
-}
-
-//////// End of inlined file: tigr_utils.c ////////
 
 //////// Start of inlined file: tigr_inflate.c ////////
 
@@ -2137,9 +2024,8 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	win->lastChar = 0;
 	win->flags = flags;
 
-	win->hblur = win->vblur = 0;
-	win->scanlines = 0.0f;
-	win->contrast = 1.0f;
+	win->p1 = win->p2 = win->p3 = 0;
+	win->p4 = 1;
 
 	win->widgetsWanted = 0;
 	win->widgetAlpha = 0;
@@ -2722,9 +2608,8 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->scale = scale;
     win->lastChar = 0;
     win->flags = flags;
-    win->hblur = win->vblur = 0;
-    win->scanlines = 0.0f;
-    win->contrast = 1.0f;
+	win->p1 = win->p2 = win->p3 = 0;
+	win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
@@ -3609,9 +3494,8 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	win->lastChar = 0;
 	win->flags = flags;
-	win->hblur = win->vblur = 0;
-	win->scanlines = 0.0f;
-	win->contrast = 1.0f;
+	win->p1 = win->p2 = win->p3 = 0;
+	win->p4 = 1;
 	win->widgetsWanted = 0;
 	win->widgetAlpha = 0;
 	win->widgetsScale = 0;
@@ -4239,9 +4123,8 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     win->lastChar = 0;
     win->flags = flags;
-    win->hblur = win->vblur = 0;
-    win->scanlines = 0.0f;
-    win->contrast = 1.0f;
+    win->p1 = win->p2 = win->p3 = 0;
+	win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
@@ -4453,8 +4336,8 @@ void* tigrReadFile(const char* fileName, int* length) {
 #include <GL/glext.h>
 #endif
 #endif
-extern const unsigned char tigr_upscale_gl_vs[], tigr_upscale_gl_fs[];
-extern int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size;
+extern const char tigr_upscale_gl_vs[], tigr_upscale_gl_fs[], tigr_default_fx_gl_fs[];
+extern const int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size, tigr_default_fx_gl_fs_size;
 
 #ifdef _WIN32
 
@@ -4662,9 +4545,47 @@ void tigrCheckProgramErrors(GLuint object)
 	}
 }
 
+void tigrCreateShaderProgram(GLStuff* gl, const char* fxSource, int fxSize) {
+	if (gl->program != 0) {
+		glDeleteProgram(gl->program);
+		gl->program = 0;
+	}
+
+	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+	const char *vs_source = (const char*)&tigr_upscale_gl_vs;
+	glShaderSource(vs, 1, &vs_source, &tigr_upscale_gl_vs_size);
+	glCompileShader(vs);
+	tigrCheckShaderErrors(vs);
+
+	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	const char* fs_sources[] = {
+		(const char*)tigr_upscale_gl_fs,
+		fxSource,
+	};
+	const int fs_lengths[] = {
+		tigr_upscale_gl_fs_size,
+		fxSize,
+	};
+	glShaderSource(fs, 2, fs_sources, fs_lengths);
+	glCompileShader(fs);
+	tigrCheckShaderErrors(fs);
+
+
+	gl->program = glCreateProgram();
+	glAttachShader(gl->program, vs);
+	glAttachShader(gl->program, fs);
+	glLinkProgram(gl->program);
+	tigrCheckProgramErrors(gl->program);
+	glDeleteShader(vs);
+	glDeleteShader(fs);
+
+	gl->uniform_projection = glGetUniformLocation(gl->program, "projection");
+	gl->uniform_model = glGetUniformLocation(gl->program, "model");
+	gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
+}
+
 void tigrGAPICreate(Tigr *bmp)
 {
-	GLuint vs, fs;
 	TigrInternal *win = tigrInternal(bmp);
 	GLStuff *gl= &win->gl;
 	GLuint VBO;
@@ -4696,28 +4617,9 @@ void tigrGAPICreate(Tigr *bmp)
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
-
+	
 		// create program
-		vs = glCreateShader(GL_VERTEX_SHADER);
-		const char *vs_source = (const char*)&tigr_upscale_gl_vs;
-		glShaderSource(vs, 1, &vs_source, &tigr_upscale_gl_vs_size);
-		glCompileShader(vs);
-		tigrCheckShaderErrors(vs);
-		fs = glCreateShader(GL_FRAGMENT_SHADER);
-		const char *fs_source = (const char*)&tigr_upscale_gl_fs;
-		glShaderSource(fs, 1, &fs_source, &tigr_upscale_gl_fs_size);
-		glCompileShader(fs);
-		tigrCheckShaderErrors(fs);
-		gl->program = glCreateProgram();
-		glAttachShader(gl->program, vs);
-		glAttachShader(gl->program, fs);
-		glLinkProgram(gl->program);
-		tigrCheckProgramErrors(gl->program);
-		glDeleteShader(vs);
-		glDeleteShader(fs);
-		gl->uniform_projection = glGetUniformLocation(gl->program, "projection");
-		gl->uniform_model = glGetUniformLocation(gl->program, "model");
-		gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
+		tigrCreateShaderProgram(gl, tigr_default_fx_gl_fs, tigr_default_fx_gl_fs_size);
 	}
 
 	// create textures
@@ -4818,7 +4720,7 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 		glBindVertexArray(gl->vao);
 		glUseProgram(gl->program);
 		glUniformMatrix4fv(gl->uniform_projection, 1, GL_FALSE, projection);
-		glUniform4f(gl->uniform_parameters, win->hblur ? 1.0f : 0.0f, win->vblur ? 1.0f : 0.0f, win->scanlines, win->contrast);
+		glUniform4f(gl->uniform_parameters, win->p1, win->p2, win->p3, win->p4);
 	}
 	else
 	{
@@ -4860,6 +4762,142 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h)
 #endif
 
 //////// End of inlined file: tigr_gl.c ////////
+
+//////// Start of inlined file: tigr_utils.c ////////
+
+//#include "tigr_internal.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifndef __ANDROID__
+
+void* tigrReadFile(const char* fileName, int* length) {
+    // TODO - unicode?
+    FILE* file;
+    char* data;
+    size_t len;
+
+    if (length)
+        *length = 0;
+
+    file = fopen(fileName, "rb");
+    if (!file)
+        return NULL;
+
+    fseek(file, 0, SEEK_END);
+    len = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    data = (char*)malloc(len + 1);
+    if (!data) {
+        fclose(file);
+        return NULL;
+    }
+
+    if (fread(data, 1, len, file) != len) {
+        free(data);
+        fclose(file);
+        return NULL;
+    }
+    data[len] = '\0';
+    fclose(file);
+
+    if (length)
+        *length = len;
+
+    return data;
+}
+
+#endif  // __ANDROID__
+
+// Reads a single UTF8 codepoint.
+const char* tigrDecodeUTF8(const char* text, int* cp) {
+    unsigned char c = *text++;
+    int extra = 0, min = 0;
+    *cp = 0;
+    if (c >= 0xf0) {
+        *cp = c & 0x07;
+        extra = 3;
+        min = 0x10000;
+    } else if (c >= 0xe0) {
+        *cp = c & 0x0f;
+        extra = 2;
+        min = 0x800;
+    } else if (c >= 0xc0) {
+        *cp = c & 0x1f;
+        extra = 1;
+        min = 0x80;
+    } else if (c >= 0x80) {
+        *cp = 0xfffd;
+    } else {
+        *cp = c;
+    }
+    while (extra--) {
+        c = *text++;
+        if ((c & 0xc0) != 0x80) {
+            *cp = 0xfffd;
+            break;
+        }
+        (*cp) = ((*cp) << 6) | (c & 0x3f);
+    }
+    if (*cp < min) {
+        *cp = 0xfffd;
+    }
+    return text;
+}
+
+char* tigrEncodeUTF8(char* text, int cp) {
+    if (cp < 0 || cp > 0x10ffff) {
+        cp = 0xfffd;
+    }
+
+#define EMIT(X, Y, Z) *text++ = X | ((cp >> Y) & Z)
+    if (cp < 0x80) {
+        EMIT(0x00, 0, 0x7f);
+    } else if (cp < 0x800) {
+        EMIT(0xc0, 6, 0x1f);
+        EMIT(0x80, 0, 0x3f);
+    } else if (cp < 0x10000) {
+        EMIT(0xe0, 12, 0xf);
+        EMIT(0x80, 6, 0x3f);
+        EMIT(0x80, 0, 0x3f);
+    } else {
+        EMIT(0xf0, 18, 0x7);
+        EMIT(0x80, 12, 0x3f);
+        EMIT(0x80, 6, 0x3f);
+        EMIT(0x80, 0, 0x3f);
+    }
+    return text;
+#undef EMIT
+}
+
+int tigrBeginOpenGL(Tigr* bmp) {
+#ifdef TIGR_GAPI_GL
+    TigrInternal* win = tigrInternal(bmp);
+    win->gl.gl_user_opengl_rendering = 1;
+    return tigrGAPIBegin(bmp) == 0;
+#else
+    return 0;
+#endif
+}
+
+void tigrSetPostShader(Tigr *bmp, const char* code, int size) {
+#ifdef TIGR_GAPI_GL
+    TigrInternal* win = tigrInternal(bmp);
+    GLStuff *gl= &win->gl;
+    tigrCreateShaderProgram(gl, code, size);
+#endif
+}
+
+void tigrSetPostFX(Tigr* bmp, float p1, float p2, float p3, float p4) {
+    TigrInternal* win = tigrInternal(bmp);
+    win->p1 = p1;
+    win->p2 = p2;
+    win->p3 = p3;
+    win->p4 = p4;
+}
+
+//////// End of inlined file: tigr_utils.c ////////
 
 
 //////// End of inlined file: tigr_amalgamated.c ////////

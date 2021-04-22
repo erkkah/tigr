@@ -98,8 +98,7 @@ typedef struct {
 	unsigned char widgetAlpha;
 	float widgetsScale;
 
-	int hblur, vblur;
-	float scanlines, contrast;
+	float p1, p2, p3, p4;
 
 	int flags;
 	int scale;

@@ -70,11 +70,18 @@ void tigrUpdate(Tigr *bmp);
 // Returns non-zero if OpenGL is available.
 int tigrBeginOpenGL(Tigr *bmp);
 
+// Sets post shader for a window.
+// This replaces the built-in post-FX shader.
+void tigrSetPostShader(Tigr *bmp, const char* code, int size);
+
 // Sets post-FX properties for a window.
-// hblur/vblur = whether to use bilinear filtering along that axis (boolean)
-// scanlines = CRT scanlines effect (0-1)
-// contrast = contrast boost (1 = no change, 2 = 2X contrast, etc)
-void tigrSetPostFX(Tigr *bmp, int hblur, int vblur, float scanlines, float contrast);
+//
+// The built-in post-FX shader uses the following parameters:
+// p1: hblur - use bilinear filtering along the x-axis
+// p2: vblur - use bilinear filtering along the y-axis
+// p3: scanlines - CRT scanlines effect (0-1)
+// p4: contrast - contrast boost (1 = no change, 2 = 2X contrast, etc)
+void tigrSetPostFX(Tigr *bmp, float p1, float p2, float p3, float p4);
 
 
 // Drawing ----------------------------------------------------------------
