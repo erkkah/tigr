@@ -160,7 +160,6 @@ typedef struct {
 	GLuint uniform_parameters;
 	int gl_legacy;
 	int gl_user_opengl_rendering;
-	const char* fxShader;
 } GLStuff;
 #endif
 
@@ -194,10 +193,6 @@ typedef struct {
 	float widgetsScale;
 
 	float p1, p2, p3, p4;
-	/*
-	int hblur, vblur;
-	float scanlines, contrast;
-	*/
 
 	int flags;
 	int scale;
@@ -503,9 +498,16 @@ static unsigned char paeth(unsigned char a, unsigned char b, unsigned char c)
 	return (pa <= pb && pa <= pc) ? a : (pb <= pc) ? b : c;
 }
 
-static int unfilter(int w, int h, int bpp, unsigned char *raw)
+static int rowBytes(int w, int bipp) {
+	int rowBits = w * bipp;
+	return rowBits / 8 + ((rowBits % 8) ? 1 : 0);
+}
+
+static int unfilter(int w, int h, int bipp, unsigned char *raw)
 {
-	int len = w * bpp, x, y;
+	int len = rowBytes(w, bipp);
+	int bpp = rowBytes(1, bipp);
+	int x, y;
 	unsigned char *prev = raw;
 	for (y=0;y<h;y++,prev=raw,raw+=len)
 	{
@@ -542,15 +544,21 @@ static void convert(int bpp, int w, int h, unsigned char *src, TPixel *dest)
 	}
 }
 
-static void depalette(int w, int h, unsigned char *src, TPixel *dest, const unsigned char *plte)
+static void depalette(int w, int h, unsigned char *src, int bipp, TPixel *dest, const unsigned char *plte)
 {
 	int x,y,c;
+	int mask = (bipp == 4) ? 0xf0 : 0xff;
+	const int shift = (bipp == 4) ? 4 : 0;
+	int shiftVal = shift;
+
 	for (y=0;y<h;y++)
 	{
 		src++; // skip filter byte
-		for (x=0;x<w;x++,src++)
+		for (x = 0; x < w; x++, src += (x & 1))
 		{
-			c = src[0];
+			c = (*src & mask) >> shiftVal;
+			shiftVal ^= shift;
+			mask ^= 0xff;
 			*dest++ = tigrRGBA(plte[c*3+0], plte[c*3+1], plte[c*3+2], c?255:0);
 		}
 	}
@@ -558,12 +566,15 @@ static void depalette(int w, int h, unsigned char *src, TPixel *dest, const unsi
 
 #define FAIL() { errno = EINVAL; goto err; }
 #define CHECK(X) if (!(X)) FAIL()
-static int outsize(Tigr *bmp, int bpp) { return (bmp->w+1)*bmp->h * bpp; }
+
+static int outsize(Tigr *bmp, int bipp) {
+	return (rowBytes(bmp->w, bipp) + 1) * bmp->h;
+}
 
 static Tigr *tigrLoadPng(PNG *png)
 {
 	const unsigned char *ihdr, *idat, *plte, *first;
-	int depth, ctype, bpp;
+	int depth, ctype, bipp;
 	int datalen = 0;
 	unsigned char *data = NULL, *out;
 	Tigr *bmp = NULL;
@@ -578,11 +589,11 @@ static Tigr *tigrLoadPng(PNG *png)
 	depth = ihdr[8];
 	ctype = ihdr[9];
 	switch (ctype) {
-		case 0: bpp = 1; break; // greyscale
-		case 2: bpp = 3; break; // RGB
-		case 3: bpp = 1; break; // paletted
-		case 4: bpp = 2; break; // grey+alpha
-		case 6: bpp = 4; break; // RGBA
+		case 0: bipp = depth; break; // greyscale
+		case 2: bipp = 3 * depth; break; // RGB
+		case 3: bipp = depth; break; // paletted
+		case 4: bipp = 2 * depth; break; // grey+alpha
+		case 6: bipp = 4 * depth; break; // RGBA
 		default: FAIL();
 	}
 
@@ -592,7 +603,7 @@ static Tigr *tigrLoadPng(PNG *png)
 	bmp->w--;
 
 	// We don't support non-8bpp, interlacing, or wacky filter types.
-	CHECK(depth == 8 && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
+	CHECK((depth == 4 || depth == 8) && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
 
 	// Join IDAT chunks.
 	for (idat=find(png, "IDAT", 0); idat; idat=find(png, "IDAT", 0))
@@ -615,15 +626,16 @@ static Tigr *tigrLoadPng(PNG *png)
 	   && (data[0] & 0xf0) <= 0x70	// window size
 	   && (data[1] & 0x20) == 0);	// preset dictionary present
 
-	out = (unsigned char *)bmp->pix + outsize(bmp, 4) - outsize(bmp, bpp);
-	CHECK(tigrInflate(out, outsize(bmp, bpp), data+2, datalen-6));
-	CHECK(unfilter(bmp->w, bmp->h, bpp, out));
+	out = (unsigned char *)bmp->pix + outsize(bmp, 32) - outsize(bmp, bipp);
+	CHECK(tigrInflate(out, outsize(bmp, bipp), data+2, datalen-6));
+	CHECK(unfilter(bmp->w, bmp->h, bipp, out));
 
 	if (ctype == 3) {
 		CHECK(plte);
-		depalette(bmp->w, bmp->h, out, bmp->pix, plte);
+		depalette(bmp->w, bmp->h, out, bipp, bmp->pix, plte);
 	} else {
-		convert(bpp, bmp->w, bmp->h, out, bmp->pix);
+		CHECK(bipp % 8 == 0);
+		convert(bipp / 8, bmp->w, bmp->h, out, bmp->pix);
 	}
 	
 	free(data);
