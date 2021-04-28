@@ -45,7 +45,7 @@ static int unfilter(int w, int h, int bipp, unsigned char *raw)
 	int len = rowBytes(w, bipp);
 	int bpp = rowBytes(1, bipp);
 	int x, y;
-	unsigned char *first = alloca(len + 1);
+	unsigned char *first = (unsigned char*) alloca(len + 1);
 	memset(first, 0, len + 1);
 	unsigned char *prev = first;
 	for (y=0;y<h;y++,prev=raw,raw+=len)
@@ -156,6 +156,7 @@ static int outsize(Tigr *bmp, int bipp) {
 static Tigr *tigrLoadPng(PNG *png)
 {
 	const unsigned char *ihdr, *idat, *plte, *trns, *first;
+	int trnsSize = 0;
 	int depth, ctype, bipp;
 	int datalen = 0;
 	unsigned char *data = NULL, *out;
@@ -207,7 +208,6 @@ static Tigr *tigrLoadPng(PNG *png)
 	// Find transparency info.
 	png->p = first;
 	trns = find(png, "tRNS", 0);
-	int trnsSize = 0;
 	if (trns) {
 		trnsSize = get32(trns - 8);
 	}
