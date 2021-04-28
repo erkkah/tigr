@@ -66,7 +66,7 @@ static int unfilter(int w, int h, int bipp, unsigned char *raw)
 }
 
 static void convert(
-	int bypp, int w, int h, unsigned char *src, TPixel *dest,
+	int bypp, int w, int h, const unsigned char *src, TPixel *dest,
 	const unsigned char *trns
 ) {
 	int x,y;
@@ -101,27 +101,43 @@ static void convert(
 	}
 }
 
-// ??? Rewrite as special cases instead, depalette2, depalette4, depalette 8 !!!
 static void depalette(
-	int w, int h, unsigned char *src, int bipp, TPixel *dest,
+	int w, int h, unsigned char *src, TPixel *dest, int bipp,
 	const unsigned char *plte, const unsigned char *trns, int trnsSize
 ) {
-	int x,y,c;
-	int mask = (bipp == 4) ? 0xf0 : 0xff;
-	int maskFlip = (bipp == 4) ? 0xff : 0x00;
-	int inc = (bipp == 4) ? 0 : 1;
-	const int shift = (bipp == 4) ? 4 : 0;
-	int shiftVal = shift;
+	int x, y, c;
+	unsigned char alpha;
+	int mask, len;
 
-	for (y=0;y<h;y++)
+	switch (bipp) {
+		case 4:
+			mask = 15;
+			len = 1;
+			break;
+		case 2:
+			mask = 3;
+			len = 3;
+			break;
+		case 1:
+			mask = 1;
+			len = 7;
+	}
+
+	for (y = 0; y < h; y++)
 	{
 		src++; // skip filter byte
-		for (x = 0; x < w; x++, src += (x & 1) | inc)
+		for (x = 0; x < w; x++)
 		{
-			c = (*src & mask) >> shiftVal;
-			shiftVal ^= shift;
-			mask ^= maskFlip;
-			unsigned char alpha = 255;
+			if (bipp == 8) {
+				c = *src++;
+			} else {
+				int pos = x & len;
+				c = (src[0] >> ((len - pos) * bipp)) & mask;
+				if (pos == len) {
+					src++;
+				}
+			}
+			alpha = 255;
 			if (c < trnsSize) {
 				alpha = trns[c];
 			}
@@ -168,9 +184,9 @@ static Tigr *tigrLoadPng(PNG *png)
 	CHECK(bmp);
 	bmp->w--;
 
-	// We only support 8-bit components, 4 and 8 bit palette formats.
+	// We support 8-bit color components and 1, 2, 4 and 8 bit palette formats.
 	// No interlacing, or wacky filter types.
-	CHECK((depth == 4 || depth == 8) && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
+	CHECK((depth != 16) && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
 
 	// Join IDAT chunks.
 	for (idat=find(png, "IDAT", 0); idat; idat=find(png, "IDAT", 0))
@@ -207,7 +223,7 @@ static Tigr *tigrLoadPng(PNG *png)
 
 	if (ctype == 3) {
 		CHECK(plte);
-		depalette(bmp->w, bmp->h, out, bipp, bmp->pix, plte, trns, trnsSize);
+		depalette(bmp->w, bmp->h, out, bmp->pix, bipp, plte, trns, trnsSize);
 	} else {
 		CHECK(bipp % 8 == 0);
 		convert(bipp / 8, bmp->w, bmp->h, out, bmp->pix, trns);

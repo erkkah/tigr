@@ -466,6 +466,7 @@ void tigrBlitAlpha(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, 
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <alloca.h>
 
 typedef struct {
 	const unsigned char *p, *end;
@@ -508,7 +509,9 @@ static int unfilter(int w, int h, int bipp, unsigned char *raw)
 	int len = rowBytes(w, bipp);
 	int bpp = rowBytes(1, bipp);
 	int x, y;
-	unsigned char *prev = raw;
+	unsigned char *first = alloca(len + 1);
+	memset(first, 0, len + 1);
+	unsigned char *prev = first;
 	for (y=0;y<h;y++,prev=raw,raw+=len)
 	{
 #define LOOP(A, B) for (x=0;x<bpp;x++) raw[x] += A; for (;x<len;x++) raw[x] += B; break
@@ -526,40 +529,83 @@ static int unfilter(int w, int h, int bipp, unsigned char *raw)
 	return 1;
 }
 
-static void convert(int bpp, int w, int h, unsigned char *src, TPixel *dest)
-{
+static void convert(
+	int bypp, int w, int h, const unsigned char *src, TPixel *dest,
+	const unsigned char *trns
+) {
 	int x,y;
 	for (y=0;y<h;y++)
 	{
 		src++; // skip filter byte
-		for (x=0;x<w;x++,src+=bpp)
+		for (x=0;x<w;x++,src+=bypp)
 		{
-			switch (bpp) {
-			case 1: *dest++ = tigrRGB (src[0], src[0], src[0]); break;
+			switch (bypp) {
+			case 1: {
+				unsigned char c = src[0];
+				if (trns && c == *trns) {
+					*dest++ = tigrRGBA(c, c, c, 0); break;
+				} else {
+					*dest++ = tigrRGB (c, c, c); break;
+				}
+			}
 			case 2: *dest++ = tigrRGBA(src[0], src[0], src[0], src[1]); break;
-			case 3: *dest++ = tigrRGB (src[0], src[1], src[2]); break;
+			case 3: {
+				unsigned char r = src[0];
+				unsigned char g = src[1];
+				unsigned char b = src[2];
+				if (trns && trns[1] == r && trns[3] == g && trns[5] == b) {
+					*dest++ = tigrRGBA(r, g, b, 0); break;
+				} else {
+					*dest++ = tigrRGB (r, g, b); break;
+				}
+			}
 			case 4: *dest++ = tigrRGBA(src[0], src[1], src[2], src[3]); break;
 			}
 		}
 	}
 }
 
-static void depalette(int w, int h, unsigned char *src, int bipp, TPixel *dest, const unsigned char *plte)
-{
+static void depalette(
+	int w, int h, unsigned char *src, TPixel *dest, int bipp,
+	const unsigned char *plte, const unsigned char *trns, int trnsSize
+) {
 	int x,y,c;
-	int mask = (bipp == 4) ? 0xf0 : 0xff;
-	const int shift = (bipp == 4) ? 4 : 0;
-	int shiftVal = shift;
+	unsigned char alpha;
+	int mask, len;
 
-	for (y=0;y<h;y++)
+	switch (bipp) {
+		case 4:
+			mask = 15;
+			len = 1;
+			break;
+		case 2:
+			mask = 3;
+			len = 3;
+			break;
+		case 1:
+			mask = 1;
+			len = 7;
+	}
+
+	for (y = 0; y < h; y++)
 	{
 		src++; // skip filter byte
-		for (x = 0; x < w; x++, src += (x & 1))
+		for (x = 0; x < w; x++)
 		{
-			c = (*src & mask) >> shiftVal;
-			shiftVal ^= shift;
-			mask ^= 0xff;
-			*dest++ = tigrRGBA(plte[c*3+0], plte[c*3+1], plte[c*3+2], c?255:0);
+			if (bipp == 8) {
+				c = *src++;
+			} else {
+				int pos = x & len;
+				c = (src[0] >> ((len - pos) * bipp)) & mask;
+				if (pos == len) {
+					src++;
+				}
+			}
+			alpha = 255;
+			if (c < trnsSize) {
+				alpha = trns[c];
+			}
+			*dest++ = tigrRGBA(plte[c*3+0], plte[c*3+1], plte[c*3+2], alpha);
 		}
 	}
 }
@@ -573,7 +619,7 @@ static int outsize(Tigr *bmp, int bipp) {
 
 static Tigr *tigrLoadPng(PNG *png)
 {
-	const unsigned char *ihdr, *idat, *plte, *first;
+	const unsigned char *ihdr, *idat, *plte, *trns, *first;
 	int depth, ctype, bipp;
 	int datalen = 0;
 	unsigned char *data = NULL, *out;
@@ -602,8 +648,9 @@ static Tigr *tigrLoadPng(PNG *png)
 	CHECK(bmp);
 	bmp->w--;
 
-	// We don't support non-8bpp, interlacing, or wacky filter types.
-	CHECK((depth == 4 || depth == 8) && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
+	// We only support 8-bit components, 4 and 8 bit palette formats.
+	// No interlacing, or wacky filter types.
+	CHECK((depth != 16) && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
 
 	// Join IDAT chunks.
 	for (idat=find(png, "IDAT", 0); idat; idat=find(png, "IDAT", 0))
@@ -621,6 +668,14 @@ static Tigr *tigrLoadPng(PNG *png)
 	png->p = first;
 	plte = find(png, "PLTE", 0);
 
+	// Find transparency info.
+	png->p = first;
+	trns = find(png, "tRNS", 0);
+	int trnsSize = 0;
+	if (trns) {
+		trnsSize = get32(trns - 8);
+	}
+
 	CHECK(data && datalen >= 6);
 	CHECK((data[0] & 0x0f) == 0x08	// compression method (RFC 1950)
 	   && (data[0] & 0xf0) <= 0x70	// window size
@@ -632,10 +687,10 @@ static Tigr *tigrLoadPng(PNG *png)
 
 	if (ctype == 3) {
 		CHECK(plte);
-		depalette(bmp->w, bmp->h, out, bipp, bmp->pix, plte);
+		depalette(bmp->w, bmp->h, out, bmp->pix, bipp, plte, trns, trnsSize);
 	} else {
 		CHECK(bipp % 8 == 0);
-		convert(bipp / 8, bmp->w, bmp->h, out, bmp->pix);
+		convert(bipp / 8, bmp->w, bmp->h, out, bmp->pix, trns);
 	}
 	
 	free(data);
