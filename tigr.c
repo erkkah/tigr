@@ -3376,6 +3376,7 @@ void tigr_android_destroy();
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <sys/time.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -3510,9 +3511,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 	swa.colormap = cmap;
-	swa.event_mask = ExposureMask | StructureNotifyMask |
-		KeyPressMask | KeyReleaseMask |
-		ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+	swa.event_mask = KeyPressMask | KeyReleaseMask ;
 
 	xwin = XCreateWindow(dpy, root, 0, 0, w * scale, h * scale, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 
@@ -3568,6 +3567,9 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	win->widgetsScale = 0;
 	win->widgets = 0;
 	win->gl.gl_legacy = 0;
+
+	memset(win->keys, 0, 256);
+	memset(win->prev, 0, 256);
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
  	tigrGAPICreate(bmp);
@@ -3726,19 +3728,30 @@ void tigrUpdate(Tigr *bmp) {
 	tigrGAPIPresent(bmp, gwa.width, gwa.height);
 	glXSwapBuffers(win->dpy, win->win);
 
+	{
+		Window root;
+		Window child;
+		int rootX;
+		int rootY;
+		int winX;
+		int winY;
+		unsigned int mask;
+
+		if (XQueryPointer(win->dpy, win->win, &root, &child, &rootX, &rootY, &winX, &winY, &mask)) {
+			win->mouseX = (winX - win->pos[0]) / win->scale;
+			win->mouseY = (winY - win->pos[1]) / win->scale;
+			win->mouseButtons = 
+				(mask & Button1Mask) ? 1 : 0 |
+				(mask & Button3Mask) ? 2 : 0 |
+				(mask & Button2Mask) ? 4 : 0 ;
+		}
+	}
+
 	XEvent event;
-	int eventMask = ExposureMask | KeyPressMask | KeyReleaseMask | PointerMotionMask | ButtonPressMask | ButtonReleaseMask ;	
+	int eventMask = KeyPressMask | KeyReleaseMask ;
 	while(XCheckWindowEvent(win->dpy, win->win, eventMask, &event)) {
 
 		switch(event.type) {
-			case Expose:
-				XGetWindowAttributes(win->dpy, win->win, &gwa);
-				glXMakeCurrent(win->dpy, win->win, win->glc);
-				tigrGAPIPresent(bmp, gwa.width, gwa.height);
-				glXSwapBuffers(win->dpy, win->win);
-				memset(win->keys, 0, 256);
-				memset(win->prev, 0, 256);
-				break;
 			case KeyPress:
 				{
 					KeySym keysym = 0;
@@ -3763,52 +3776,19 @@ void tigrUpdate(Tigr *bmp) {
 					tigrUpdateModifiers(win);
 				}
 				break;
-			case MotionNotify:
-				win->mouseX = (event.xmotion.x - win->pos[0]) / win->scale;
-				win->mouseY = (event.xmotion.y - win->pos[1]) / win->scale;
-				break;
-			case ButtonRelease:
-				switch(event.xbutton.button) {
-					case Button1:
-						win->mouseButtons &= ~1;
-						break;
-					case Button2:
-						win->mouseButtons &= ~4;
-						break;
-					case Button3:
-						win->mouseButtons &= ~2;
-						break;
-				}
-				break;
-			case ButtonPress:
-				switch(event.xbutton.button) {
-					case Button1:
-						win->mouseButtons |= 1;
-						break;
-					case Button2:
-						win->mouseButtons |= 4;
-						break;
-					case Button3:
-						win->mouseButtons |= 2;
-						break;
-				}
-				break;
 			default:
 				break;
 		}
 	}
-	if (XCheckTypedEvent(win->dpy, ClientMessage, &event)) {
-		if (event.xclient.window == win->win) {
-			if(event.xclient.data.l[0] == wmDeleteMessage) {
-				glXMakeCurrent(win->dpy, None, NULL);
-				glXDestroyContext(win->dpy, win->glc);
-				XDestroyWindow(win->dpy, win->win);
-				win->win = 0;
-			}
-		} else {
-			XPutBackEvent(win->dpy, &event);
+	while (XCheckTypedWindowEvent(win->dpy, win->win, ClientMessage, &event)) {
+		if(event.xclient.data.l[0] == wmDeleteMessage) {
+			glXMakeCurrent(win->dpy, None, NULL);
+			glXDestroyContext(win->dpy, win->glc);
+			XDestroyWindow(win->dpy, win->win);
+			win->win = 0;
 		}
 	}
+	XFlush(win->dpy);
 }
 
 void tigrFree(Tigr *bmp) {
