@@ -109,6 +109,7 @@ typedef struct {
 	int mouseButtons;
 	#endif
 	#ifdef __linux__
+	char prevX11Keys[32];
 	int mouseX;
 	int mouseY;
 	#endif // __linux__
