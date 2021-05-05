@@ -10,6 +10,7 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xlocale.h>
+#include <X11/XKBlib.h>
 #include <GL/glx.h>
 
 static Display *dpy;
@@ -140,7 +141,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 	swa.colormap = cmap;
-	swa.event_mask = KeyPressMask | KeyReleaseMask ;
+	swa.event_mask = 0;
 
 	xwin = XCreateWindow(dpy, root, 0, 0, w * scale, h * scale, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 
@@ -199,6 +200,7 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	memset(win->keys, 0, 256);
 	memset(win->prev, 0, 256);
+	memset(win->prevX11Keys, 0, 32);
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
  	tigrGAPICreate(bmp);
@@ -338,6 +340,83 @@ static void tigrUpdateModifiers(TigrInternal *win) {
     win->keys[TK_ALT] = win->keys[TK_LALT] || win->keys[TK_RALT];
 }
 
+static void tigrInterpretChar(TigrInternal* win, Window root, unsigned int keycode, unsigned int mask) {
+	XKeyEvent event;
+	memset(&event, 0, sizeof(event));
+	event.type = KeyPress;
+	event.display = win->dpy;
+	event.root = root;
+	event.window = win->win;
+	event.state = mask;
+	event.keycode = keycode;
+	char inputTextUTF8[10];
+	Status status = 0;
+	Xutf8LookupString(win->ic, &event, inputTextUTF8, sizeof(inputTextUTF8), NULL, &status);
+
+	if(status == XLookupChars) {
+		tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
+	}
+}
+
+static void tigrProcessInput(TigrInternal* win) {
+	Window root;
+	Window child;
+	int rootX;
+	int rootY;
+	int winX;
+	int winY;
+	unsigned int mask;
+
+	if (XQueryPointer(win->dpy, win->win, &root, &child, &rootX, &rootY, &winX, &winY, &mask)) {
+		win->mouseX = (winX - win->pos[0]) / win->scale;
+		win->mouseY = (winY - win->pos[1]) / win->scale;
+		win->mouseButtons = 
+			(mask & Button1Mask) ? 1 : 0 |
+			(mask & Button3Mask) ? 2 : 0 |
+			(mask & Button2Mask) ? 4 : 0 ;
+	}
+
+	char keys[32];
+	XQueryKeymap(win->dpy, keys);
+	for (int i = 0; i < 32; i++) {
+		char thisBlock = keys[i];
+		char prevBlock = win->prevX11Keys[i];
+		if (thisBlock != prevBlock) {
+			for (int j = 0; j < 8; j++) {
+				int thisBit = thisBlock & 1;
+				int prevBit = prevBlock & 1;
+				thisBlock >>= 1;
+				prevBlock >>= 1;
+				if (thisBit != prevBit) {
+					int keyCode = 8 * i + j;
+					KeySym keySym = XkbKeycodeToKeysym(win->dpy, keyCode, 0, 0);
+					if (keySym != NoSymbol) {
+						int key = tigrKeyFromX11(keySym);
+						win->keys[key] = thisBit;
+						tigrUpdateModifiers(win);
+
+						if (thisBit) {
+							tigrInterpretChar(win, root, keyCode, mask);
+						}
+					}
+				}
+			}
+		}
+	}
+	memcpy(win->prevX11Keys, keys, 32);
+
+	XEvent event;
+	while (XCheckTypedWindowEvent(win->dpy, win->win, ClientMessage, &event)) {
+		if(event.xclient.data.l[0] == wmDeleteMessage) {
+			glXMakeCurrent(win->dpy, None, NULL);
+			glXDestroyContext(win->dpy, win->glc);
+			XDestroyWindow(win->dpy, win->win);
+			win->win = 0;
+		}
+	}
+	XFlush(win->dpy);
+}
+
 void tigrUpdate(Tigr *bmp) {
 	XWindowAttributes gwa;
 
@@ -357,67 +436,7 @@ void tigrUpdate(Tigr *bmp) {
 	tigrGAPIPresent(bmp, gwa.width, gwa.height);
 	glXSwapBuffers(win->dpy, win->win);
 
-	{
-		Window root;
-		Window child;
-		int rootX;
-		int rootY;
-		int winX;
-		int winY;
-		unsigned int mask;
-
-		if (XQueryPointer(win->dpy, win->win, &root, &child, &rootX, &rootY, &winX, &winY, &mask)) {
-			win->mouseX = (winX - win->pos[0]) / win->scale;
-			win->mouseY = (winY - win->pos[1]) / win->scale;
-			win->mouseButtons = 
-				(mask & Button1Mask) ? 1 : 0 |
-				(mask & Button3Mask) ? 2 : 0 |
-				(mask & Button2Mask) ? 4 : 0 ;
-		}
-	}
-
-	XEvent event;
-	int eventMask = KeyPressMask | KeyReleaseMask ;
-	while(XCheckWindowEvent(win->dpy, win->win, eventMask, &event)) {
-
-		switch(event.type) {
-			case KeyPress:
-				{
-					KeySym keysym = 0;
-					char inputTextUTF8[10];
-					Status status = 0;
-                	int count = Xutf8LookupString(win->ic, &event.xkey, inputTextUTF8, sizeof(inputTextUTF8), NULL, &status);
-
-                	if(status == XLookupChars) {
-						tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
-					}
-	                keysym = XLookupKeysym(&event.xkey, 0);
-	                int key = tigrKeyFromX11(keysym);
-	                win->keys[key] = 1;
-	                tigrUpdateModifiers(win);
-                }
-				break;
-			case KeyRelease:
-				{
-					KeySym keysym = XLookupKeysym(&event.xkey, 0);
-					uint8_t key = tigrKeyFromX11(keysym);
-					win->keys[key] = 0;
-					tigrUpdateModifiers(win);
-				}
-				break;
-			default:
-				break;
-		}
-	}
-	while (XCheckTypedWindowEvent(win->dpy, win->win, ClientMessage, &event)) {
-		if(event.xclient.data.l[0] == wmDeleteMessage) {
-			glXMakeCurrent(win->dpy, None, NULL);
-			glXDestroyContext(win->dpy, win->glc);
-			XDestroyWindow(win->dpy, win->win);
-			win->win = 0;
-		}
-	}
-	XFlush(win->dpy);
+	tigrProcessInput(win);
 }
 
 void tigrFree(Tigr *bmp) {
