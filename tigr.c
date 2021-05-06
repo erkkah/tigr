@@ -3728,7 +3728,7 @@ static void tigrInterpretChar(TigrInternal* win, Window root, unsigned int keyco
 	}
 }
 
-static void tigrProcessInput(TigrInternal* win) {
+static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
 	{
 		Window focused;
 		int revertTo;
@@ -3748,12 +3748,19 @@ static void tigrProcessInput(TigrInternal* win) {
 	unsigned int mask;
 
 	if (XQueryPointer(win->dpy, win->win, &root, &child, &rootX, &rootY, &winX, &winY, &mask)) {
+		static unsigned int prevButtons;
+		unsigned int buttons = mask & (Button1Mask | Button2Mask | Button3Mask);
+
 		win->mouseX = (winX - win->pos[0]) / win->scale;
 		win->mouseY = (winY - win->pos[1]) / win->scale;
-		win->mouseButtons = 
-			(mask & Button1Mask) ? 1 : 0 |
-			(mask & Button3Mask) ? 2 : 0 |
-			(mask & Button2Mask) ? 4 : 0 ;
+
+		if (buttons != prevButtons && (winX > 0 && winX < winWidth) && (winY > 0 && winY < winHeight)) {
+			win->mouseButtons = 
+				(buttons & Button1Mask) ? 1 : 0 |
+				(buttons & Button3Mask) ? 2 : 0 |
+				(buttons & Button2Mask) ? 4 : 0 ;
+		}
+		prevButtons = buttons;
 	}
 
 	static char prevKeys[32];
@@ -3817,7 +3824,7 @@ void tigrUpdate(Tigr *bmp) {
 	tigrGAPIPresent(bmp, gwa.width, gwa.height);
 	glXSwapBuffers(win->dpy, win->win);
 
-	tigrProcessInput(win);
+	tigrProcessInput(win, gwa.width, gwa.height);
 }
 
 void tigrFree(Tigr *bmp) {
