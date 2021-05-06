@@ -203,7 +203,6 @@ typedef struct {
 	int mouseButtons;
 	#endif
 	#ifdef __linux__
-	char prevX11Keys[32];
 	int mouseX;
 	int mouseY;
 	#endif // __linux__
@@ -3572,7 +3571,6 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	memset(win->keys, 0, 256);
 	memset(win->prev, 0, 256);
-	memset(win->prevX11Keys, 0, 32);
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
  	tigrGAPICreate(bmp);
@@ -3731,6 +3729,16 @@ static void tigrInterpretChar(TigrInternal* win, Window root, unsigned int keyco
 }
 
 static void tigrProcessInput(TigrInternal* win) {
+	{
+		Window focused;
+		int revertTo;
+		XGetInputFocus(win->dpy, &focused, &revertTo);
+
+		if (win->win != focused) {
+			return;
+		}
+	}
+
 	Window root;
 	Window child;
 	int rootX;
@@ -3748,11 +3756,12 @@ static void tigrProcessInput(TigrInternal* win) {
 			(mask & Button2Mask) ? 4 : 0 ;
 	}
 
+	static char prevKeys[32];
 	char keys[32];
 	XQueryKeymap(win->dpy, keys);
 	for (int i = 0; i < 32; i++) {
 		char thisBlock = keys[i];
-		char prevBlock = win->prevX11Keys[i];
+		char prevBlock = prevKeys[i];
 		if (thisBlock != prevBlock) {
 			for (int j = 0; j < 8; j++) {
 				int thisBit = thisBlock & 1;
@@ -3775,7 +3784,7 @@ static void tigrProcessInput(TigrInternal* win) {
 			}
 		}
 	}
-	memcpy(win->prevX11Keys, keys, 32);
+	memcpy(prevKeys, keys, 32);
 
 	XEvent event;
 	while (XCheckTypedWindowEvent(win->dpy, win->win, ClientMessage, &event)) {
@@ -3786,7 +3795,7 @@ static void tigrProcessInput(TigrInternal* win) {
 			win->win = 0;
 		}
 	}
-	XFlush(win->dpy);	
+	XFlush(win->dpy);
 }
 
 void tigrUpdate(Tigr *bmp) {
