@@ -43,6 +43,7 @@ typedef struct {
 #define TIGR_3X			4	// always enforce (at least) 3X pixel scale
 #define TIGR_4X			8	// always enforce (at least) 4X pixel scale
 #define TIGR_RETINA		16	// enable retina support on OS X
+#define TIGR_NOCURSOR	32	// hide cursor
 
 // A Tigr bitmap.
 typedef struct Tigr {

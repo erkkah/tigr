@@ -115,6 +115,21 @@ static void setupVSync(Display* display, Window win) {
 	}
 }
 
+static void tigrHideCursor(TigrInternal *win) {
+	Cursor invisibleCursor;
+	Pixmap bitmapNoData;
+	XColor black;
+	static char noData[] = { 0,0,0,0,0,0,0,0 };
+	black.red = black.green = black.blue = 0;
+
+	bitmapNoData = XCreateBitmapFromData(win->dpy, win->win, noData, 8, 8);
+	invisibleCursor = XCreatePixmapCursor(win->dpy, bitmapNoData, bitmapNoData, 
+										&black, &black, 0, 0);
+	XDefineCursor(win->dpy, win->win, invisibleCursor);
+	XFreeCursor(win->dpy, invisibleCursor);
+	XFreePixmap(win->dpy, bitmapNoData);
+}
+
 Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	Tigr* bmp = 0;
 	Colormap cmap;
@@ -200,6 +215,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	memset(win->keys, 0, 256);
 	memset(win->prev, 0, 256);
+
+	if (flags & TIGR_NOCURSOR) {
+		tigrHideCursor(win);
+	}
 
 	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
  	tigrGAPICreate(bmp);
