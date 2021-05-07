@@ -330,6 +330,10 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     // Set the handle
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
 
+    if (flags & TIGR_NOCURSOR) {
+        objc_msgSend_void_id((id)objc_getClass("NSCursor"), sel_registerName("hide"));
+    }
+
     // Set up the Windows parts.
     win = tigrInternal(bmp);
     win->shown = 0;

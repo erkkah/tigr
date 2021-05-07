@@ -456,6 +456,10 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 	if (!hWnd)
 		ExitProcess(1);
 
+	if (flags & TIGR_NOCURSOR) {
+		ShowCursor(FALSE);
+	}
+
 	// Wrap a bitmap around it.
 	bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
 	bmp->handle = hWnd;
