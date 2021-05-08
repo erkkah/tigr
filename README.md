@@ -4,8 +4,8 @@
 
 TIGR is a tiny graphics library, for when you just need to draw something in a window without any fuss. TIGR doesn't want to do everything. We don't want to bloat your program with hundreds of extra DLLs and megabytes of frameworks.
 
-
-We don't want to supply every possible function you might ever need. There are already plenty of add-on libraries for doing sound, XML, 3D, whatever. Our goal is simply to allow you to easily throw together small 2D programs when you need them.
+We don't want to supply every possible function you might ever need. There are already plenty of add-on libraries for doing sound, json, 3D, whatever.
+Our goal is simply to allow you to easily throw together small 2D programs when you need them.
 
 TIGR's core is a simple framebuffer library. On top of that, we provide a few helpers for the common tasks that 2D programs generally need:
 
@@ -79,9 +79,12 @@ TIGR comes with a built-in bitmap font, accessed by the `tfont` variable. Custom
 
 ### Custom pixel shaders
 
-TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by [`tigrSetPostFX`](tigr.h#L84). These stock effects can be replaced by calling [`tigrSetPostShader`](tigr.h#L75) with a custom shader. The custom shader will have access to the four parameters from `tigrSetPostFX` as the `uniform vec4` `parameters`.
+TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by [`tigrSetPostFX`](tigr.h#L84).
+These stock effects can be replaced by calling [`tigrSetPostShader`](tigr.h#L75) with a custom shader.
+The custom shader is in the form of a shader function: `void fxShader(out vec4 color, in vec2 uv)` and has access to the four parameters from `tigrSetPostFX` as a `uniform vec4` called `parameters`.
 
 See the [shader example](examples/shader/shader.c) for more details.
+
 ## Known issues
 
 On macOS, seemingly depending on SDK version and if you use TIGR in an Xcode project, you need to define `OBJC_OLD_DISPATCH_PROTOTYPES` to avoid problems with `objc_msgSend` prototypes.
