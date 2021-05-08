@@ -2384,7 +2384,13 @@ typedef CGPoint NSPoint;
 typedef CGSize NSSize;
 typedef CGRect NSRect;
 
-enum { NSKeyDown = 10, NSKeyUp = 11, NSKeyDownMask = 1 << NSKeyDown, NSKeyUpMask = 1 << NSKeyUp };
+enum {
+    NSKeyDown = 10,
+    NSKeyDownMask = 1 << NSKeyDown,
+    NSKeyUp = 11,
+    NSKeyUpMask = 1 << NSKeyUp,
+    NSAllEventMask = NSUIntegerMax,
+};
 
 extern id NSApp;
 extern id const NSDefaultRunLoopMode;
@@ -2439,6 +2445,14 @@ void windowDidBecomeKey(id self, SEL _sel, id notification) {
         win->lastChar = 0;
         win->mouseButtons = 0;
     }
+}
+
+void mouseEntered(id self, SEL _sel, id event) {
+    objc_msgSend_id((id)objc_getClass("NSCursor"), sel_registerName("hide"));
+}
+
+void mouseExited(id self, SEL _sel, id event) {
+    objc_msgSend_id((id)objc_getClass("NSCursor"), sel_registerName("unhide"));
 }
 
 bool _tigrCocoaIsWindowClosed(id window) {
@@ -2618,6 +2632,13 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     resultAddMethod =
         class_addMethod(WindowDelegateClass, sel_registerName("windowDidBecomeKey:"), (IMP)windowDidBecomeKey, "v@:@");
     assert(resultAddMethod);
+    resultAddMethod =
+        class_addMethod(WindowDelegateClass, sel_registerName("mouseEntered:"), (IMP)mouseEntered, "v@:@");
+    assert(resultAddMethod);
+    resultAddMethod =
+        class_addMethod(WindowDelegateClass, sel_registerName("mouseExited:"), (IMP)mouseExited, "v@:@");
+    assert(resultAddMethod);
+
     id wdgAlloc = objc_msgSend_id((id)WindowDelegateClass, sel_registerName("alloc"));
     id wdg = objc_msgSend_id(wdgAlloc, sel_registerName("init"));
 
@@ -2673,7 +2694,16 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
 
     if (flags & TIGR_NOCURSOR) {
-        objc_msgSend_void_id((id)objc_getClass("NSCursor"), sel_registerName("hide"));
+        #define NSTrackingMouseEnteredAndExited 1
+        #define NSTrackingActiveInKeyWindow 0x20
+        #define NSTrackingInVisibleRect 0x200
+        id trackingArea = objc_msgSend_id((id)objc_getClass("NSTrackingArea"), sel_registerName("alloc"));
+        trackingArea = ((id (*)(id, SEL, NSRect, int, id, id))objc_msgSend)
+            (
+                trackingArea, sel_registerName("initWithRect:options:owner:userInfo:"),
+                rect, NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect, wdg, 0
+            );
+        objc_msgSend_void_id(contentView, sel_registerName("addTrackingArea:"), trackingArea);
     }
 
     // Set up the Windows parts.
@@ -3181,12 +3211,12 @@ void tigrUpdate(Tigr* bmp) {
     }
 
     id keyWindow = objc_msgSend_id(NSApp, sel_registerName("keyWindow"));
-    unsigned long long eventMask = NSUIntegerMax;
+    unsigned long long eventMask = NSAllEventMask;
 
     if (keyWindow == window) {
         memcpy(win->prev, win->keys, 256);
     } else {
-        eventMask = ~(NSKeyDownMask | NSKeyUpMask);
+        eventMask &= ~(NSKeyDownMask | NSKeyUpMask);
     }
 
     id distantPast = objc_msgSend_id((id)objc_getClass("NSDate"), sel_registerName("distantPast"));
