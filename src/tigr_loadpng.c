@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <alloca.h>
 
 typedef struct {
 	const unsigned char *p, *end;
@@ -45,7 +44,7 @@ static int unfilter(int w, int h, int bipp, unsigned char *raw)
 	int len = rowBytes(w, bipp);
 	int bpp = rowBytes(1, bipp);
 	int x, y;
-	unsigned char *first = (unsigned char*) alloca(len + 1);
+	unsigned char *first = (unsigned char*) malloc(len + 1);
 	memset(first, 0, len + 1);
 	unsigned char *prev = first;
 	for (y=0;y<h;y++,prev=raw,raw+=len)
@@ -62,6 +61,7 @@ static int unfilter(int w, int h, int bipp, unsigned char *raw)
 		}
 #undef LOOP
 	}
+	free(first);
 	return 1;
 }
 
