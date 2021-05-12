@@ -130,6 +130,17 @@ static void tigrHideCursor(TigrInternal *win) {
 	XFreePixmap(win->dpy, bitmapNoData);
 }
 
+
+
+typedef struct {
+	unsigned long flags;
+	unsigned long functions;
+	unsigned long decorations;
+	long          inputMode;
+	unsigned long status;
+} WindowHints;
+
+
 Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	Tigr* bmp = 0;
 	Colormap cmap;
@@ -142,13 +153,13 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 	initX11Stuff();
 
 	if (flags & TIGR_AUTO) {
-		// Always use a 1:1 pixel size.
+		// Always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
 		scale = 1;
 	} else {
 		// See how big we can make it and still fit on-screen.
 		Screen *screen = DefaultScreenOfDisplay(dpy);
-		int maxW = WidthOfScreen(screen) * 3/4;
-		int maxH = HeightOfScreen(screen) * 3/4;
+		int maxW = WidthOfScreen(screen);
+		int maxH = HeightOfScreen(screen);
 		scale = tigrCalcScale(w, h, maxW, maxH);
 	}
 
@@ -156,11 +167,44 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags) {
 
 	cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 	swa.colormap = cmap;
-	swa.event_mask = 0;
+	swa.event_mask = StructureNotifyMask;
 
+	// Create window of wanted size
 	xwin = XCreateWindow(dpy, root, 0, 0, w * scale, h * scale, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
-
 	XMapWindow(dpy, xwin);
+
+	if (flags & TIGR_FULLSCREEN) {
+		// https://www.tonyobryan.com//index.php?article=9
+		WindowHints hints;
+		Atom property;
+		hints.flags = 2;
+		hints.decorations = 0;
+		property = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
+		XChangeProperty(dpy, xwin, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
+		int screen = DefaultScreen(dpy);
+		int dWidth = DisplayWidth(dpy, screen);
+		int dHeight = DisplayHeight(dpy, screen);
+		XMoveResizeWindow(dpy, xwin, 0, 0, dWidth, dHeight);
+		XMapRaised(dpy, xwin);
+		XGrabPointer(dpy, xwin, True, 0, GrabModeAsync, GrabModeAsync, xwin, 0L, CurrentTime);
+		XGrabKeyboard(dpy, xwin, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+	} else  {
+		// Wait for window to get mapped
+		for(;;) {
+			XEvent e;
+			XNextEvent(dpy, &e);
+			if (e.type == MapNotify) {
+				break;
+			}
+		}
+
+		// Reset size if we did not get the window size we wanted above.
+		XWindowAttributes wa;
+		XGetWindowAttributes(dpy, xwin, &wa);
+		scale = tigrCalcScale(w, h, wa.width, wa.height);
+		scale = tigrEnforceScale(scale, flags);
+		XResizeWindow(dpy, xwin, w * scale, h * scale);
+	}
 
 	XTextProperty prop;
 	int result = Xutf8TextListToTextProperty(dpy, (char**) &title, 1, XUTF8StringStyle, &prop);
