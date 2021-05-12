@@ -33,23 +33,24 @@ extern "C" {
 
 // This struct contains one pixel.
 typedef struct {
-	unsigned char r, g, b, a;
+    unsigned char r, g, b, a;
 } TPixel;
 
 // Window flags.
-#define TIGR_FIXED		0	// window's bitmap is a fixed size (default)
-#define TIGR_AUTO		1	// window's bitmap will automatically resize after each tigrUpdate
-#define TIGR_2X			2	// always enforce (at least) 2X pixel scale
-#define TIGR_3X			4	// always enforce (at least) 3X pixel scale
-#define TIGR_4X			8	// always enforce (at least) 4X pixel scale
-#define TIGR_RETINA		16	// enable retina support on OS X
-#define TIGR_NOCURSOR	32	// hide cursor
+#define TIGR_FIXED      0   // window's bitmap is a fixed size (default)
+#define TIGR_AUTO       1   // window's bitmap will automatically resize after each tigrUpdate
+#define TIGR_2X         2   // always enforce (at least) 2X pixel scale
+#define TIGR_3X         4   // always enforce (at least) 3X pixel scale
+#define TIGR_4X         8   // always enforce (at least) 4X pixel scale
+#define TIGR_RETINA     16  // enable retina support on OS X
+#define TIGR_NOCURSOR   32  // hide cursor
+#define TIGR_FULLSCREEN 64  // start in full-screen mode
 
 // A Tigr bitmap.
 typedef struct Tigr {
-	int w, h;		// width/height (unscaled)
-	TPixel *pix;	// pixel data
-	void *handle;	// OS window handle, NULL for off-screen bitmaps.
+    int w, h;       // width/height (unscaled)
+    TPixel *pix;    // pixel data
+    void *handle;   // OS window handle, NULL for off-screen bitmaps.
 } Tigr;
 
 // Creates a new empty window. (title is UTF-8)
@@ -120,26 +121,26 @@ void tigrBlitTint(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, 
 // Helper for making colors.
 TIGR_INLINE TPixel tigrRGB(unsigned char r, unsigned char g, unsigned char b)
 {
-	TPixel p; p.r = r; p.g = g; p.b = b; p.a = 0xff; return p;
+    TPixel p; p.r = r; p.g = g; p.b = b; p.a = 0xff; return p;
 }
 
 // Helper for making colors.
 TIGR_INLINE TPixel tigrRGBA(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
-	TPixel p; p.r = r; p.g = g; p.b = b; p.a = a; return p;
+    TPixel p; p.r = r; p.g = g; p.b = b; p.a = a; return p;
 }
 
 
 // Font printing ----------------------------------------------------------
 
 typedef struct {
-	int code, x, y, w, h;
+    int code, x, y, w, h;
 } TigrGlyph;
 
 typedef struct {
-	Tigr *bitmap;
-	int numGlyphs;
-	TigrGlyph *glyphs;
+    Tigr *bitmap;
+    int numGlyphs;
+    TigrGlyph *glyphs;
 } TigrFont;
 
 // Loads a font. The font bitmap should contain all characters
@@ -167,22 +168,22 @@ extern TigrFont *tfont;
 
 // Key scancodes. For letters/numbers, use ASCII ('A'-'Z' and '0'-'9').
 typedef enum {
-	TK_PAD0=128,TK_PAD1,TK_PAD2,TK_PAD3,TK_PAD4,TK_PAD5,TK_PAD6,TK_PAD7,TK_PAD8,TK_PAD9,
-	TK_PADMUL,TK_PADADD,TK_PADENTER,TK_PADSUB,TK_PADDOT,TK_PADDIV,
-	TK_F1,TK_F2,TK_F3,TK_F4,TK_F5,TK_F6,TK_F7,TK_F8,TK_F9,TK_F10,TK_F11,TK_F12,
-	TK_BACKSPACE,TK_TAB,TK_RETURN,TK_SHIFT,TK_CONTROL,TK_ALT,TK_PAUSE,TK_CAPSLOCK,
-	TK_ESCAPE,TK_SPACE,TK_PAGEUP,TK_PAGEDN,TK_END,TK_HOME,TK_LEFT,TK_UP,TK_RIGHT,TK_DOWN,
-	TK_INSERT,TK_DELETE,TK_LWIN,TK_RWIN,TK_NUMLOCK,TK_SCROLL,TK_LSHIFT,TK_RSHIFT,
-	TK_LCONTROL,TK_RCONTROL,TK_LALT,TK_RALT,TK_SEMICOLON,TK_EQUALS,TK_COMMA,TK_MINUS,
-	TK_DOT,TK_SLASH,TK_BACKTICK,TK_LSQUARE,TK_BACKSLASH,TK_RSQUARE,TK_TICK
+    TK_PAD0=128,TK_PAD1,TK_PAD2,TK_PAD3,TK_PAD4,TK_PAD5,TK_PAD6,TK_PAD7,TK_PAD8,TK_PAD9,
+    TK_PADMUL,TK_PADADD,TK_PADENTER,TK_PADSUB,TK_PADDOT,TK_PADDIV,
+    TK_F1,TK_F2,TK_F3,TK_F4,TK_F5,TK_F6,TK_F7,TK_F8,TK_F9,TK_F10,TK_F11,TK_F12,
+    TK_BACKSPACE,TK_TAB,TK_RETURN,TK_SHIFT,TK_CONTROL,TK_ALT,TK_PAUSE,TK_CAPSLOCK,
+    TK_ESCAPE,TK_SPACE,TK_PAGEUP,TK_PAGEDN,TK_END,TK_HOME,TK_LEFT,TK_UP,TK_RIGHT,TK_DOWN,
+    TK_INSERT,TK_DELETE,TK_LWIN,TK_RWIN,TK_NUMLOCK,TK_SCROLL,TK_LSHIFT,TK_RSHIFT,
+    TK_LCONTROL,TK_RCONTROL,TK_LALT,TK_RALT,TK_SEMICOLON,TK_EQUALS,TK_COMMA,TK_MINUS,
+    TK_DOT,TK_SLASH,TK_BACKTICK,TK_LSQUARE,TK_BACKSLASH,TK_RSQUARE,TK_TICK
 } TKey;
 
 // Returns mouse input for a window.
 void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons);
 
 typedef struct {
-	int x;
-	int y;
+    int x;
+    int y;
 } TigrTouchPoint;
 
 // Reads touch input for a window.
