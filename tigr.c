@@ -2526,11 +2526,14 @@ void tigrInitOSX() {
     objc_msgSend_void_id(menuBar, sel_registerName("addItem:"), appMenuItem);
     ((id(*)(id, SEL, id))objc_msgSend)(NSApp, sel_registerName("setMainMenu:"), menuBar);
 
-    id appMenuAlloc = objc_msgSend_id((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
-    id appMenu = objc_msgSend_id(appMenuAlloc, sel_registerName("init"));
-
     id processInfo = objc_msgSend_id((id)objc_getClass("NSProcessInfo"), sel_registerName("processInfo"));
     id appName = objc_msgSend_id(processInfo, sel_registerName("processName"));
+
+    id appMenuAlloc = objc_msgSend_id((id)objc_getClass("NSMenu"), sel_registerName("alloc"));
+    id appMenu = ((id(*)(id, SEL, id))objc_msgSend)(
+        appMenuAlloc, sel_registerName("initWithTitle:"),
+        appName
+    );
 
     id quitTitlePrefixString =
         objc_msgSend_id_const_char((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), "Quit ");
@@ -3196,7 +3199,7 @@ void _tigrOnCocoaEvent(id event, id window) {
 
             uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
             win->keys[_tigrKeyFromOSX(keyCode)] = 1;
-            return;
+            break;
         }
         case 11:  // NSKeyUp
         {
