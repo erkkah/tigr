@@ -249,6 +249,16 @@ TigrInternal* _tigrInternalCocoa(id window) {
     return bmp ? tigrInternal(bmp) : NULL;
 }
 
+enum {
+    NSWindowStyleMaskTitled = 1 << 0,
+    NSWindowStyleMaskClosable = 1 << 1,
+    NSWindowStyleMaskMiniaturizable = 1 << 2,
+    NSWindowStyleMaskResizable = 1 << 3,
+    NSWindowStyleRegular = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+        NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable,
+    NSWindowStyleMaskFullSizeContentView = 1 << 15
+};
+
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     int scale;
     Tigr* bmp;
@@ -256,15 +266,21 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     tigrInitOSX();
 
+    int windowStyleMask = NSWindowStyleRegular;
     if (flags & TIGR_AUTO) {
-        // Always use a 1:1 pixel size.
+        // Always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
         scale = 1;
     } else {
         // See how big we can make it and still fit on-screen.
         CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
-        int maxW = CGRectGetHeight(mainMonitor) * 3 / 4;
-        int maxH = CGRectGetWidth(mainMonitor) * 3 / 4;
-        scale = tigrCalcScale(w, h, maxW, maxH);
+        int maxW = CGRectGetHeight(mainMonitor);
+        int maxH = CGRectGetWidth(mainMonitor);
+        NSRect screen = {{0, 0}, {maxW, maxH}};
+        NSRect content = ((NSRect(*)(id, SEL, NSRect, int))objc_msgSend)(
+            (id)objc_getClass("NSWindow"), sel_registerName("contentRectForFrameRect:styleMask:"),
+            screen, windowStyleMask
+        );
+        scale = tigrCalcScale(w, h, content.size.width, content.size.height);
     }
 
     scale = tigrEnforceScale(scale, flags);
@@ -399,7 +415,7 @@ void tigrFree(Tigr* bmp) {
         if (!_tigrCocoaIsWindowClosed(window) && !terminated)
             objc_msgSend_void(window, sel_registerName("close"));
 
-        id wdg = objc_msgSend(window, sel_registerName("delegate"));
+        id wdg = objc_msgSend_id(window, sel_registerName("delegate"));
         objc_msgSend_void(wdg, sel_registerName("release"));
         objc_msgSend_void((id)win->gl.glContext, sel_registerName("release"));
         objc_msgSend_void(window, sel_registerName("release"));
