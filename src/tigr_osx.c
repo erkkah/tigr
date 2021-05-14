@@ -270,6 +270,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     tigrInitOSX();
 
     NSUInteger windowStyleMask = NSWindowStyleRegular;
+
     if (flags & TIGR_AUTO) {
         // Always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
         scale = 1;
@@ -293,6 +294,10 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     id windowAlloc = objc_msgSend_id((id)objc_getClass("NSWindow"), sel_registerName("alloc"));
     id window = ((id(*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(
         windowAlloc, sel_registerName("initWithContentRect:styleMask:backing:defer:"), rect, windowStyleMask, 2, NO);
+
+    if (flags & TIGR_FULLSCREEN) {
+        objc_msgSend_void_id(window, sel_registerName("toggleFullScreen:"), window);
+    }
 
     objc_msgSend_void_bool(window, sel_registerName("setReleasedWhenClosed:"), NO);
 
