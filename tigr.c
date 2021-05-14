@@ -2611,20 +2611,21 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     tigrInitOSX();
 
-    int windowStyleMask = NSWindowStyleRegular;
+    NSUInteger windowStyleMask = NSWindowStyleRegular;
     if (flags & TIGR_AUTO) {
         // Always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
         scale = 1;
     } else {
         // See how big we can make it and still fit on-screen.
         CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
-        int maxW = CGRectGetHeight(mainMonitor);
-        int maxH = CGRectGetWidth(mainMonitor);
+        int maxW = CGRectGetWidth(mainMonitor);
+        int maxH = CGRectGetHeight(mainMonitor);
         NSRect screen = {{0, 0}, {maxW, maxH}};
-        NSRect content = ((NSRect(*)(id, SEL, NSRect, int))objc_msgSend)(
-            (id)objc_getClass("NSWindow"), sel_registerName("contentRectForFrameRect:styleMask:"),
-            screen, windowStyleMask
-        );
+        NSRect content = 
+            ((NSRect(*)(id, SEL, NSRect, NSUInteger))objc_msgSend_stret)(
+                (id)objc_getClass("NSWindow"), sel_registerName("contentRectForFrameRect:styleMask:"),
+                screen, windowStyleMask
+            );
         scale = tigrCalcScale(w, h, content.size.width, content.size.height);
     }
 
@@ -2633,7 +2634,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     NSRect rect = { { 0, 0 }, { w * scale, h * scale } };
     id windowAlloc = objc_msgSend_id((id)objc_getClass("NSWindow"), sel_registerName("alloc"));
     id window = ((id(*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(
-        windowAlloc, sel_registerName("initWithContentRect:styleMask:backing:defer:"), rect, 15, 2, NO);
+        windowAlloc, sel_registerName("initWithContentRect:styleMask:backing:defer:"), rect, windowStyleMask, 2, NO);
 
     objc_msgSend_void_bool(window, sel_registerName("setReleasedWhenClosed:"), NO);
 
