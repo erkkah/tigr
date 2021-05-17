@@ -972,7 +972,7 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
         p.y = adjustFrame.size.height;
 
     // map input to pixels
-    NSRect r = { p.x, p.y, 0, 0 };
+    NSRect r = { {p.x, p.y}, {0, 0} };
     r = ((NSRect(*)(id, SEL, NSRect))abi_objc_msgSend_stret)(windowContentView,
                                                              sel_registerName("convertRectToBacking:"), r);
     p = r.origin;
