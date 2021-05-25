@@ -80,6 +80,19 @@ extern id const NSDefaultRunLoopMode;
 
 bool terminated = false;
 
+TigrInternal* _tigrInternalCocoa(id window) {
+    if (!window)
+        return NULL;
+
+    id wdg = objc_msgSend_id(window, sel_registerName("delegate"));
+    if (!wdg)
+        return NULL;
+
+    Tigr* bmp = 0;
+    object_getInstanceVariable(wdg, "tigrHandle", (void**)&bmp);
+    return bmp ? tigrInternal(bmp) : NULL;
+}
+
 // we gonna construct objective-c class by hand in runtime, so wow, so hacker!
 NSUInteger applicationShouldTerminate(id self, SEL _sel, id sender) {
     terminated = true;
@@ -106,11 +119,21 @@ void windowDidBecomeKey(id self, SEL _sel, id notification) {
 }
 
 void mouseEntered(id self, SEL _sel, id event) {
-    objc_msgSend_id((id)objc_getClass("NSCursor"), sel_registerName("hide"));
+    id window = objc_msgSend_id(event, sel_registerName("window"));
+    TigrInternal* win = _tigrInternalCocoa(window);
+    win->mouseInView = 1;
+    if (win->flags & TIGR_NOCURSOR) {
+        objc_msgSend_id((id)objc_getClass("NSCursor"), sel_registerName("hide"));
+    }
 }
 
 void mouseExited(id self, SEL _sel, id event) {
-    objc_msgSend_id((id)objc_getClass("NSCursor"), sel_registerName("unhide"));
+    id window = objc_msgSend_id(event, sel_registerName("window"));
+    TigrInternal* win = _tigrInternalCocoa(window);
+    win->mouseInView = 0;
+    if (win->flags & TIGR_NOCURSOR) {
+        objc_msgSend_id((id)objc_getClass("NSCursor"), sel_registerName("unhide"));
+    }
 }
 
 bool _tigrCocoaIsWindowClosed(id window) {
@@ -239,19 +262,6 @@ NSSize _tigrCocoaWindowSize(id window) {
     return rect.size;
 }
 
-TigrInternal* _tigrInternalCocoa(id window) {
-    if (!window)
-        return NULL;
-
-    id wdg = objc_msgSend_id(window, sel_registerName("delegate"));
-    if (!wdg)
-        return NULL;
-
-    Tigr* bmp = 0;
-    object_getInstanceVariable(wdg, "tigrHandle", (void**)&bmp);
-    return bmp ? tigrInternal(bmp) : NULL;
-}
-
 enum {
     NSWindowStyleMaskTitled = 1 << 0,
     NSWindowStyleMaskClosable = 1 << 1,
@@ -281,7 +291,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
         int maxH = CGRectGetHeight(mainMonitor);
         NSRect screen = {{0, 0}, {maxW, maxH}};
         NSRect content = 
-            ((NSRect(*)(id, SEL, NSRect, NSUInteger))objc_msgSend_stret)(
+            ((NSRect(*)(id, SEL, NSRect, NSUInteger))abi_objc_msgSend_stret)(
                 (id)objc_getClass("NSWindow"), sel_registerName("contentRectForFrameRect:styleMask:"),
                 screen, windowStyleMask
             );
@@ -370,21 +380,23 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     // Wrap a bitmap around it.
     NSSize windowSize = _tigrCocoaWindowSize(window);
-    bmp = tigrBitmap2(windowSize.width / scale, windowSize.height / scale, sizeof(TigrInternal));
+    bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
     bmp->handle = window;
 
     // Set the handle
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
 
-    if (flags & TIGR_NOCURSOR) {
+    {
         #define NSTrackingMouseEnteredAndExited 1
         #define NSTrackingActiveInKeyWindow 0x20
         #define NSTrackingInVisibleRect 0x200
+
+        int trackingFlags = NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect;
         id trackingArea = objc_msgSend_id((id)objc_getClass("NSTrackingArea"), sel_registerName("alloc"));
         trackingArea = ((id (*)(id, SEL, NSRect, int, id, id))objc_msgSend)
             (
                 trackingArea, sel_registerName("initWithRect:options:owner:userInfo:"),
-                rect, NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect, wdg, 0
+                rect, trackingFlags, wdg, 0
             );
         objc_msgSend_void_id(contentView, sel_registerName("addTrackingArea:"), trackingArea);
     }
@@ -405,6 +417,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->gl.gl_legacy = 0;
     win->gl.glContext = openGLContext;
     win->mouseButtons = 0;
+    win->mouseInView = 0;
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
 
@@ -774,13 +787,17 @@ void _tigrOnCocoaEvent(id event, id window) {
     NSUInteger eventType = ((NSUInteger(*)(id, SEL))objc_msgSend)(event, sel_registerName("type"));
     switch (eventType) {
         case 1:  // NSLeftMouseDown
-            win->mouseButtons |= 1;
+            if (win->mouseInView) {
+                win->mouseButtons |= 1;
+            }
             break;
         case 2:  // NSLeftMouseUp
             win->mouseButtons &= ~1;
             break;
         case 3:  // NSRightMouseDown
-            win->mouseButtons |= 2;
+            if (win->mouseInView) {
+                win->mouseButtons |= 2;
+            }
             break;
         case 4:  // NSRightMouseUp
             win->mouseButtons &= ~2;
@@ -789,8 +806,9 @@ void _tigrOnCocoaEvent(id event, id window) {
         {
             // number == 2 is a middle button
             NSInteger number = ((NSInteger(*)(id, SEL))objc_msgSend)(event, sel_registerName("buttonNumber"));
-            if (number == 2)
+            if (number == 2 && win->mouseInView) {
                 win->mouseButtons |= 4;
+            }
             break;
         }
         case 26:  // NSOtherMouseUp
@@ -800,26 +818,6 @@ void _tigrOnCocoaEvent(id event, id window) {
                 win->mouseButtons &= ~4;
             break;
         }
-        // case 22: // NSScrollWheel
-        //{
-        //	CGFloat deltaX = ((CGFloat (*)(id,
-        // SEL))abi_objc_msgSend_fpret)(event,
-        // sel_registerName("scrollingDeltaX")); 	CGFloat deltaY = ((CGFloat
-        //(*)(id, SEL))abi_objc_msgSend_fpret)(event,
-        // sel_registerName("scrollingDeltaY")); 	BOOL precisionScrolling = ((BOOL
-        //(*)(id, SEL))objc_msgSend)(event,
-        // sel_registerName("hasPreciseScrollingDeltas"));
-        //
-        //	if(precisionScrolling)
-        //	{
-        //		deltaX *= 0.1f; // similar to glfw
-        //		deltaY *= 0.1f;
-        //	}
-        //
-        //	if(fabs(deltaX) > 0.0f || fabs(deltaY) > 0.0f)
-        //		printf("mouse scroll wheel delta %f %f\n", deltaX,
-        // deltaY); 	break;
-        //}
         case 12:  // NSFlagsChanged
         {
             NSUInteger modifiers = ((NSUInteger(*)(id, SEL))objc_msgSend)(event, sel_registerName("modifierFlags"));
@@ -863,7 +861,12 @@ void _tigrOnCocoaEvent(id event, id window) {
 
             uint16_t keyCode = ((unsigned short (*)(id, SEL))objc_msgSend)(event, sel_registerName("keyCode"));
             win->keys[_tigrKeyFromOSX(keyCode)] = 1;
-            break;
+
+            // Pass through cmd+key
+            if (win->keys[TK_LWIN]) {
+                break;
+            }
+            return;
         }
         case 11:  // NSKeyUp
         {
@@ -972,7 +975,7 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
         p.y = adjustFrame.size.height;
 
     // map input to pixels
-    NSRect r = { {p.x, p.y}, {0, 0} };
+    NSRect r = { p, {0, 0} };
     r = ((NSRect(*)(id, SEL, NSRect))abi_objc_msgSend_stret)(windowContentView,
                                                              sel_registerName("convertRectToBacking:"), r);
     p = r.origin;
