@@ -105,10 +105,12 @@ typedef struct {
 	int pos[4];
 	int lastChar;
 	char keys[256], prev[256];
-	#if defined(__APPLE__) || defined(__linux__)
+	#if defined(__APPLE__)
+	int mouseInView;
 	int mouseButtons;
 	#endif
 	#ifdef __linux__
+	int mouseButtons;
 	int mouseX;
 	int mouseY;
 	#endif // __linux__
