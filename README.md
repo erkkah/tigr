@@ -29,7 +29,7 @@ TIGR is free to copy with no restrictions; see tigr.h.
 
 ### Desktop (Windows, macOS, Linux)
 
-TIGR is supplied as a single .h file.
+TIGR is supplied as a single .c and corresponding .h file.
 
 To use it, you just drop them right into your project. No fancy build systems, no DLL hell, no package managers.
 
