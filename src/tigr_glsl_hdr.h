@@ -3,7 +3,7 @@
 
 #if __ANDROID__
 #define GLSL_VERSION_HEADER \
-    "#version 300 es\n"
+    "#version 300 es\n" \
     "precision mediump float;\n"
 #else
 #define GLSL_VERSION_HEADER \
