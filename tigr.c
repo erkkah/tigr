@@ -2109,16 +2109,20 @@ Tigr *tigrWindow(int w, int h, const char *title, int flags)
 
 	tigrGAPICreate(bmp);
 
-	// Try and restore our window position.
-	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
-	if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE *)&wp, &wpsize) == ERROR_SUCCESS)
-	{
-		if (wp.showCmd == SW_MAXIMIZE)
-			tigrEnterBorderlessWindowed(bmp);
-		else
-			SetWindowPlacement(hWnd, &wp);
+	if (flags & TIGR_FULLSCREEN) {
+		tigrEnterBorderlessWindowed(bmp);
+	} else {
+		// Try and restore our window position.
+		#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
+		if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE *)&wp, &wpsize) == ERROR_SUCCESS)
+		{
+			if (wp.showCmd == SW_MAXIMIZE)
+				tigrEnterBorderlessWindowed(bmp);
+			else
+				SetWindowPlacement(hWnd, &wp);
+		}
+		#endif
 	}
-	#endif
 
 	wglSwapIntervalEXT_ = (PFNWGLSWAPINTERVALFARPROC_)wglGetProcAddress( "wglSwapIntervalEXT" );
 	if(wglSwapIntervalEXT_) wglSwapIntervalEXT_(1);
