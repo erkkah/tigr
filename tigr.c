@@ -3,93 +3,6 @@
 
 #include "tigr.h"
 
-//////// Start of inlined file: tigr_upscale_gl_vs.h ////////
-
-#ifndef __TIGR_UPSCALE_GL_VS_H__
-#define __TIGR_UPSCALE_GL_VS_H__
-
-//////// Start of inlined file: tigr_glsl_hdr.h ////////
-
-#ifndef __TIGR_GLSL_HDR_H__
-#define __TIGR_GLSL_HDR_H__
-
-#if __ANDROID__
-#define GLSL_VERSION_HEADER \
-    "#version 300 es\n" \
-    "precision mediump float;\n"
-#else
-#define GLSL_VERSION_HEADER \
-    "#version 330 core\n"
-#endif
-
-#endif // __TIGR_GLSL_HDR_H__
-
-//////// End of inlined file: tigr_glsl_hdr.h ////////
-
-
-const char tigr_upscale_gl_vs[] = {
-    GLSL_VERSION_HEADER
-    "layout (location = 0) in vec2 pos_in;"
-    "layout (location = 1) in vec2 uv_in;"
-    "out vec2 uv;"
-    "uniform mat4 model;"
-    "uniform mat4 projection;"
-    "void main()"
-    "{"
-    "   uv = uv_in;"
-    "   gl_Position = projection * model * vec4(pos_in, 0.0, 1.0);"
-    "}"
-};
-
-const int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
-
-#endif
-
-//////// End of inlined file: tigr_upscale_gl_vs.h ////////
-
-//////// Start of inlined file: tigr_upscale_gl_fs.h ////////
-
-#ifndef __TIGR_UPSCALE_GL_FS_H__
-#define __TIGR_UPSCALE_GL_FS_H__
-
-//#include "tigr_glsl_hdr.h"
-
-const char tigr_upscale_gl_fs[] = {
-    GLSL_VERSION_HEADER
-    "in vec2 uv;"
-    "out vec4 color;"
-    "uniform sampler2D image;"
-    "uniform vec4 parameters;"
-    "void fxShader(out vec4 color, in vec2 coord);"
-    "void main()"
-    "{"
-    "   fxShader(color, uv);"
-    "}\n"
-};
-
-const int tigr_upscale_gl_fs_size = (int)sizeof(tigr_upscale_gl_fs) - 1;
-
-const char tigr_default_fx_gl_fs[] = {
-    "void fxShader(out vec4 color, in vec2 uv) {"
-    "   vec2 tex_size = vec2(textureSize(image, 0));"
-    "   vec2 uv_blur = mix(floor(uv * tex_size) + 0.5, uv * tex_size, parameters.xy) / tex_size;"
-    "   vec4 c = texture(image, uv_blur);"
-    "   c.rgb *= mix(0.5, 1.0 - fract(uv.y * tex_size.y), parameters.z) * 2.0; //scanline\n"
-    "   c = mix(vec4(0.5), c, parameters.w); //contrast\n"
-    "   color = c;"
-    "}"
-};
-
-const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
-
-
-#endif
-
-//////// End of inlined file: tigr_upscale_gl_fs.h ////////
-
-
-//////// Start of inlined file: tigr_bitmaps.c ////////
-
 //////// Start of inlined file: tigr_internal.h ////////
 
 // can't use pragma once here because this file probably will endup in .c
@@ -127,8 +40,17 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #include<X11/Xlib.h>
 #endif
 
-#ifdef TIGR_GAPI_GL
 #ifdef __APPLE__
+#include "TargetConditionals.h"
+#if TARGET_OS_IPHONE
+#define __IOS__ 1
+#else
+#define __MACOS__ 1
+#endif
+#endif
+
+#ifdef TIGR_GAPI_GL
+#if __MACOS__
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #endif
@@ -144,6 +66,11 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #endif
+#if __IOS__
+#define GLES_SILENCE_DEPRECATION
+#include <OpenGLES/ES3/gl.h>
+#endif
+
 typedef struct {
 	#ifdef _WIN32
 	HGLRC hglrc;
@@ -228,6 +155,94 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h);
 
 //////// End of inlined file: tigr_internal.h ////////
 
+//////// Start of inlined file: tigr_upscale_gl_vs.h ////////
+
+#ifndef __TIGR_UPSCALE_GL_VS_H__
+#define __TIGR_UPSCALE_GL_VS_H__
+
+//////// Start of inlined file: tigr_glsl_hdr.h ////////
+
+#ifndef __TIGR_GLSL_HDR_H__
+#define __TIGR_GLSL_HDR_H__
+
+#if __ANDROID__ || __IOS__
+#define GLSL_VERSION_HEADER \
+    "#version 300 es\n" \
+    "precision mediump float;\n"
+#else
+#define GLSL_VERSION_HEADER \
+    "#version 330 core\n"
+#endif
+
+#endif // __TIGR_GLSL_HDR_H__
+
+//////// End of inlined file: tigr_glsl_hdr.h ////////
+
+
+const char tigr_upscale_gl_vs[] = {
+    GLSL_VERSION_HEADER
+    "layout (location = 0) in vec2 pos_in;"
+    "layout (location = 1) in vec2 uv_in;"
+    "out vec2 uv;"
+    "uniform mat4 model;"
+    "uniform mat4 projection;"
+    "void main()"
+    "{"
+    "   uv = uv_in;"
+    "   gl_Position = projection * model * vec4(pos_in, 0.0, 1.0);"
+    "}"
+};
+
+const int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
+
+#endif
+
+//////// End of inlined file: tigr_upscale_gl_vs.h ////////
+
+//////// Start of inlined file: tigr_upscale_gl_fs.h ////////
+
+#ifndef __TIGR_UPSCALE_GL_FS_H__
+#define __TIGR_UPSCALE_GL_FS_H__
+
+//#include "tigr_glsl_hdr.h"
+
+const char tigr_upscale_gl_fs[] = {
+    GLSL_VERSION_HEADER
+    "in vec2 uv;"
+    "out vec4 color;"
+    "uniform sampler2D image;"
+    "uniform vec4 parameters;"
+    "void fxShader(out vec4 color, in vec2 coord);"
+    "void main()"
+    "{"
+    "   fxShader(color, uv);"
+    "}\n"
+};
+
+const int tigr_upscale_gl_fs_size = (int)sizeof(tigr_upscale_gl_fs) - 1;
+
+const char tigr_default_fx_gl_fs[] = {
+    "void fxShader(out vec4 color, in vec2 uv) {"
+    "   vec2 tex_size = vec2(textureSize(image, 0));"
+    "   vec2 uv_blur = mix(floor(uv * tex_size) + 0.5, uv * tex_size, parameters.xy) / tex_size;"
+    "   vec4 c = texture(image, uv_blur);"
+    "   c.rgb *= mix(0.5, 1.0 - fract(uv.y * tex_size.y), parameters.z) * 2.0; //scanline\n"
+    "   c = mix(vec4(0.5), c, parameters.w); //contrast\n"
+    "   color = c;"
+    "}"
+};
+
+const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
+
+
+#endif
+
+//////// End of inlined file: tigr_upscale_gl_fs.h ////////
+
+
+//////// Start of inlined file: tigr_bitmaps.c ////////
+
+//#include "tigr_internal.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -2350,9 +2365,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 //#include "tigr_internal.h"
 
-#ifdef __APPLE__
-#include <TargetConditionals.h>
-#ifdef TARGET_OS_MAC
+#if __MACOS__
 
 #include <assert.h>
 #include <limits.h>
@@ -3388,9 +3401,132 @@ float tigrTime() {
 }
 
 #endif
-#endif
 
 //////// End of inlined file: tigr_osx.c ////////
+
+//////// Start of inlined file: tigr_ios.c ////////
+
+//#include "tigr_internal.h"
+
+#ifdef __IOS__
+
+#include <os/log.h>
+
+/// Global state
+static struct {
+    int screenW;
+    int screenH;
+    double lastTime;
+    int closed;
+} gState = {
+    .screenW = 0,
+    .screenH = 0,
+    .lastTime = 0,
+    .closed = 0,
+};
+
+
+void tigrIOSInit(int w, int h) {
+    gState.screenW = w;
+    gState.screenH = h;
+}
+
+extern void ios_acquire_context();
+extern void ios_release_context();
+
+Tigr* tigrWindow(int w, int h, const char* title, int flags) {    
+    int scale = 1;
+    if (flags & TIGR_AUTO) {
+        // Always use a 1:1 pixel size.
+        scale = 1;
+    } else {
+        // See how big we can make it and still fit on-screen.
+        scale = tigrCalcScale(w, h, gState.screenW, gState.screenH);
+        os_log_info(OS_LOG_DEFAULT, "Scale: %d", scale);
+    }
+
+    scale = tigrEnforceScale(scale, flags);
+    Tigr* bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
+    bmp->handle = 4711;
+    TigrInternal* win = tigrInternal(bmp);
+    win->shown = 0;
+    win->closed = 0;
+    win->scale = scale;
+
+    win->lastChar = 0;
+    win->flags = flags;
+    win->p1 = win->p2 = win->p3 = 0;
+	win->p4 = 1;
+    win->widgetsWanted = 0;
+    win->widgetAlpha = 0;
+    win->widgetsScale = 0;
+    win->widgets = 0;
+    win->gl.gl_legacy = 0;
+
+    tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
+    ios_acquire_context();
+    tigrGAPICreate(bmp);
+    ios_release_context();
+
+    return bmp;
+}
+
+extern void ios_swap();
+Tigr* currentWindow = 0;
+
+void tigrUpdate(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+
+    if (win->flags & TIGR_AUTO) {
+        tigrResize(bmp, gState.screenW / win->scale, gState.screenH / win->scale);
+    } else {
+        win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, gState.screenW, gState.screenH), win->flags);
+    }
+
+    tigrPosition(bmp, win->scale, gState.screenW, gState.screenH, win->pos);
+    currentWindow = bmp;
+    ios_swap();
+}
+
+int tigrClosed(Tigr* bmp) {
+    return 0;
+}
+
+void tigrError(Tigr* bmp, const char* message, ...) {
+    char tmp[1024];
+
+    va_list args;
+    va_start(args, message);
+    vsnprintf(tmp, sizeof(tmp), message, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
+
+    os_log_error(OS_LOG_DEFAULT, "tigr fatal error: %s\n", tmp);
+
+    //exit(1);
+}
+
+void tigrFree(Tigr* bmp) {
+    if (bmp->handle) {
+        TigrInternal* win = tigrInternal(bmp);
+    }
+    free(bmp->pix);
+    free(bmp);
+}
+
+int tigrGAPIBegin(Tigr* bmp) {
+    (void)bmp;
+    return 0;
+}
+
+int tigrGAPIEnd(Tigr* bmp) {
+    (void)bmp;
+    return 0;
+}
+
+#endif // __IOS__
+
+//////// End of inlined file: tigr_ios.c ////////
 
 //////// Start of inlined file: tigr_android.h ////////
 
