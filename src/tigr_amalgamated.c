@@ -1,6 +1,7 @@
 
 #include "tigr.h"
 
+#include "tigr_internal.h"
 #include "tigr_upscale_gl_vs.h"
 #include "tigr_upscale_gl_fs.h"
 
@@ -11,6 +12,7 @@
 #include "tigr_print.c"
 #include "tigr_win.c"
 #include "tigr_osx.c"
+#include "tigr_ios.c"
 #include "tigr_android.h"
 #include "tigr_linux.c"
 #include "tigr_android.c"

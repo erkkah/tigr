@@ -2,9 +2,7 @@
 
 #include "tigr_internal.h"
 
-#ifdef __APPLE__
-#include <TargetConditionals.h>
-#ifdef TARGET_OS_MAC
+#if __MACOS__
 
 #include <assert.h>
 #include <limits.h>
@@ -1039,5 +1037,4 @@ float tigrTime() {
     return (float)elapsed;
 }
 
-#endif
 #endif
