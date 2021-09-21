@@ -2,31 +2,184 @@
 
 #ifdef __IOS__
 
+#include <CoreGraphics/CoreGraphics.h>
+#include <objc/message.h>
+#include <objc/objc.h>
+#include <objc/runtime.h>
+#include <dispatch/dispatch.h>
 #include <os/log.h>
+
+#if defined(__OBJC__) && __has_feature(objc_arc)
+#error "Can't compile as objective-c code!"
+#endif
+
+// ABI is a bit different between platforms
+#ifdef __arm64__
+#define abi_objc_msgSend_stret objc_msgSend
+#else
+#define abi_objc_msgSend_stret objc_msgSend_stret
+#endif
+#ifdef __i386__
+#define abi_objc_msgSend_fpret objc_msgSend_fpret
+#else
+#define abi_objc_msgSend_fpret objc_msgSend
+#endif
+
+#define objc_msgSend_id ((id(*)(id, SEL))objc_msgSend)
+#define objc_msgSend_void ((void (*)(id, SEL))objc_msgSend)
+#define objc_msgSend_void_id ((void (*)(id, SEL, id))objc_msgSend)
+#define objc_msgSend_void_bool ((void (*)(id, SEL, BOOL))objc_msgSend)
+#define objc_msgSend_id_const_char ((id(*)(id, SEL, const char*))objc_msgSend)
+
+#define objc_msgSend_t(RET, ...) ((RET(*)(id, SEL, ##__VA_ARGS__))objc_msgSend)
+
+#define objc_alloc(CLASS) objc_msgSend_id((id)objc_getClass(CLASS), sel_registerName("alloc"))
+
+extern id UIApplication;
 
 /// Global state
 static struct {
+    id appDelegate;
+    id context;
+    id frameCondition;
+    Tigr* currentWindow;
     int screenW;
     int screenH;
     double lastTime;
     int closed;
 } gState = {
+    .appDelegate = 0,
+    .context = 0,
+    .frameCondition = 0,
+    .currentWindow = 0,
     .screenW = 0,
     .screenH = 0,
     .lastTime = 0,
     .closed = 0,
 };
 
+static id autoreleasePool = NULL;
 
-void tigrIOSInit(int w, int h) {
-    gState.screenW = w;
-    gState.screenH = h;
+static void _pauseRendering(void* appDelegate) {
+    id vc = objc_msgSend_id(appDelegate, sel_registerName("viewController"));
+    objc_msgSend_void_bool((id) vc, sel_registerName("setPaused:"), YES);
 }
 
-extern void ios_acquire_context();
-extern void ios_release_context();
+static void _resumeRendering(void* appDelegate) {
+    id vc = objc_msgSend_id(appDelegate, sel_registerName("viewController"));
+    objc_msgSend_void_bool((id) vc, sel_registerName("setPaused:"), NO);
+}
 
-Tigr* tigrWindow(int w, int h, const char* title, int flags) {    
+void callOnMainThread(void(*fn)(void*), void* data) {
+    dispatch_sync_f(dispatch_get_main_queue(), NULL, fn);
+}
+
+static void acquireContext() {
+    callOnMainThread(_pauseRendering, gState.appDelegate);
+    objc_msgSend_void_id((id)objc_getClass("EAGLContext"), sel_registerName("setCurrentContext:"), gState.context);
+}
+
+static void releaseContext() {
+    objc_msgSend_void_id((id)objc_getClass("EAGLContext"), sel_registerName("setCurrentContext:"), NULL);
+    callOnMainThread(_resumeRendering, gState.appDelegate);
+}
+
+BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options) {
+    gState.appDelegate = self;
+
+    os_log_info(OS_LOG_DEFAULT, "didFinishLaunchingWithOptions!");
+
+    id screen = objc_msgSend_id((id)objc_getClass("UIScreen"), sel_registerName("mainScreen"));
+    CGRect bounds = objc_msgSend_t(CGRect)(screen, sel_registerName("bounds"));
+    CGSize size = bounds.size;
+
+    id window = objc_alloc("UIWindow");
+    window = objc_msgSend_t(id, CGRect)(window, sel_registerName("initWithFrame:"), bounds);
+
+    id vc = objc_alloc("GLKViewController");
+    vc = objc_msgSend_id(vc, sel_registerName("init"));
+
+    id context = objc_alloc("EAGLContext");
+    static int kEAGLRenderingAPIOpenGLES3 = 3;
+    context = objc_msgSend_t(id, int)(context, sel_registerName("initWithAPI:"), kEAGLRenderingAPIOpenGLES3);
+    gState.context = context;
+
+    id view = objc_alloc("GLKView");
+    view = objc_msgSend_t(id, CGRect, id)(view, sel_registerName("initWithFrame:context:"), bounds, context);
+
+    objc_msgSend_t(void, id)(vc, sel_registerName("setView:"), view);
+    objc_msgSend_t(void, id)(view, sel_registerName("setDelegate:"), self);
+    objc_msgSend_t(void, id)(window, sel_registerName("setRootViewController:"), vc);
+    objc_msgSend_t(void)(window, sel_registerName("makeKeyAndVisible"));
+
+    double scaleFactor = objc_msgSend_t(double)(view, sel_registerName("contentScaleFactor"));
+    gState.screenW = size.width * scaleFactor;
+    gState.screenH = size.height * scaleFactor;
+    os_log_info(OS_LOG_DEFAULT, "Size: %f, %f, %f", size.width, size.height, scaleFactor);
+
+    gState.frameCondition = objc_msgSend_t(id)(objc_alloc("NSCondition"), sel_registerName("init"));
+
+    id renderThread = objc_msgSend_t(id, id, SEL, id)
+        (objc_alloc("NSThread"), sel_registerName("initWithTarget:selector:object:"), self, sel_registerName("renderMain"), NULL);
+    objc_msgSend_void(renderThread, sel_registerName("start"));
+
+    return YES;
+}
+
+void waitForFrame() {
+    objc_msgSend_void(gState.frameCondition, sel_registerName("wait"));
+}
+
+void drawInRect(id _self, SEL _sel, id view, CGRect rect) {
+    if (gState.currentWindow != 0) {
+        tigrGAPIPresent(gState.currentWindow, gState.screenW, gState.screenH);
+    }
+    objc_msgSend_void(gState.frameCondition, sel_registerName("signal"));
+}
+
+extern void tigrMain();
+
+void renderMain(id _self, SEL _sel) {
+    tigrMain();
+}
+
+void tigrInitIOS() {
+    static bool inited = false;
+    if (inited) {
+        return;
+    }
+    inited = true;
+
+    id application = objc_msgSend_id((id)objc_getClass("UIApplication"), sel_registerName("sharedApplication"));
+    Class delegateClass = objc_allocateClassPair((Class)objc_getClass("UIResponder"), "TigrAppDelegate", 0);
+    objc_registerClassPair(delegateClass);
+    //bool result = class_addProtocol(delegateClass, objc_getProtocol("UIApplicationDelegate"));
+    //assert(result);
+    //Class GLKViewDelegate = objc_getClass("GLKViewDelegate");
+    //result = class_addProtocol(delegateClass, objc_getProtocol("GLKViewDelegate"));
+    //assert(result);
+
+    bool result = class_addMethod(delegateClass, sel_registerName("application:didFinishLaunchingWithOptions:"), (IMP) didFinishLaunchingWithOptions, "c@:@@");
+    assert(result);
+    result = class_addMethod(delegateClass, sel_registerName("glkView:drawInRect:"), (IMP) drawInRect, "v@:@{CGRect}");
+    assert(result);
+    result = class_addMethod(delegateClass, sel_registerName("renderMain"), (IMP) renderMain, "v@:");
+    assert(result);
+
+
+    // https://nshipster.com/type-encodings/
+    // https://stackoverflow.com/questions/7819092/how-can-i-add-properties-to-an-object-at-runtime
+
+
+    /*
+    id delegate = objc_msgSend_id((id)delegateClass, sel_registerName("alloc"));
+    delegate = objc_msgSend_id(delegate, sel_registerName("init"));
+    objc_msgSend_void_id(application, sel_registerName("setDelegate:"), delegate);
+    gState.appDelegate = delegate;
+    */
+}
+
+Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     int scale = 1;
     if (flags & TIGR_AUTO) {
         // Always use a 1:1 pixel size.
@@ -56,15 +209,12 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->gl.gl_legacy = 0;
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
-    ios_acquire_context();
+    acquireContext();
     tigrGAPICreate(bmp);
-    ios_release_context();
+    releaseContext();
 
     return bmp;
 }
-
-extern void ios_swap();
-Tigr* currentWindow = 0;
 
 void tigrUpdate(Tigr* bmp) {
     TigrInternal* win = tigrInternal(bmp);
@@ -76,8 +226,8 @@ void tigrUpdate(Tigr* bmp) {
     }
 
     tigrPosition(bmp, win->scale, gState.screenW, gState.screenH, win->pos);
-    currentWindow = bmp;
-    ios_swap();
+    gState.currentWindow = bmp;
+    waitForFrame();
 }
 
 int tigrClosed(Tigr* bmp) {
