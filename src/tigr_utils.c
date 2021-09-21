@@ -4,7 +4,11 @@
 
 #ifndef __ANDROID__
 
+#ifdef __IOS__
+void* _tigrReadFile(const char* fileName, int* length) {
+#else
 void* tigrReadFile(const char* fileName, int* length) {
+#endif
     // TODO - unicode?
     FILE* file;
     char* data;
