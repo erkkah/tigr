@@ -37,6 +37,20 @@
 
 extern id UIApplication;
 
+id makeNSString(const char* str) {
+    return objc_msgSend_t(id, const char*)
+        ((id)objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), str);
+}
+
+id joinNSStrings(id a, id b) {
+    return objc_msgSend_t(id, id)
+        (a, sel_registerName("stringByAppendingString:"), b);
+}
+
+const char* UTF8StringFromNSString(id a) {
+    return objc_msgSend_t(const char*)(a, sel_registerName("UTF8String"));
+}
+
 /// Global state
 static struct {
     id appDelegate;
@@ -165,18 +179,8 @@ void tigrInitIOS() {
     assert(result);
     result = class_addMethod(delegateClass, sel_registerName("renderMain"), (IMP) renderMain, "v@:");
     assert(result);
-
-
     // https://nshipster.com/type-encodings/
     // https://stackoverflow.com/questions/7819092/how-can-i-add-properties-to-an-object-at-runtime
-
-
-    /*
-    id delegate = objc_msgSend_id((id)delegateClass, sel_registerName("alloc"));
-    delegate = objc_msgSend_id(delegate, sel_registerName("init"));
-    objc_msgSend_void_id(application, sel_registerName("setDelegate:"), delegate);
-    gState.appDelegate = delegate;
-    */
 }
 
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
@@ -192,7 +196,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     scale = tigrEnforceScale(scale, flags);
     Tigr* bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
-    bmp->handle = 4711;
+    bmp->handle = (void*)4711;
     TigrInternal* win = tigrInternal(bmp);
     win->shown = 0;
     win->closed = 0;
@@ -264,6 +268,16 @@ int tigrGAPIBegin(Tigr* bmp) {
 int tigrGAPIEnd(Tigr* bmp) {
     (void)bmp;
     return 0;
+}
+
+extern void* _tigrReadFile(const char* fileName, int* length);
+
+void* tigrReadFile(const char* fileName, int* length) {
+    id mainBundle = objc_msgSend_id((id)objc_getClass("NSBundle"), sel_registerName("mainBundle"));
+    id resourcePath = objc_msgSend_id(mainBundle, sel_registerName("resourcePath"));
+    resourcePath = joinNSStrings(resourcePath, makeNSString("/"));
+    resourcePath = joinNSStrings(resourcePath, makeNSString(fileName));
+    return _tigrReadFile(UTF8StringFromNSString(resourcePath), length);
 }
 
 #endif // __IOS__
