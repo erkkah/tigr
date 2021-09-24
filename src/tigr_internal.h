@@ -119,19 +119,19 @@ typedef struct {
 	int pos[4];
 	int lastChar;
 	char keys[256], prev[256];
-	#if defined(__APPLE__)
+	#if defined(__MACOS__)
 	int mouseInView;
 	int mouseButtons;
 	#endif
-	#ifdef __linux__
+	#if defined(__linux__) || defined(__IOS__)
 	int mouseButtons;
 	int mouseX;
 	int mouseY;
-	#endif // __linux__
-	#ifdef __ANDROID__
+	#endif // __linux__ __IOS__
+	#if defined(__ANDROID__) || defined(__IOS__)
 	int numTouchPoints;
 	TigrTouchPoint touchPoints[MAX_TOUCH_POINTS];
-	#endif // __ANDROID__
+	#endif // __ANDROID__ __IOS__
 } TigrInternal;
 // ----------------------------------------------------------
 
