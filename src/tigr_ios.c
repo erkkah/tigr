@@ -120,7 +120,7 @@ void writeToRenderThread(const TigrMessageData* message) {
 
 int readFromMainThread(TigrMessageData* message) {
     int result = read(gState.renderReadFd, message, sizeof(TigrMessageData));
-    if (result == EAGAIN) {
+    if (result == -1 && errno == EAGAIN) {
         return 0;
     }
     if (result != sizeof(TigrMessageData)) {
@@ -128,16 +128,6 @@ int readFromMainThread(TigrMessageData* message) {
         return 0;
     }
     return 1;
-}
-
-static void acquireContext() {
-    callOnMainThread(_pauseRendering, gState.appDelegate);
-    objc_msgSend_void_id(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
-}
-
-static void releaseContext() {
-    objc_msgSend_void_id(class("EAGLContext"), sel("setCurrentContext:"), NULL);
-    callOnMainThread(_resumeRendering, gState.appDelegate);
 }
 
 void viewWillTransitionToSize(id self, SEL _sel, CGSize size, id transitionCoordinator) {
@@ -150,6 +140,15 @@ void viewWillTransitionToSize(id self, SEL _sel, CGSize size, id transitionCoord
     };
     objc_msgSendSuper_t(void, CGSize, id)(&super, _sel, size, transitionCoordinator);
 }
+
+BOOL prefersStatusBarHidden(id self, SEL _sel) {
+    return true;
+}
+
+enum RenderState {
+    SWAPPED = 5150,
+    RENDERED
+};
 
 BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options) {
     gState.appDelegate = self;
@@ -165,8 +164,10 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
 
     Class ViewController = makeClass("TigrViewController", "GLKViewController");
     addMethod(ViewController, "viewWillTransitionToSize:withTransitionCoordinator:", viewWillTransitionToSize, "v@:{CGSize}@");
+    addMethod(ViewController, "prefersStatusBarHidden", prefersStatusBarHidden, "c@:");
     id vc = objc_msgSend_t(id)((id)ViewController, sel("alloc"));
     vc = objc_msgSend_id(vc, sel("init"));
+    objc_msgSend_t(void, int)(vc, sel("setPreferredFramesPerSecond:"), 60);
     int framesPerSecond = objc_msgSend_t(int)(vc, sel("framesPerSecond"));
     os_log_info(OS_LOG_DEFAULT, "Frames per second: (%d)", framesPerSecond);
 
@@ -178,9 +179,9 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     id view = objc_alloc("GLKView");
     view = objc_msgSend_t(id, CGRect, id)(view, sel("initWithFrame:context:"), bounds, context);
     objc_msgSend_t(void, BOOL)(view, sel("setMultipleTouchEnabled:"), YES);
-
-    objc_msgSend_t(void, id)(vc, sel("setView:"), view);
     objc_msgSend_t(void, id)(view, sel("setDelegate:"), self);
+    objc_msgSend_t(void, id)(vc, sel("setView:"), view);
+    objc_msgSend_t(void, id)(vc, sel("setDelegate:"), self);
     objc_msgSend_t(void, id)(window, sel("setRootViewController:"), vc);
     objc_msgSend_t(void)(window, sel("makeKeyAndVisible"));
 
@@ -188,7 +189,8 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     gState.screenW = size.width * gState.scaleFactor;
     gState.screenH = size.height * gState.scaleFactor;
 
-    gState.frameCondition = objc_msgSend_t(id)(objc_alloc("NSCondition"), sel("init"));
+    gState.frameCondition = objc_msgSend_t(id, int)(objc_alloc("NSConditionLock"), sel("initWithCondition:"), RENDERED);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), RENDERED);
 
     id renderThread = objc_msgSend_t(id, id, SEL, id)
         (objc_alloc("NSThread"), sel("initWithTarget:selector:object:"), self, sel("renderMain"), NULL);
@@ -199,19 +201,23 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
 }
 
 void waitForFrame() {
-    objc_msgSend_void(gState.frameCondition, sel("wait"));
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), 0);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("unlockWithCondition:"), RENDERED);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), SWAPPED);
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
 }
 
 void drawInRect(id _self, SEL _sel, id view, CGRect rect) {
-    if (gState.currentWindow != 0) {
-        tigrGAPIPresent(gState.currentWindow, gState.screenW, gState.screenH);
-    }
-    objc_msgSend_void(gState.frameCondition, sel("signal"));
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("unlockWithCondition:"), SWAPPED);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), RENDERED);
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
 }
 
 extern void tigrMain();
 
 void renderMain(id _self, SEL _sel) {
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), SWAPPED);
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
     tigrMain();
 }
 
@@ -321,9 +327,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->gl.gl_legacy = 0;
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
-    acquireContext();
     tigrGAPICreate(bmp);
-    releaseContext();
 
     return bmp;
 }
@@ -372,6 +376,7 @@ void tigrUpdate(Tigr* bmp) {
 
     tigrPosition(bmp, win->scale, gState.screenW, gState.screenH, win->pos);
     gState.currentWindow = bmp;
+    tigrGAPIPresent(gState.currentWindow, gState.screenW, gState.screenH);
     waitForFrame();
 }
 
@@ -388,9 +393,9 @@ void tigrError(Tigr* bmp, const char* message, ...) {
     tmp[sizeof(tmp) - 1] = 0;
     va_end(args);
 
-    os_log_error(OS_LOG_DEFAULT, "tigr fatal error: %s\n", tmp);
+    os_log_error(OS_LOG_DEFAULT, "tigr fatal error: %{public}s\n", tmp);
 
-    exit(1);
+    //exit(1);
 }
 
 float tigrTime() {
