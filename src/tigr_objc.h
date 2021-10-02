@@ -1,5 +1,7 @@
-#ifndef OBJC_H
-#define OBJC_H
+#ifndef TIGR_OBJC_H
+#define TIGR_OBJC_H
+
+#if defined(__IOS__) || defined (__MACOS__)
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
 #error "Can't compile as objective-c code!"
@@ -47,18 +49,5 @@
 #define NSUIntegerEncoding "I"
 #endif
 
-id makeNSString(const char* str) {
-    return objc_msgSend_t(id, const char*)
-        (class("NSString"), sel("stringWithUTF8String:"), str);
-}
-
-id joinNSStrings(id a, id b) {
-    return objc_msgSend_t(id, id)
-        (a, sel("stringByAppendingString:"), b);
-}
-
-const char* UTF8StringFromNSString(id a) {
-    return objc_msgSend_t(const char*)(a, sel("UTF8String"));
-}
-
-#endif
+#endif // defined(__IOS__) || defined (__MACOS__)
+#endif // TIGR_OBJC_H

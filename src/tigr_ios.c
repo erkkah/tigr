@@ -1,4 +1,5 @@
 #include "tigr_internal.h"
+#include "tigr_objc.h"
 
 #ifdef __IOS__
 
@@ -10,7 +11,19 @@
 #include <os/log.h>
 #include <time.h>
 
-#include "tigr_objc.h"
+id makeNSString(const char* str) {
+    return objc_msgSend_t(id, const char*)
+        (class("NSString"), sel("stringWithUTF8String:"), str);
+}
+
+id joinNSStrings(id a, id b) {
+    return objc_msgSend_t(id, id)
+        (a, sel("stringByAppendingString:"), b);
+}
+
+const char* UTF8StringFromNSString(id a) {
+    return objc_msgSend_t(const char*)(a, sel("UTF8String"));
+}
 
 extern id UIApplication;
 static int NSQualityOfServiceUserInteractive = 0x21;
