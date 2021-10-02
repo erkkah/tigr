@@ -1,6 +1,7 @@
 // this one is based on https://github.com/jimon/osx_app_in_plain_c
 
 #include "tigr_internal.h"
+#include "tigr_objc.h"
 
 #if __MACOS__
 
@@ -20,8 +21,6 @@
 #include <objc/message.h>
 #include <objc/objc.h>
 #include <objc/runtime.h>
-
-#include "tigr_objc.h"
 
 #ifdef __OBJC__
 #import <Cocoa/Cocoa.h>
