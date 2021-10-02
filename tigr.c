@@ -3422,13 +3422,10 @@ float tigrTime() {
 #error "Can't compile as objective-c code!"
 #endif
 
-#define objc_msgSend_id ((id(*)(id, SEL))objc_msgSend)
-#define objc_msgSend_void ((void (*)(id, SEL))objc_msgSend)
-#define objc_msgSend_void_id ((void (*)(id, SEL, id))objc_msgSend)
-#define objc_msgSend_void_bool ((void (*)(id, SEL, BOOL))objc_msgSend)
-
 #define objc_msgSendSuper_t(RET, ...) ((RET(*)(struct objc_super*, SEL, ##__VA_ARGS__))objc_msgSendSuper)
 #define objc_msgSend_t(RET, ...) ((RET(*)(id, SEL, ##__VA_ARGS__))objc_msgSend)
+#define objc_msgSend_id objc_msgSend_t(id)
+#define objc_msgSend_void objc_msgSend_t(void)
 #define sel(NAME) sel_registerName(NAME)
 #define class(NAME) ((id)objc_getClass(NAME))
 #define makeClass(NAME, SUPER) \
@@ -3439,7 +3436,6 @@ float tigrTime() {
     if (!class_addMethod(CLASS, sel(NAME), (IMP) (IMPL), (SIGNATURE))) assert(false)
 
 #define objc_alloc(CLASS) objc_msgSend_id(class(CLASS), sel("alloc"))
-
 
 extern id UIApplication;
 static int NSQualityOfServiceUserInteractive = 0x21;
@@ -3467,14 +3463,13 @@ typedef struct {
 /// Global state
 static struct {
     InputState inputState;
-    id appDelegate;
+    id viewController;
     id context;
     id frameCondition;
-    Tigr* currentWindow;
     int screenW;
     int screenH;
     double scaleFactor;
-    double lastTime;
+    double timeSinceLastDraw;
     int closed;
     int renderReadFd;
     int mainWriteFd;
@@ -3482,14 +3477,13 @@ static struct {
     .inputState = {
         .numPoints = 0,
     },
-    .appDelegate = 0,
+    .viewController = 0,
     .context = 0,
     .frameCondition = 0,
-    .currentWindow = 0,
     .screenW = 0,
     .screenH = 0,
     .scaleFactor = 1,
-    .lastTime = 0,
+    .timeSinceLastDraw = 0,
     .closed = 0,
     .renderReadFd = 0,
     .mainWriteFd = 0,
@@ -3506,46 +3500,22 @@ typedef struct TigrMessageData {
 
 static id autoreleasePool = NULL;
 
-static void _pauseRendering(void* appDelegate) {
-    id vc = objc_msgSend_id(appDelegate, sel("viewController"));
-    objc_msgSend_void_bool((id) vc, sel("setPaused:"), YES);
-}
-
-static void _resumeRendering(void* appDelegate) {
-    id vc = objc_msgSend_id(appDelegate, sel("viewController"));
-    objc_msgSend_void_bool((id) vc, sel("setPaused:"), NO);
-}
-
-void callOnMainThread(void(*fn)(void*), void* data) {
-    dispatch_sync_f(dispatch_get_main_queue(), NULL, fn);
-}
-
 void writeToRenderThread(const TigrMessageData* message) {
     if (write(gState.mainWriteFd, message, sizeof(TigrMessageData)) != sizeof(TigrMessageData)) {
-        os_log_error(OS_LOG_DEFAULT, "Failed to write message to render thread: %s", strerror(errno));
+        os_log_error(OS_LOG_DEFAULT, "Failed to write message to render thread: %{public}s", strerror(errno));
     }
 }
 
 int readFromMainThread(TigrMessageData* message) {
     int result = read(gState.renderReadFd, message, sizeof(TigrMessageData));
-    if (result == EAGAIN) {
+    if (result == -1 && errno == EAGAIN) {
         return 0;
     }
     if (result != sizeof(TigrMessageData)) {
-        os_log_error(OS_LOG_DEFAULT, "Failed to read message from main thread: %s", strerror(errno));
+        os_log_error(OS_LOG_DEFAULT, "Failed to read message from main thread: %{public}s", strerror(errno));
         return 0;
     }
     return 1;
-}
-
-static void acquireContext() {
-    callOnMainThread(_pauseRendering, gState.appDelegate);
-    objc_msgSend_void_id(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
-}
-
-static void releaseContext() {
-    objc_msgSend_void_id(class("EAGLContext"), sel("setCurrentContext:"), NULL);
-    callOnMainThread(_resumeRendering, gState.appDelegate);
 }
 
 void viewWillTransitionToSize(id self, SEL _sel, CGSize size, id transitionCoordinator) {
@@ -3559,11 +3529,16 @@ void viewWillTransitionToSize(id self, SEL _sel, CGSize size, id transitionCoord
     objc_msgSendSuper_t(void, CGSize, id)(&super, _sel, size, transitionCoordinator);
 }
 
+BOOL prefersStatusBarHidden(id self, SEL _sel) {
+    return true;
+}
+
+enum RenderState {
+    SWAPPED = 5150,
+    RENDERED
+};
+
 BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options) {
-    gState.appDelegate = self;
-
-    os_log_info(OS_LOG_DEFAULT, "didFinishLaunchingWithOptions!");
-
     id screen = objc_msgSend_id(class("UIScreen"), sel("mainScreen"));
     CGRect bounds = objc_msgSend_t(CGRect)(screen, sel("bounds"));
     CGSize size = bounds.size;
@@ -3573,10 +3548,12 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
 
     Class ViewController = makeClass("TigrViewController", "GLKViewController");
     addMethod(ViewController, "viewWillTransitionToSize:withTransitionCoordinator:", viewWillTransitionToSize, "v@:{CGSize}@");
+    addMethod(ViewController, "prefersStatusBarHidden", prefersStatusBarHidden, "c@:");
     id vc = objc_msgSend_t(id)((id)ViewController, sel("alloc"));
     vc = objc_msgSend_id(vc, sel("init"));
+    gState.viewController = vc;
+    objc_msgSend_t(void, int)(vc, sel("setPreferredFramesPerSecond:"), 60);
     int framesPerSecond = objc_msgSend_t(int)(vc, sel("framesPerSecond"));
-    os_log_info(OS_LOG_DEFAULT, "Frames per second: (%d)", framesPerSecond);
 
     id context = objc_alloc("EAGLContext");
     static int kEAGLRenderingAPIOpenGLES3 = 3;
@@ -3586,9 +3563,9 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     id view = objc_alloc("GLKView");
     view = objc_msgSend_t(id, CGRect, id)(view, sel("initWithFrame:context:"), bounds, context);
     objc_msgSend_t(void, BOOL)(view, sel("setMultipleTouchEnabled:"), YES);
-
-    objc_msgSend_t(void, id)(vc, sel("setView:"), view);
     objc_msgSend_t(void, id)(view, sel("setDelegate:"), self);
+    objc_msgSend_t(void, id)(vc, sel("setView:"), view);
+    objc_msgSend_t(void, id)(vc, sel("setDelegate:"), self);
     objc_msgSend_t(void, id)(window, sel("setRootViewController:"), vc);
     objc_msgSend_t(void)(window, sel("makeKeyAndVisible"));
 
@@ -3596,7 +3573,8 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     gState.screenW = size.width * gState.scaleFactor;
     gState.screenH = size.height * gState.scaleFactor;
 
-    gState.frameCondition = objc_msgSend_t(id)(objc_alloc("NSCondition"), sel("init"));
+    gState.frameCondition = objc_msgSend_t(id, int)(objc_alloc("NSConditionLock"), sel("initWithCondition:"), RENDERED);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), RENDERED);
 
     id renderThread = objc_msgSend_t(id, id, SEL, id)
         (objc_alloc("NSThread"), sel("initWithTarget:selector:object:"), self, sel("renderMain"), NULL);
@@ -3607,19 +3585,24 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
 }
 
 void waitForFrame() {
-    objc_msgSend_void(gState.frameCondition, sel("wait"));
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), 0);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("unlockWithCondition:"), RENDERED);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), SWAPPED);
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
 }
 
 void drawInRect(id _self, SEL _sel, id view, CGRect rect) {
-    if (gState.currentWindow != 0) {
-        tigrGAPIPresent(gState.currentWindow, gState.screenW, gState.screenH);
-    }
-    objc_msgSend_void(gState.frameCondition, sel("signal"));
+    gState.timeSinceLastDraw = objc_msgSend_t(double)(gState.viewController, sel("timeSinceLastDraw"));
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("unlockWithCondition:"), SWAPPED);
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), RENDERED);
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
 }
 
 extern void tigrMain();
 
 void renderMain(id _self, SEL _sel) {
+    objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), SWAPPED);
+    objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
     tigrMain();
 }
 
@@ -3632,7 +3615,8 @@ enum {
 };
 
 void touches(id self, SEL sel, id touches, id event) {
-    id enumerator = objc_msgSend_t(id)(touches, sel("objectEnumerator"));
+    id allTouches = objc_msgSend_t(id)(event, sel("allTouches"));
+    id enumerator = objc_msgSend_t(id)(allTouches, sel("objectEnumerator"));
     id touch = 0;
     InputState input = {
         .numPoints = 0,
@@ -3652,7 +3636,6 @@ void touches(id self, SEL sel, id touches, id event) {
         if (input.numPoints >= MAX_TOUCH_POINTS) {
             break;
         }
-        os_log_info(OS_LOG_DEFAULT, "Touches: (%f, %f)", location.x, location.y);
     }
     TigrMessageData message = {
         .message = SET_INPUT,
@@ -3661,24 +3644,14 @@ void touches(id self, SEL sel, id touches, id event) {
     writeToRenderThread(&message);
 }
 
-void touchesEnded(id self, SEL sel, id touches, id event) {
-    id enumerator = objc_msgSend_t(id)(touches, sel("objectEnumerator"));
-    id touch = 0;
-    while ((touch = objc_msgSend_t(id)(enumerator, sel("nextObject")))) {
-        CGPoint location = objc_msgSend_t(CGPoint, id)(touch, sel("locationInView:"), NULL);
-        os_log_info(OS_LOG_DEFAULT, "Touches ended/cancelled: (%f, %f)", location.x, location.y);
+Class tigrAppDelegate() {
+    static Class delegateClass = 0;
+    if (delegateClass != 0) {
+        return delegateClass;
     }
-}
-
-void tigrInitIOS() {
-    static bool inited = false;
-    if (inited) {
-        return;
-    }
-    inited = true;
 
     id application = objc_msgSend_id(class("UIApplication"), sel("sharedApplication"));
-    Class delegateClass = makeClass("TigrAppDelegate", "UIResponder");
+    delegateClass = makeClass("TigrAppDelegate", "UIResponder");
     addMethod(delegateClass, "application:didFinishLaunchingWithOptions:", didFinishLaunchingWithOptions, "c@:@@");
     addMethod(delegateClass, "touchesBegan:withEvent:", touches, "v@:@@");
     addMethod(delegateClass, "touchesMoved:withEvent:", touches, "v@:@@");
@@ -3690,13 +3663,14 @@ void tigrInitIOS() {
 
     int fds[2];
     if (pipe(fds) != 0) {
-        exit(42);
+        tigrError(0, "Failed to create message pipe");
     }
     int flags = fcntl(fds[0], F_GETFL, 0);
     fcntl(fds[0], F_SETFL, flags | O_NONBLOCK);
 
     gState.renderReadFd = fds[0];
     gState.mainWriteFd = fds[1];
+    return delegateClass;
 }
 
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
@@ -3707,7 +3681,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     } else {
         // See how big we can make it and still fit on-screen.
         scale = tigrCalcScale(w, h, gState.screenW, gState.screenH);
-        os_log_info(OS_LOG_DEFAULT, "Scale: %d", scale);
     }
 
     scale = tigrEnforceScale(scale, flags);
@@ -3729,9 +3702,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->gl.gl_legacy = 0;
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
-    acquireContext();
     tigrGAPICreate(bmp);
-    releaseContext();
 
     return bmp;
 }
@@ -3779,7 +3750,7 @@ void tigrUpdate(Tigr* bmp) {
     }
 
     tigrPosition(bmp, win->scale, gState.screenW, gState.screenH, win->pos);
-    gState.currentWindow = bmp;
+    tigrGAPIPresent(bmp, gState.screenW, gState.screenH);
     waitForFrame();
 }
 
@@ -3796,20 +3767,13 @@ void tigrError(Tigr* bmp, const char* message, ...) {
     tmp[sizeof(tmp) - 1] = 0;
     va_end(args);
 
-    os_log_error(OS_LOG_DEFAULT, "tigr fatal error: %s\n", tmp);
+    os_log_error(OS_LOG_DEFAULT, "tigr fatal error: %{public}s\n", tmp);
 
     exit(1);
 }
 
 float tigrTime() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    double now = (double)ts.tv_sec + (ts.tv_nsec / 1000000000.0);
-    double elapsed = gState.lastTime == 0 ? 0 : now - gState.lastTime;
-    gState.lastTime = now;
-
-    return (float)elapsed;
+    return (float)gState.timeSinceLastDraw;
 }
 
 void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
