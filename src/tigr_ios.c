@@ -10,41 +10,10 @@
 #include <os/log.h>
 #include <time.h>
 
-#if defined(__OBJC__) && __has_feature(objc_arc)
-#error "Can't compile as objective-c code!"
-#endif
-
-#define objc_msgSendSuper_t(RET, ...) ((RET(*)(struct objc_super*, SEL, ##__VA_ARGS__))objc_msgSendSuper)
-#define objc_msgSend_t(RET, ...) ((RET(*)(id, SEL, ##__VA_ARGS__))objc_msgSend)
-#define objc_msgSend_id objc_msgSend_t(id)
-#define objc_msgSend_void objc_msgSend_t(void)
-#define sel(NAME) sel_registerName(NAME)
-#define class(NAME) ((id)objc_getClass(NAME))
-#define makeClass(NAME, SUPER) \
-    objc_allocateClassPair((Class)objc_getClass(SUPER), NAME, 0)
-
-// Check here to get the signature right: https://nshipster.com/type-encodings/
-#define addMethod(CLASS, NAME, IMPL, SIGNATURE) \
-    if (!class_addMethod(CLASS, sel(NAME), (IMP) (IMPL), (SIGNATURE))) assert(false)
-
-#define objc_alloc(CLASS) objc_msgSend_id(class(CLASS), sel("alloc"))
+#include "tigr_objc.h"
 
 extern id UIApplication;
 static int NSQualityOfServiceUserInteractive = 0x21;
-
-id makeNSString(const char* str) {
-    return objc_msgSend_t(id, const char*)
-        (class("NSString"), sel("stringWithUTF8String:"), str);
-}
-
-id joinNSStrings(id a, id b) {
-    return objc_msgSend_t(id, id)
-        (a, sel("stringByAppendingString:"), b);
-}
-
-const char* UTF8StringFromNSString(id a) {
-    return objc_msgSend_t(const char*)(a, sel("UTF8String"));
-}
 
 typedef struct {
     TigrTouchPoint points[MAX_TOUCH_POINTS];
