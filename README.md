@@ -2,57 +2,34 @@
 
 ![](./tigr.png)
 
-TIGR is a tiny graphics library, for when you just need to draw something in a window without any fuss. TIGR doesn't want to do everything. We don't want to bloat your program with hundreds of extra DLLs and megabytes of frameworks.
-
-We don't want to supply every possible function you might ever need. There are already plenty of add-on libraries for doing sound, json, 3D, whatever.
-Our goal is simply to allow you to easily throw together small 2D programs when you need them.
+TIGR is a tiny cross-platform graphics library,
+providing a unified API for Windows, macOS, Linux, iOS and Android.
 
 TIGR's core is a simple framebuffer library. On top of that, we provide a few helpers for the common tasks that 2D programs generally need:
 
  - Create bitmap windows.
  - Direct access to bitmaps, no locking.
  - Basic drawing helpers (plot, line, blitter).
- - Text output.
+ - Text output using bitmap fonts.
  - Mouse, touch and keyboard input.
  - PNG loading and saving.
  - Easy pixel shader access.
 
-TIGR is designed to be small and independent. A typical 'hello world' is less than 40KB. We don't require you to distribute any additional DLLs; everything is baked right into your program.
+TIGR is designed to be small and independent.
+The 'hello world' example is less than 100kB:
 
-TIGR is cross platform, providing a unified API for Windows, macOS, Linux and Android.
+| *Platform* | *Size* |
+| --- | --- |
+| windows x86_64 | 48k |
+| linux x86_64 | 43k |
+| macOS arm64 | 90k |
+| macOS x86_64 | 74k |
 
-TIGR is free to copy with no restrictions; see tigr.h.
+There are no additional libraries to include; everything is baked right into your program.
 
-> NOTE: This repo contains a fork of TIGR with added Linux and Android support. The original repo lives [here](https://bitbucket.org/rmitton/tigr/overview).
+TIGR is free to copy with no restrictions; see [tigr.h](tigr.h).
 
-## How to set up TIGR
-
-### Desktop (Windows, macOS, Linux)
-
-TIGR is supplied as a single .c and corresponding .h file.
-
-To use it, you just drop them right into your project. No fancy build systems, no DLL hell, no package managers.
-
-1. Grab  **tigr.c** and **tigr.h**
-2. Throw them into your project.
-3. Link with
-    - -lopengl32 and -lgdi32 on Windows
-    - -framework OpenGL and -framework Cocoa on macOS
-    - -lGLU -lGL -lX11 on Linux
-4. You're done!
-
-### Android
-
-Due to the complex lifecycle and packaging of Android apps
-(there is no such thing as a single source file Android app),
-a tiny wrapper around TIGR is needed. Still - the TIGR API stays the same!
-
-To keep TIGR as tiny and focused as it is, the Android wrapper lives in a separate repo.
-
-To get started on Android, head over to the [TIMOGR](https://github.com/erkkah/timogr) repo and continue there.
-TIGR is included in TIMOGR, there is no need to install TIGR separately.
-
-### How do I program with TIGR? ###
+## How do I program with TIGR?
 
 Here's an example Hello World program. For more information, just read **tigr.h** to see the APIs available.
 
@@ -72,6 +49,44 @@ int main(int argc, char *argv[])
     return 0;
 }
 ```
+
+## How to set up TIGR
+
+### Desktop (Windows, macOS, Linux)
+
+TIGR is supplied as a single .c and corresponding .h file.
+
+To use it, you just drop them right into your project.
+
+1. Grab  **tigr.c** and **tigr.h**
+2. Throw them into your project.
+3. Link with
+    - -lopengl32 and -lgdi32 on Windows
+    - -framework OpenGL and -framework Cocoa on macOS
+    - -lGLU -lGL -lX11 on Linux
+4. You're done!
+
+### Android
+
+Due to the complex lifecycle and packaging of Android apps
+(there is no such thing as a single source file Android app),
+a tiny wrapper around TIGR is needed. Still - the TIGR API stays the same!
+
+To keep TIGR as tiny and focused as it is, the Android wrapper lives in a separate repo.
+
+To get started on Android, head over to the [TIMOGR](https://github.com/erkkah/timogr) repo and continue there.
+
+### iOS
+
+On iOS, TIGR is implemented as an app delegate, which can be used in your app with just a few lines of code.
+
+Building an iOS app usually requires quite a bit of tinkering in Xcode just to get up and running. To get up and running **fast**, there is an iOS starter project with a completely commandline-based tool chain, and VS Code configurations for debugging.
+
+To get started on iOS, head over to the [TIMOGRiOS](https://github.com/erkkah/timogrios) repo and continue there.
+
+> NOTE: TIGR is included in TIMOGR and TIMOGRiOS, there is no need to install TIGR separately.
+
+## Fonts and shaders
 
 ### Custom fonts
 
