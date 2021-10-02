@@ -31,7 +31,7 @@ TIGR is free to copy with no restrictions; see [tigr.h](tigr.h).
 
 ## How do I program with TIGR?
 
-Here's an example Hello World program. For more information, just read **tigr.h** to see the APIs available.
+Here's an example Hello World program. For more information, just read [tigr.h](tigr.h) to see the APIs available.
 
 ```C
 #include "tigr.h"
