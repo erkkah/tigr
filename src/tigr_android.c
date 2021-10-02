@@ -409,7 +409,6 @@ void tigrUpdate(Tigr* bmp) {
     if (win->mouseButtons > 0) {
         win->mouseX = win->touchPoints[0].x;
         win->mouseY = win->touchPoints[0].y;
-        ;
     }
 
     if (win->flags & TIGR_AUTO) {
