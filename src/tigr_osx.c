@@ -750,7 +750,7 @@ void _tigrOnCocoaEvent(id event, id window) {
         case 25:  // NSOtherMouseDown
         {
             // number == 2 is a middle button
-            NSInteger number = objc_msgSend_t(NSUInteger)(event, sel("buttonNumber"));
+            NSInteger number = objc_msgSend_t(NSInteger)(event, sel("buttonNumber"));
             if (number == 2 && win->mouseInView) {
                 win->mouseButtons |= 4;
             }
