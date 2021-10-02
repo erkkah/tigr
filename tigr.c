@@ -1659,6 +1659,7 @@ TigrInternal *tigrInternal(Tigr *bmp)
 #include <shellapi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 #define WIDGET_SCALE	3
 #define WIDGET_FADE		16
