@@ -213,7 +213,7 @@ void tigrError(Tigr* bmp, const char* message, ...) {
     exit(1);
 }
 
-NSSize _tigrCocoaWindowSize(id window) {
+NSSize _tigrContentBackingSize(id window) {
     id contentView = objc_msgSend_id(window, sel("contentView"));
     NSRect rect = objc_msgSend_stret_t(NSRect)(contentView, sel("frame"));
     rect = objc_msgSend_stret_t(NSRect, NSRect)(contentView, sel("convertRectToBacking:"), rect);
@@ -232,7 +232,6 @@ enum {
 };
 
 Tigr* tigrWindow(int w, int h, const char* title, int flags) {
-    int scale;
     Tigr* bmp;
     TigrInternal* win;
 
@@ -240,11 +239,11 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     NSUInteger windowStyleMask = NSWindowStyleRegular;
 
-    if (flags & TIGR_AUTO) {
-        // Always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
-        scale = 1;
-    } else {
-        // See how big we can make it and still fit on-screen.
+    // In AUTO mode, window follows requested size, unless downscaled by tigrEnforceScale below.
+    int windowScale = 1;
+    
+    // In non-AUTO mode, see how big we can make it and still fit on-screen.
+    if ((flags & TIGR_AUTO) == 0) {
         CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
         int maxW = CGRectGetWidth(mainMonitor);
         int maxH = CGRectGetHeight(mainMonitor);
@@ -253,12 +252,12 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
             class("NSWindow"), sel("contentRectForFrameRect:styleMask:"),
             screen, windowStyleMask
         );
-        scale = tigrCalcScale(w, h, content.size.width, content.size.height);
+        windowScale = tigrCalcScale(w, h, content.size.width, content.size.height);
     }
 
-    scale = tigrEnforceScale(scale, flags);
+    windowScale = tigrEnforceScale(windowScale, flags);
 
-    NSRect rect = { { 0, 0 }, { w * scale, h * scale } };
+    NSRect rect = { { 0, 0 }, { w * windowScale, h * windowScale } };
     id windowAlloc = objc_msgSend_id(class("NSWindow"), sel("alloc"));
     id window = ((id(*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(
         windowAlloc, sel("initWithContentRect:styleMask:backing:defer:"), rect, windowStyleMask, 2, NO);
@@ -284,8 +283,8 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     id contentView = objc_msgSend_id(window, sel("contentView"));
 
-    if (flags & TIGR_RETINA)
-        objc_msgSend_void_bool(contentView, sel("setWantsBestResolutionOpenGLSurface:"), YES);
+	int wantsHighRes = (flags & TIGR_RETINA);
+    objc_msgSend_void_bool(contentView, sel("setWantsBestResolutionOpenGLSurface:"), wantsHighRes);
 
     NSPoint point = { 20, 20 };
     ((void (*)(id, SEL, NSPoint))objc_msgSend)(window, sel("cascadeTopLeftFromPoint:"), point);
@@ -324,9 +323,23 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     objc_msgSend_void_bool(NSApp, sel("activateIgnoringOtherApps:"), YES);
 
     // Wrap a bitmap around it.
-    NSSize windowSize = _tigrCocoaWindowSize(window);
     bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
     bmp->handle = window;
+
+    NSSize windowContentSize = _tigrContentBackingSize(window);
+
+    // In AUTO mode, always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
+    int bitmapScale = 1;
+    
+    // In non-AUTO mode, scale based on backing size
+    if ((flags & TIGR_AUTO) == 0) {
+        bitmapScale = tigrEnforceScale(tigrCalcScale(w, h, windowContentSize.width, windowContentSize.height), flags); 
+    } else {
+        // In AUTO mode, bitmap size follows window size
+        w = windowContentSize.width / windowScale;
+        h = windowContentSize.height / windowScale;
+        bitmapScale = tigrEnforceScale(bitmapScale, flags);
+    }
 
     // Set the handle
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
@@ -349,7 +362,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win = tigrInternal(bmp);
     win->shown = 0;
     win->closed = 0;
-    win->scale = scale;
+    win->scale = bitmapScale;
     win->lastChar = 0;
     win->flags = flags;
 	win->p1 = win->p2 = win->p3 = 0;
@@ -867,7 +880,7 @@ void tigrUpdate(Tigr* bmp) {
     objc_msgSend_void(openGLContext, sel("update"));
     tigrGAPIBegin(bmp);
 
-    NSSize windowSize = _tigrCocoaWindowSize(window);
+    NSSize windowSize = _tigrContentBackingSize(window);
 
     if (win->flags & TIGR_AUTO)
         tigrResize(bmp, windowSize.width / win->scale, windowSize.height / win->scale);
