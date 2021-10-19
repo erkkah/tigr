@@ -2497,6 +2497,16 @@ void windowWillClose(id self, SEL _sel, id notification) {
     object_setInstanceVariable(self, "closed", (void*)value);
 }
 
+void windowDidResize(id self, SEL _sel, id notification) {
+    TigrInternal* win;
+    Tigr* bmp = 0;
+    object_getInstanceVariable(self, "tigrHandle", (void**)&bmp);
+    win = bmp ? tigrInternal(bmp) : NULL;
+    if (win) {
+        win->mouseButtons = 0;
+    }
+}
+
 void windowDidBecomeKey(id self, SEL _sel, id notification) {
     TigrInternal* win;
     Tigr* bmp = 0;
@@ -2697,6 +2707,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     addIvar(WindowDelegateClass, "closed", sizeof(NSUInteger), NSUIntegerEncoding);
     addIvar(WindowDelegateClass, "tigrHandle", sizeof(void*), "ˆv");
     addMethod(WindowDelegateClass, "windowWillClose:", windowWillClose, "v@:@");
+    addMethod(WindowDelegateClass, "windowDidResize:", windowDidResize, "v@:@");
     addMethod(WindowDelegateClass, "windowDidBecomeKey:", windowDidBecomeKey, "v@:@");
     addMethod(WindowDelegateClass, "mouseEntered:", mouseEntered, "v@:@");
     addMethod(WindowDelegateClass, "mouseExited:", mouseExited, "v@:@");
