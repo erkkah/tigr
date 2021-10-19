@@ -36,6 +36,10 @@ Tigr *tigrBitmap(int w, int h)
 
 void tigrResize(Tigr *bmp, int w, int h)
 {
+	if (bmp->w == w && bmp->h == h) {
+		return;
+	}
+
 	int y, cw, ch;
 	TPixel *newpix = (TPixel *)calloc(w*h, sizeof(TPixel));
 	cw = (w < bmp->w) ? w : bmp->w;
