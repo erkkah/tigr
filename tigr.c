@@ -2672,7 +2672,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     tigrInitOSX();
 
-    NSUInteger windowStyleMask = NSWindowStyleRegular;
+    NSUInteger windowStyleMask = NSWindowStyleRegular & ~NSWindowStyleMaskMiniaturizable;
 
     // In AUTO mode, window follows requested size, unless downscaled by tigrEnforceScale below.
     int windowScale = 1;
@@ -3300,6 +3300,7 @@ void tigrUpdate(Tigr* bmp) {
 
     id distantPast = objc_msgSend_id(class("NSDate"), sel("distantPast"));
     id event = 0;
+    int processedEvents;
     do {
         event = objc_msgSend_t(id, NSUInteger, id, id, BOOL)(
             NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"), eventMask, distantPast,
@@ -3307,9 +3308,16 @@ void tigrUpdate(Tigr* bmp) {
         );
 
         if (event != 0) {
+            processedEvents++;
             _tigrOnCocoaEvent(event, window);
         }
     } while (event != 0);
+
+    if (processedEvents) {
+        // The event processing loop above is blocking, which causes timing to freeze.
+        // A quick call to tigrTime will reset the time and hide that fact from client code.
+        tigrTime();
+    }
 
     // do runloop stuff
     objc_msgSend_void(NSApp, sel("updateWindows"));
