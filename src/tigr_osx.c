@@ -406,6 +406,10 @@ void tigrFree(Tigr* bmp) {
             objc_msgSend_void(window, sel("close"));
         }
 
+        if (win->flags & TIGR_NOCURSOR) {
+            objc_msgSend_id(class("NSCursor"), sel("unhide"));
+        }
+
         id wdg = objc_msgSend_id(window, sel("delegate"));
         objc_msgSend_void(wdg, sel("release"));
         objc_msgSend_void((id)win->gl.glContext, sel("release"));
