@@ -2699,6 +2699,9 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     if (flags & TIGR_FULLSCREEN) {
         objc_msgSend_void_id(window, sel("toggleFullScreen:"), window);
+        if (flags & TIGR_NOCURSOR) {
+            objc_msgSend_id(class("NSCursor"), sel("hide"));
+        }
     }
 
     objc_msgSend_void_bool(window, sel("setReleasedWhenClosed:"), NO);
