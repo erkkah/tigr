@@ -38,7 +38,7 @@ typedef struct {
 
 // Window flags.
 #define TIGR_FIXED      0   // window's bitmap is a fixed size (default)
-#define TIGR_AUTO       1   // window's bitmap will automatically resize after each tigrUpdate
+#define TIGR_AUTO       1   // window's bitmap is scaled with the window
 #define TIGR_2X         2   // always enforce (at least) 2X pixel scale
 #define TIGR_3X         4   // always enforce (at least) 3X pixel scale
 #define TIGR_4X         8   // always enforce (at least) 4X pixel scale
@@ -53,7 +53,23 @@ typedef struct Tigr {
     void *handle;   // OS window handle, NULL for off-screen bitmaps.
 } Tigr;
 
-// Creates a new empty window. (title is UTF-8)
+// Creates a new empty window with a given bitmap size.
+//
+// Title is UTF-8.
+//
+// In TIGR_FIXED mode, the window is made as large as possible to contain an integer-scaled
+// version of the bitmap while still fitting on the screen. Resizing the window will adapt
+// the scale in integer steps to fit the bitmap.
+//
+// In TIGR_AUTO mode, the initial window size is set to the bitmap size times the pixel
+// scale. Resizing the window will resize the bitmap using the specified scale.
+// For example, in forced 2X mode, the window will be twice as wide (and high) as the bitmap.
+//
+// Turning on TIGR_RETINA mode will request full backing resolution on OSX, meaning that
+// the effective window size might be integer scaled to a larger size. In TIGR_AUTO mode,
+// this means that the Tigr bitmap will change size if the window is moved between
+// retina and non-retina screens.
+//
 Tigr *tigrWindow(int w, int h, const char *title, int flags);
 
 // Creates an empty off-screen bitmap.
@@ -65,7 +81,7 @@ void tigrFree(Tigr *bmp);
 // Returns non-zero if the user requested to close a window.
 int tigrClosed(Tigr *bmp);
 
-// Displays a window's contents on-screen.
+// Displays a window's contents on-screen and updates input.
 void tigrUpdate(Tigr *bmp);
 
 // Called before doing direct OpenGL calls and before tigrUpdate.
@@ -89,7 +105,7 @@ void tigrSetPostFX(Tigr *bmp, float p1, float p2, float p3, float p4);
 // Drawing ----------------------------------------------------------------
 
 // Helper for reading/writing pixels.
-// For high performance, just write to bmp->pix yourself.
+// For high performance, just access bmp->pix directly.
 TPixel tigrGet(Tigr *bmp, int x, int y);
 void tigrPlot(Tigr *bmp, int x, int y, TPixel pix);
 
