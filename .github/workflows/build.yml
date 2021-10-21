@@ -29,7 +29,7 @@ jobs:
       if: startsWith(matrix.os, 'ubuntu')
       shell: bash
       working-directory: ./ci
-      run: xvfb-run --auto-servernum ./ci
+      run: xvfb-run ./ci
 
     - name: Run tests (macOS)
       if: startsWith(matrix.os, 'macos')
