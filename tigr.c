@@ -2657,20 +2657,17 @@ void tigrInitOSX() {
 }
 
 void tigrError(Tigr* bmp, const char* message, ...) {
-    char tmp[1024];
+	char tmp[1024];
 
-    va_list args;
-    va_start(args, message);
-    vsnprintf(tmp, sizeof(tmp), message, args);
-    tmp[sizeof(tmp) - 1] = 0;
-    va_end(args);
+	va_list args;
+	va_start(args, message);
+	vsnprintf(tmp, sizeof(tmp), message, args);
+	tmp[sizeof(tmp)-1] = 0;
+	va_end(args);
 
-    CFStringRef header = CFStringCreateWithCString(NULL, "Error", kCFStringEncodingUTF8);
-    CFStringRef msg = CFStringCreateWithCString(NULL, tmp, kCFStringEncodingUTF8);
-    CFUserNotificationDisplayNotice(0.0, kCFUserNotificationStopAlertLevel, NULL, NULL, NULL, header, msg, NULL);
-    CFRelease(header);
-    CFRelease(msg);
-    exit(1);
+	printf("tigr fatal error: %s\n", tmp);
+
+	exit(1);
 }
 
 NSSize _tigrContentBackingSize(id window) {
@@ -2770,7 +2767,8 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
                                 // 72,			//	NSOpenGLPFANoRecovery,
                                 // 55, 1,		//	NSOpenGLPFASampleBuffers, 1,
                                 // 56, 4,		//	NSOpenGLPFASamples, 4,
-                                99, 0x3200,  //	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+                                99, 0x3200,     //	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+                                // 70, 0x00020400, // NSOpenGLPFARendererID, kCGLRendererGenericFloatID
                                 0 };
 
     id pixelFormat = objc_alloc("NSOpenGLPixelFormat");
