@@ -15,6 +15,11 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v1
+
+    - name: Get OpenGL headers on Linux
+      run: suto apt install libgl-dev
+      if: startsWith(matrix.os, 'ubuntu')
+
     - name: Compile
       shell: bash
       working-directory: ./ci
