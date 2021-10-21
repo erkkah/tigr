@@ -51,6 +51,7 @@ typedef struct Tigr {
     int w, h;       // width/height (unscaled)
     TPixel *pix;    // pixel data
     void *handle;   // OS window handle, NULL for off-screen bitmaps.
+    int blendMode;  // Target bitmap blend mode
 } Tigr;
 
 // Creates a new empty window with a given bitmap size.
@@ -133,7 +134,13 @@ void tigrBlit(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int 
 // target using per pixel alpha and the specified global alpha.
 //
 // Ablend = Asrc * alpha
-// RGBAdest = RGBAsrc * Ablend + RGBAdest * (1 - Ablend)
+// RGBdest = RGBsrc * Ablend + RGBdest * (1 - Ablend)
+//
+// Blend mode == TIGR_KEEP_ALPHA:
+// Adest = Adest
+//
+// Blend mode == TIGR_BLEND_ALPHA:
+// Adest = Asrc * Ablend + Adest * (1 - Ablend)
 void tigrBlitAlpha(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, float alpha);
 
 // Same as tigrBlit, but tints the source bitmap with a color
@@ -143,8 +150,25 @@ void tigrBlitAlpha(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w,
 // Gblend = Gsrc * Gtint
 // Bblend = Bsrc * Btint
 // Ablend = Asrc * Atint
+//
 // RGBAdest = RGBAblend * Ablend + RGBAdest * (1 - Ablend)
+//
+// RGBdest = RGBblend * Ablend + RGBdest * (1 - Ablend)
+//
+// Blend mode == TIGR_KEEP_ALPHA:
+// Adest = Adest
+//
+// Blend mode == TIGR_BLEND_ALPHA:
+// Adest = Ablend * Ablend + Adest * (1 - Ablend)
 void tigrBlitTint(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint);
+
+enum TIGRBlendMode {
+    TIGR_KEEP_ALPHA = 0,    // Keep destination alpha value
+    TIGR_BLEND_ALPHA = 1,   // Blend destination alpha (default)
+};
+
+// Set destination bitmap blend mode for blit operations.
+void tigrBlitMode(Tigr *dest, int mode);
 
 // Helper for making colors.
 TIGR_INLINE TPixel tigrRGB(unsigned char r, unsigned char g, unsigned char b)
