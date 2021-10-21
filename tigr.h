@@ -125,13 +125,25 @@ void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color);
 // dx/dy = dest co-ordinates
 // sx/sy = source co-ordinates
 // w/h   = width/height
+//
+// RGBAdest = RGBAsrc
 void tigrBlit(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h);
 
-// Same as tigrBlit, but blends with the bitmap alpha channel,
-// and uses the 'alpha' variable to fade out.
+// Same as tigrBlit, but alpha blends the source bitmap with the
+// target using per pixel alpha and the specified global alpha.
+//
+// Ablend = Asrc * alpha
+// RGBAdest = RGBAsrc * Ablend + RGBAdest * (1 - Ablend)
 void tigrBlitAlpha(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, float alpha);
 
-// Same as tigrBlit, but tints the source bitmap with a color.
+// Same as tigrBlit, but tints the source bitmap with a color
+// and alpha blends the resulting source with the destination.
+//
+// Rblend = Rsrc * Rtint
+// Gblend = Gsrc * Gtint
+// Bblend = Bsrc * Btint
+// Ablend = Asrc * Atint
+// RGBAdest = RGBAblend * Ablend + RGBAdest * (1 - Ablend)
 void tigrBlitTint(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint);
 
 // Helper for making colors.
