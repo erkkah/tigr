@@ -581,7 +581,7 @@ int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints)
 {
 	int buttons = 0;
 	if (maxPoints > 0) {
-		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
+		tigrMouse(bmp, &points->x, &points->y, &buttons);
 	}
 	return buttons ? 1 : 0;
 }
