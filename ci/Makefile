@@ -1,6 +1,7 @@
 CFLAGS = -I..
 ifeq ($(OS),Windows_NT)
 	LDFLAGS = -s -lopengl32 -lgdi32
+	EXT = .exe
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
@@ -11,4 +12,4 @@ else
 endif
 
 ci : ci.c ../tigr.c
-	gcc $^ -g -o $@ $(CFLAGS) $(LDFLAGS)
+	gcc $^ -o $@$(EXT) $(CFLAGS) $(LDFLAGS)
