@@ -55,9 +55,10 @@ static TPixel colors[4] = { { 0xff, 0, 0, 0xff },
     { 0x0, 0xff, 0xff, 0xff } };
 
 void drawFauxSierpinski(Tigr* bmp) {
+    int scale = 255 / bmp->w + 1;
     for (int x = 0; x < bmp->w; x++) {
         for (int y = 0; y < bmp->h; y++) {
-            int c = ((x & y) + (x ^ y)) & 0xff;
+            int c = (((x & y) + (x ^ y)) * scale) & 0xff;
             tigrPlot(bmp, x, y, tigrRGBA(c, c, c, 220));
         }
     }
@@ -93,9 +94,12 @@ void drawTestPattern(Tigr* bmp) {
     tigrBlitTint(bmp, img, midW + 11, midH + 16, 42, 125, 70, 42, colors[2]);
     tigrBlitAlpha(bmp, img, midW + 21, midH + 31, 42, 125, 70, 42, 0.5);
 
-    Tigr* sierp = tigrBitmap(100, 100);
+    Tigr* sierp = tigrBitmap(50, 50);
     drawFauxSierpinski(sierp);
+
     tigrBlitAlpha(bmp, sierp, 0, midH, 0, 0, sierp->w, sierp->h, 1);
+    tigrBlitMode(bmp, TIGR_KEEP_ALPHA);
+    tigrBlitAlpha(bmp, sierp, sierp->w, midH + sierp->h, 0, 0, sierp->w, sierp->h, 1);
 }
 
 void assertEqual(Tigr* a, Tigr* b) {

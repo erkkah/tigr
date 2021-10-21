@@ -270,6 +270,7 @@ Tigr *tigrBitmap2(int w, int h, int extra)
 	tigr->w = w;
 	tigr->h = h;
 	tigr->pix = (TPixel *)calloc(w*h, sizeof(TPixel));
+	tigr->blendMode = TIGR_BLEND_ALPHA;
 	return tigr;
 }
 
@@ -462,7 +463,7 @@ void tigrBlitTint(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, i
 			td[x].r += (unsigned char)((r - td[x].r)*a >> 16);
 			td[x].g += (unsigned char)((g - td[x].g)*a >> 16);
 			td[x].b += (unsigned char)((b - td[x].b)*a >> 16);
-			td[x].a += (unsigned char)((ts[x].a - td[x].a)*a >> 16);
+			td[x].a += (dst->blendMode) * (unsigned char)((ts[x].a - td[x].a)*a >> 16);
 		}
 		ts += st;
 		td += dt;
@@ -473,6 +474,10 @@ void tigrBlitAlpha(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, 
 {
 	alpha = (alpha < 0) ? 0 : (alpha > 1 ? 1 : alpha);
 	tigrBlitTint(dst, src, dx, dy, sx, sy, w, h, tigrRGBA(0xff,0xff,0xff,(unsigned char)(alpha*255)));
+}
+
+void tigrBlitMode(Tigr* dst, int mode) {
+	dst->blendMode = mode;
 }
 
 #undef CLIP0
