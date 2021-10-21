@@ -2473,6 +2473,12 @@ extern id const NSDefaultRunLoopMode;
 
 bool terminated = false;
 
+static uint64_t tigrTimestamp = 0;
+
+void _tigrResetTime() {
+	tigrTimestamp = mach_absolute_time();
+}
+
 TigrInternal* _tigrInternalCocoa(id window) {
     if (!window)
         return NULL;
@@ -2495,6 +2501,12 @@ NSUInteger applicationShouldTerminate(id self, SEL _sel, id sender) {
 void windowWillClose(id self, SEL _sel, id notification) {
     NSUInteger value = true;
     object_setInstanceVariable(self, "closed", (void*)value);
+    object_setInstanceVariable(self, "tigrHandle", (void*)0);
+}
+
+void windowDidEnterFullScreen(id self, SEL _sel, id notification) {
+    NSUInteger value = true;
+    object_setInstanceVariable(self, "visible", (void*)value);
 }
 
 void windowDidResize(id self, SEL _sel, id notification) {
@@ -2524,27 +2536,40 @@ void windowDidBecomeKey(id self, SEL _sel, id notification) {
 void mouseEntered(id self, SEL _sel, id event) {
     id window = objc_msgSend_id(event, sel("window"));
     TigrInternal* win = _tigrInternalCocoa(window);
-    win->mouseInView = 1;
-    if (win->flags & TIGR_NOCURSOR) {
-        objc_msgSend_id(class("NSCursor"), sel("hide"));
+    if (win) {
+        win->mouseInView = 1;
+        if (win->flags & TIGR_NOCURSOR) {
+            objc_msgSend_id(class("NSCursor"), sel("hide"));
+        }
     }
 }
 
 void mouseExited(id self, SEL _sel, id event) {
     id window = objc_msgSend_id(event, sel("window"));
     TigrInternal* win = _tigrInternalCocoa(window);
-    win->mouseInView = 0;
-    if (win->flags & TIGR_NOCURSOR) {
-        objc_msgSend_id(class("NSCursor"), sel("unhide"));
+    if (win) {
+        win->mouseInView = 0;
+        if (win->flags & TIGR_NOCURSOR) {
+            objc_msgSend_id(class("NSCursor"), sel("unhide"));
+        }
     }
 }
 
-bool _tigrCocoaIsWindowClosed(id window) {
+bool _tigrIsWindowClosed(id window) {
     id wdg = objc_msgSend_id(window, sel("delegate"));
     if (!wdg)
         return false;
     NSUInteger value = 0;
     object_getInstanceVariable(wdg, "closed", (void**)&value);
+    return value ? true : false;
+}
+
+bool _tigrIsWindowVisible(id window) {
+    id wdg = objc_msgSend_id(window, sel("delegate"));
+    if (!wdg)
+        return false;
+    NSUInteger value = 0;
+    object_getInstanceVariable(wdg, "visible", (void**)&value);
     return value ? true : false;
 }
 
@@ -2697,19 +2722,15 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     id window = ((id(*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(
         windowAlloc, sel("initWithContentRect:styleMask:backing:defer:"), rect, windowStyleMask, 2, NO);
 
-    if (flags & TIGR_FULLSCREEN) {
-        objc_msgSend_void_id(window, sel("toggleFullScreen:"), window);
-        if (flags & TIGR_NOCURSOR) {
-            objc_msgSend_id(class("NSCursor"), sel("hide"));
-        }
-    }
 
     objc_msgSend_void_bool(window, sel("setReleasedWhenClosed:"), NO);
 
     Class WindowDelegateClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "WindowDelegate", 0);
     addIvar(WindowDelegateClass, "closed", sizeof(NSUInteger), NSUIntegerEncoding);
+    addIvar(WindowDelegateClass, "visible", sizeof(NSUInteger), NSUIntegerEncoding);
     addIvar(WindowDelegateClass, "tigrHandle", sizeof(void*), "ˆv");
     addMethod(WindowDelegateClass, "windowWillClose:", windowWillClose, "v@:@");
+    addMethod(WindowDelegateClass, "windowDidEnterFullScreen:", windowDidEnterFullScreen, "v@:@");
     addMethod(WindowDelegateClass, "windowDidResize:", windowDidResize, "v@:@");
     addMethod(WindowDelegateClass, "windowDidBecomeKey:", windowDidBecomeKey, "v@:@");
     addMethod(WindowDelegateClass, "mouseEntered:", mouseEntered, "v@:@");
@@ -2717,6 +2738,16 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     id wdgAlloc = objc_msgSend_id((id)WindowDelegateClass, sel("alloc"));
     id wdg = objc_msgSend_id(wdgAlloc, sel("init"));
+
+    if (flags & TIGR_FULLSCREEN) {
+        objc_msgSend_void_id(window, sel("toggleFullScreen:"), window);
+        if (flags & TIGR_NOCURSOR) {
+            objc_msgSend_id(class("NSCursor"), sel("hide"));
+        }
+    } else {
+        NSUInteger value = true;
+        object_setInstanceVariable(wdg, "visible", (void*)value);
+    }
 
     objc_msgSend_void_id(window, sel("setDelegate:"), wdg);
 
@@ -2758,7 +2789,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     id blackColor = objc_msgSend_id(class("NSColor"), sel("blackColor"));
     objc_msgSend_void_id(window, sel("setBackgroundColor:"), blackColor);
 
-    // TODO do we really need this?
     objc_msgSend_void_bool(NSApp, sel("activateIgnoringOtherApps:"), YES);
 
     // Wrap a bitmap around it.
@@ -2830,7 +2860,7 @@ void tigrFree(Tigr* bmp) {
 
         id window = (id)bmp->handle;
 
-        if (!_tigrCocoaIsWindowClosed(window) && !terminated) {
+        if (!_tigrIsWindowClosed(window) && !terminated) {
             objc_msgSend_void(window, sel("close"));
         }
 
@@ -3292,7 +3322,7 @@ void tigrUpdate(Tigr* bmp) {
     window = (id)bmp->handle;
     openGLContext = (id)win->gl.glContext;
 
-    if (terminated || _tigrCocoaIsWindowClosed(window)) {
+    if (terminated || _tigrIsWindowClosed(window)) {
         return;
     }
 
@@ -3308,6 +3338,8 @@ void tigrUpdate(Tigr* bmp) {
     id distantPast = objc_msgSend_id(class("NSDate"), sel("distantPast"));
     id event = 0;
     int processedEvents;
+    BOOL visible = 0;
+
     do {
         event = objc_msgSend_t(id, NSUInteger, id, id, BOOL)(
             NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"), eventMask, distantPast,
@@ -3317,13 +3349,15 @@ void tigrUpdate(Tigr* bmp) {
         if (event != 0) {
             processedEvents++;
             _tigrOnCocoaEvent(event, window);
+        } else {
+            visible = _tigrIsWindowVisible(window);
         }
-    } while (event != 0);
+    } while (event != 0 || !visible);
 
     if (processedEvents) {
         // The event processing loop above is blocking, which causes timing to freeze.
-        // A quick call to tigrTime will reset the time and hide that fact from client code.
-        tigrTime();
+        // Reset the time here to hide that fact from client code.
+        _tigrResetTime();
     }
 
     // do runloop stuff
@@ -3357,7 +3391,7 @@ int tigrGAPIEnd(Tigr* bmp) {
 }
 
 int tigrClosed(Tigr* bmp) {
-    return (terminated || _tigrCocoaIsWindowClosed((id)bmp->handle)) ? 1 : 0;
+    return (terminated || _tigrIsWindowClosed((id)bmp->handle)) ? 1 : 0;
 }
 
 void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
@@ -3432,18 +3466,17 @@ int tigrReadChar(Tigr* bmp) {
 }
 
 float tigrTime() {
-    static uint64_t time = 0;
     static mach_timebase_info_data_t timebaseInfo;
 
     if (timebaseInfo.denom == 0) {
         mach_timebase_info(&timebaseInfo);
-        time = mach_absolute_time();
+        tigrTimestamp = mach_absolute_time();
         return 0.0f;
     }
 
     uint64_t current_time = mach_absolute_time();
-    double elapsed = (double)(current_time - time) * timebaseInfo.numer / (timebaseInfo.denom * 1000000000.0);
-    time = current_time;
+    double elapsed = (double)(current_time - tigrTimestamp) * timebaseInfo.numer / (timebaseInfo.denom * 1000000000.0);
+    tigrTimestamp = current_time;
     return (float)elapsed;
 }
 
