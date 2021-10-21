@@ -203,20 +203,36 @@ void unicode() {
     }
 }
 
-int main(int argc, char* argv[]) {
-    offscreen();
-    verifyDrawing();
-    windowBasics();
-    unicode();
-    timing();
-    customShader();
-    directOpenGL();
-    input();
+typedef struct Test {
+    const char* title;
+    void (*test)(void);
+} Test;
 
-    if (argc == 2 && strcmp(argv[1], "full") == 0) {
-        windowFlags();
+int main(int argc, char* argv[]) {
+    Test tests[] = {
+        {"Create offscreen", offscreen},
+        {"Drawing API", verifyDrawing},
+        {"Window basics", windowBasics},
+        {"Unicode", unicode},
+        {"Timing", timing},
+        {"Custom fx shader", customShader},
+        {"Direct OpenGL calls", directOpenGL},
+        {"Input processing", input},
+        {0}
+    };
+
+    for (Test* test = tests; test->title != 0; test++) {
+        printf("%s...", test->title);
+        test->test();
+        printf("OK\n");
     }
 
-    printf("All tests pass OK\n");
+    if (argc == 2 && strcmp(argv[1], "full") == 0) {
+        printf("Full window flag test...");
+        windowFlags();
+        printf("OK\n");
+    }
+
+    printf("*** All tests pass OK\n");
     return 0;
 }
