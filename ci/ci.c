@@ -143,7 +143,7 @@ void customShader() {
         "   vec2 tex_size = vec2(textureSize(image, 0));"
         "   vec4 c = texture(image, (floor(uv * tex_size) + 0.5 * sin(parameters.x)) / tex_size);"
         "   color = c;"
-        "}";
+        "}\n";
 
     tigrSetPostShader(win, shader, sizeof(shader) - 1);
     tigrSetPostFX(win, 3.14 / 2, 0, 0, 0);
