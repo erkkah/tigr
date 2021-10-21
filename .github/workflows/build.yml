@@ -16,15 +16,29 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v1
 
-    - name: Get OpenGL headers on Linux
-      run: sudo apt install libgl-dev libglu1-mesa-dev
+    - name: Install Linux dependencies
       if: startsWith(matrix.os, 'ubuntu')
+      run: sudo apt install libgl-dev libglu1-mesa-dev xvfb
 
     - name: Compile
       shell: bash
       working-directory: ./ci
       run: make
-    - name: Run tests
+
+    - name: Run tests (Linux)
+      if: startsWith(matrix.os, 'ubuntu')
+      shell: bash
+      working-directory: ./ci
+      run: xvfb-run --auto-servernum ./ci
+
+    - name: Run tests (macOS)
+      if: startsWith(matrix.os, 'macos')
       shell: bash
       working-directory: ./ci
       run: ./ci
+
+    - name: Run tests (Windows)
+      if: startsWith(matrix.os, 'windows')
+      shell: bash
+      working-directory: ./ci
+      run: ci.exe
