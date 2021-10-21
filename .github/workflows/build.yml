@@ -1,0 +1,25 @@
+name: Smoke tests
+
+on:
+  push:
+    branches-ignore:
+      - 'test-*'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v1
+    - name: Compile
+      shell: bash
+      working-directory: ./ci
+      run: make
+    - name: Run tests
+      shell: bash
+      working-directory: ./ci
+      run: ./ci
