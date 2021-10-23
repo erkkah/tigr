@@ -5,9 +5,10 @@
 TIGR is a tiny cross-platform graphics library,
 providing a unified API for Windows, macOS, Linux, iOS and Android.
 
-TIGR's core is a simple framebuffer library. On top of that, we provide a few helpers for the common tasks that 2D programs generally need:
+TIGR's core is a simple framebuffer library.
+On top of that, we provide a few helpers for the common tasks that 2D programs generally need:
 
- - Create bitmap windows.
+ - Bitmap-backed windows.
  - Direct access to bitmaps, no locking.
  - Basic drawing helpers (plot, line, blitter).
  - Text output using bitmap fonts.
@@ -90,12 +91,12 @@ To get started on iOS, head over to the [TIMOGRiOS](https://github.com/erkkah/ti
 
 ### Custom fonts
 
-TIGR comes with a built-in bitmap font, accessed by the `tfont` variable. Custom fonts can be loaded from bitmaps using [`tigrLoadFont`](tigr.h#L149). A font bitmap contains rows of characters separated by same-colored borders. TIGR assumes that the borders use the same color as the top-left pixel in the bitmap. Each character is assumed to be drawn in white on a transparent background to make tinting work.
+TIGR comes with a built-in bitmap font, accessed by the `tfont` variable. Custom fonts can be loaded from bitmaps using [`tigrLoadFont`](tigr.h#L201). A font bitmap contains rows of characters separated by same-colored borders. TIGR assumes that the borders use the same color as the top-left pixel in the bitmap. Each character is assumed to be drawn in white on a transparent background to make tinting work.
 
 ### Custom pixel shaders
 
-TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by [`tigrSetPostFX`](tigr.h#L84).
-These stock effects can be replaced by calling [`tigrSetPostShader`](tigr.h#L75) with a custom shader.
+TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by [`tigrSetPostFX`](tigr.h#L103).
+These stock effects can be replaced by calling [`tigrSetPostShader`](tigr.h#L94) with a custom shader.
 The custom shader is in the form of a shader function: `void fxShader(out vec4 color, in vec2 uv)` and has access to the four parameters from `tigrSetPostFX` as a `uniform vec4` called `parameters`.
 
 See the [shader example](examples/shader/shader.c) for more details.
