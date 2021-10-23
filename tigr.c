@@ -2007,9 +2007,13 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		return 0;
 	case WM_CHAR:
 		if (win) {
-			if (wParam == '\r') wParam = '\n';
-
-			win->lastChar = wParam;
+			if (wParam == '\r') {
+				wParam = '\n';
+			}
+			int repeating = (HIWORD(lParam) & KF_REPEAT) == KF_REPEAT;
+			if (!repeating) {
+				win->lastChar = wParam;
+			}
 		}
 		return DefWindowProcW(hWnd, message, wParam, lParam);
 	case WM_MENUCHAR:
