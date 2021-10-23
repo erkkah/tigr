@@ -361,7 +361,8 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CHAR:
 		if (win) {
 			if (wParam == '\r') wParam = '\n';
-				win->lastChar = wParam;
+
+			win->lastChar = wParam;
 		}
 		return DefWindowProcW(hWnd, message, wParam, lParam);
 	case WM_MENUCHAR:
