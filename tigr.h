@@ -151,8 +151,6 @@ void tigrBlitAlpha(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w,
 // Bblend = Bsrc * Btint
 // Ablend = Asrc * Atint
 //
-// RGBAdest = RGBAblend * Ablend + RGBAdest * (1 - Ablend)
-//
 // RGBdest = RGBblend * Ablend + RGBdest * (1 - Ablend)
 //
 // Blend mode == TIGR_KEEP_ALPHA:
