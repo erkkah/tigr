@@ -2008,7 +2008,8 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CHAR:
 		if (win) {
 			if (wParam == '\r') wParam = '\n';
-				win->lastChar = wParam;
+
+			win->lastChar = wParam;
 		}
 		return DefWindowProcW(hWnd, message, wParam, lParam);
 	case WM_MENUCHAR:
@@ -3287,13 +3288,21 @@ void _tigrOnCocoaEvent(id event, id window) {
         }
         case 10:  // NSKeyDown
         {
-            id inputText = objc_msgSend_id(event, sel("characters"));
-            const char* inputTextUTF8 = objc_msgSend_t(const char*)(inputText, sel("UTF8String"));
-
-            tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
-
             uint16_t keyCode = objc_msgSend_t(unsigned short)(event, sel("keyCode"));
-            win->keys[_tigrKeyFromOSX(keyCode)] = 1;
+            int tigrKey = _tigrKeyFromOSX(keyCode);
+
+            // Ignore keyboard repeats
+            if (!win->keys[tigrKey]) {
+                win->keys[tigrKey] = 1;
+                id inputText = objc_msgSend_id(event, sel("characters"));
+                const char* inputTextUTF8 = objc_msgSend_t(const char*)(inputText, sel("UTF8String"));
+
+                int decoded = 0;
+                tigrDecodeUTF8(inputTextUTF8, &decoded);
+                if (decoded < 0xe000 || decoded > 0xf8ff) {
+                    win->lastChar = decoded;
+                }
+            }
 
             // Pass through cmd+key
             if (win->keys[TK_LWIN]) {
