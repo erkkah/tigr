@@ -51,7 +51,7 @@ typedef struct Tigr {
     int w, h;       // width/height (unscaled)
     TPixel *pix;    // pixel data
     void *handle;   // OS window handle, NULL for off-screen bitmaps.
-    int blendMode;  // Target bitmap blend mode
+    int blitMode;  // Target bitmap blit mode
 } Tigr;
 
 // Creates a new empty window with a given bitmap size.
@@ -136,10 +136,10 @@ void tigrBlit(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int 
 // Ablend = Asrc * alpha
 // RGBdest = RGBsrc * Ablend + RGBdest * (1 - Ablend)
 //
-// Blend mode == TIGR_KEEP_ALPHA:
+// Blit mode == TIGR_KEEP_ALPHA:
 // Adest = Adest
 //
-// Blend mode == TIGR_BLEND_ALPHA:
+// Blit mode == TIGR_BLEND_ALPHA:
 // Adest = Asrc * Ablend + Adest * (1 - Ablend)
 void tigrBlitAlpha(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, float alpha);
 
@@ -153,14 +153,14 @@ void tigrBlitAlpha(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w,
 //
 // RGBdest = RGBblend * Ablend + RGBdest * (1 - Ablend)
 //
-// Blend mode == TIGR_KEEP_ALPHA:
+// Blit mode == TIGR_KEEP_ALPHA:
 // Adest = Adest
 //
-// Blend mode == TIGR_BLEND_ALPHA:
+// Blit mode == TIGR_BLEND_ALPHA:
 // Adest = Ablend * Ablend + Adest * (1 - Ablend)
 void tigrBlitTint(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint);
 
-enum TIGRBlendMode {
+enum TIGRBlitMode {
     TIGR_KEEP_ALPHA = 0,    // Keep destination alpha value
     TIGR_BLEND_ALPHA = 1,   // Blend destination alpha (default)
 };
@@ -204,6 +204,9 @@ TigrFont *tigrLoadFont(Tigr *bitmap, int codepage);
 void tigrFreeFont(TigrFont *font);
 
 // Prints UTF-8 text onto a bitmap.
+// NOTE:
+//  This uses the target bitmap blit mode.
+//  See tigrBlitTint for details.
 void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const char *text, ...);
 
 // Returns the width/height of a string.
