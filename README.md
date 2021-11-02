@@ -93,6 +93,8 @@ To get started on iOS, head over to the [TIMOGRiOS](https://github.com/erkkah/ti
 
 TIGR comes with a built-in bitmap font, accessed by the `tfont` variable. Custom fonts can be loaded from bitmaps using [`tigrLoadFont`](tigr.h#L201). A font bitmap contains rows of characters separated by same-colored borders. TIGR assumes that the borders use the same color as the top-left pixel in the bitmap. Each character is assumed to be drawn in white on a transparent background to make tinting work.
 
+Use the [tigrfont](https://github.com/erkkah/tigrfont) tool to create your own bitmap fonts from TTF or BFD font files.
+
 ### Custom pixel shaders
 
 TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by [`tigrSetPostFX`](tigr.h#L103).
