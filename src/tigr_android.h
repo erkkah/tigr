@@ -29,6 +29,7 @@ extern "C" {
 extern int android_pollEvent(int (*eventHandler)(AndroidEvent, void*), void*);
 extern void android_swap(EGLDisplay display, EGLSurface surface);
 extern void* android_loadAsset(const char* filename, int* outLength);
+extern void android_showKeyboard(int show);
 
 /// Calls from Android to TIGR side, main thread
 void tigr_android_create();

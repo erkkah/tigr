@@ -119,10 +119,13 @@ typedef struct {
 	int pos[4];
 	int lastChar;
 	char keys[256], prev[256];
+	#if defined(__ANDROID__)
+	char released[256];
+	#endif // __ANDROID__
 	#if defined(__MACOS__)
 	int mouseInView;
 	int mouseButtons;
-	#endif
+	#endif // __MACOS__
 	#if defined(__linux__) || defined(__IOS__)
 	int mouseButtons;
 	int mouseX;
