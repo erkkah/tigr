@@ -249,18 +249,18 @@ const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
 // Expands 0-255 into 0-256
 #define EXPAND(X) ((X) + ((X) > 0))
 
-#define CLIP0(X, X2, W) if (X < 0) { W += X; X2 -= X; X = 0; }
+#define CLIP0(CX, X, X2, W) if (X < CX) { int D = CX - X; W -= D; X2 += D; X += D; }
 #define CLIP1(X, DW, W) if (X + W > DW) W = DW - X;
 #define CLIP() \
-	CLIP0(dx, sx, w);		\
-	CLIP0(dy, sy, h);		\
-	CLIP0(sx, dx, w);		\
-	CLIP0(sy, dy, h);		\
-	CLIP1(dx, dst->w, w);	\
-	CLIP1(dy, dst->h, h);	\
-	CLIP1(sx, src->w, w);	\
-	CLIP1(sy, src->h, h);	\
-	if (w <= 0 || h <= 0)	\
+	CLIP0(dst->cx, dx, sx, w); \
+	CLIP0(dst->cy, dy, sy, h); \
+	CLIP0(0, sx, dx, w); \
+	CLIP0(0, sy, dy, h); \
+	CLIP1(dx, dst->cx + dst->cw, w); \
+	CLIP1(dy, dst->cy + dst->ch, h); \
+	CLIP1(sx, src->w, w); \
+	CLIP1(sy, src->h, h); \
+	if (w <= 0 || h <= 0) \
 		return
 
 
@@ -269,6 +269,8 @@ Tigr *tigrBitmap2(int w, int h, int extra)
 	Tigr *tigr = (Tigr *)calloc(1, sizeof(Tigr) + extra);
 	tigr->w = w;
 	tigr->h = h;
+	tigr->cw = w;
+	tigr->ch = h;
 	tigr->pix = (TPixel *)calloc(w*h, sizeof(TPixel));
 	tigr->blitMode = TIGR_BLEND_ALPHA;
 	return tigr;
@@ -421,16 +423,22 @@ void tigrPlot(Tigr *bmp, int x, int y, TPixel pix)
 	}
 }
 
+void tigrClip(Tigr *bmp, int cx, int cy, int cw, int ch)
+{
+	bmp->cx = cx;
+	bmp->cy = cy;
+	bmp->cw = cw;
+	bmp->ch = ch;
+}
+
 void tigrBlit(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h)
 {
-	TPixel *td, *ts;
-	int st, dt;
 	CLIP();
 
-	ts = &src->pix[sy*src->w + sx];
-	td = &dst->pix[dy*dst->w + dx];
-	st = src->w;
-	dt = dst->w;
+	TPixel* ts = &src->pix[sy*src->w + sx];
+	TPixel* td = &dst->pix[dy*dst->w + dx];
+	int st = src->w;
+	int dt = dst->w;
 	do {
 		memcpy(td, ts, w*sizeof(TPixel));
 		ts += st;
@@ -440,21 +448,19 @@ void tigrBlit(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h
 
 void tigrBlitTint(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint)
 {
-	TPixel *td, *ts;
-	int x, st, dt, xr,xg,xb,xa;
 	CLIP();
 
-	xr = EXPAND(tint.r);
-	xg = EXPAND(tint.g);
-	xb = EXPAND(tint.b);
-	xa = EXPAND(tint.a);
+	int xr = EXPAND(tint.r);
+	int xg = EXPAND(tint.g);
+	int xb = EXPAND(tint.b);
+	int xa = EXPAND(tint.a);
 
-	ts = &src->pix[sy*src->w + sx];
-	td = &dst->pix[dy*dst->w + dx];
-	st = src->w;
-	dt = dst->w;
+	TPixel* ts = &src->pix[sy*src->w + sx];
+	TPixel* td = &dst->pix[dy*dst->w + dx];
+	int st = src->w;
+	int dt = dst->w;
 	do {
-		for (x=0;x<w;x++)
+		for (int x = 0; x < w; x++)
 		{
 			unsigned r = (xr * ts[x].r) >> 8;
 			unsigned g = (xg * ts[x].g) >> 8;

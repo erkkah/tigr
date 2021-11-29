@@ -48,10 +48,11 @@ typedef struct {
 
 // A Tigr bitmap.
 typedef struct Tigr {
-    int w, h;       // width/height (unscaled)
-    TPixel *pix;    // pixel data
-    void *handle;   // OS window handle, NULL for off-screen bitmaps.
-    int blitMode;  // Target bitmap blit mode
+    int w, h;           // width/height (unscaled)
+    int cx, cy, cw, ch; // clip rect
+    TPixel *pix;        // pixel data
+    void *handle;       // OS window handle, NULL for off-screen bitmaps.
+    int blitMode;       // Target bitmap blit mode
 } Tigr;
 
 // Creates a new empty window with a given bitmap size.
@@ -121,6 +122,9 @@ void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color);
 
 // Draws a line.
 void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color);
+
+// Sets clip rect for blit operations
+void tigrClip(Tigr *bmp, int cx, int cy, int cw, int ch);
 
 // Copies bitmap data.
 // dx/dy = dest co-ordinates
