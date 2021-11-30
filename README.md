@@ -91,14 +91,14 @@ To get started on iOS, head over to the [TIMOGRiOS](https://github.com/erkkah/ti
 
 ### Custom fonts
 
-TIGR comes with a built-in bitmap font, accessed by the `tfont` variable. Custom fonts can be loaded from bitmaps using [`tigrLoadFont`](tigr.h#L201). A font bitmap contains rows of characters separated by same-colored borders. TIGR assumes that the borders use the same color as the top-left pixel in the bitmap. Each character is assumed to be drawn in white on a transparent background to make tinting work.
+TIGR comes with a built-in bitmap font, accessed by the `tfont` variable. Custom fonts can be loaded from bitmaps using `tigrLoadFont`. A font bitmap contains rows of characters separated by same-colored borders. TIGR assumes that the borders use the same color as the top-left pixel in the bitmap. Each character is assumed to be drawn in white on a transparent background to make tinting work.
 
 Use the [tigrfont](https://github.com/erkkah/tigrfont) tool to create your own bitmap fonts from TTF or BFD font files.
 
 ### Custom pixel shaders
 
-TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by [`tigrSetPostFX`](tigr.h#L103).
-These stock effects can be replaced by calling [`tigrSetPostShader`](tigr.h#L94) with a custom shader.
+TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by `tigrSetPostFX`.
+These stock effects can be replaced by calling `tigrSetPostShader` with a custom shader.
 The custom shader is in the form of a shader function: `void fxShader(out vec4 color, in vec2 uv)` and has access to the four parameters from `tigrSetPostFX` as a `uniform vec4` called `parameters`.
 
 See the [shader example](examples/shader/shader.c) for more details.
