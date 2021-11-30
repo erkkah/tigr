@@ -256,8 +256,8 @@ const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
 	CLIP0(dst->cy, dy, sy, h); \
 	CLIP0(0, sx, dx, w); \
 	CLIP0(0, sy, dy, h); \
-	CLIP1(dx, dst->cx + dst->cw, w); \
-	CLIP1(dy, dst->cy + dst->ch, h); \
+	CLIP1(dx, dst->cx + cw, w); \
+	CLIP1(dy, dst->cy + ch, h); \
 	CLIP1(sx, src->w, w); \
 	CLIP1(sy, src->h, h); \
 	if (w <= 0 || h <= 0) \
@@ -269,8 +269,8 @@ Tigr *tigrBitmap2(int w, int h, int extra)
 	Tigr *tigr = (Tigr *)calloc(1, sizeof(Tigr) + extra);
 	tigr->w = w;
 	tigr->h = h;
-	tigr->cw = w;
-	tigr->ch = h;
+	tigr->cw = -1;
+	tigr->ch = -1;
 	tigr->pix = (TPixel *)calloc(w*h, sizeof(TPixel));
 	tigr->blitMode = TIGR_BLEND_ALPHA;
 	return tigr;
@@ -433,6 +433,9 @@ void tigrClip(Tigr *bmp, int cx, int cy, int cw, int ch)
 
 void tigrBlit(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h)
 {
+	int cw = dst->cw >= 0 ? dst->cw : dst->w;
+	int ch = dst->ch >= 0 ? dst->ch : dst->h;
+
 	CLIP();
 
 	TPixel* ts = &src->pix[sy*src->w + sx];
@@ -448,6 +451,9 @@ void tigrBlit(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h
 
 void tigrBlitTint(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint)
 {
+	int cw = dst->cw >= 0 ? dst->cw : dst->w;
+	int ch = dst->ch >= 0 ? dst->ch : dst->h;
+
 	CLIP();
 
 	int xr = EXPAND(tint.r);
