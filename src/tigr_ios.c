@@ -34,6 +34,11 @@ typedef struct {
     int numPoints;
 } InputState;
 
+typedef struct {
+    int keyCode;
+    int codePoint;
+} KeyEvent;
+
 enum {
     KBD_HIDDEN = 0,
     KBD_SHOWREQ,
@@ -73,12 +78,16 @@ static struct {
 };
 
 typedef enum {
-    SET_INPUT
+    SET_INPUT,
+    KEY_EVENT,
 } TigrMessage;
 
 typedef struct TigrMessageData {
     TigrMessage message;
-    InputState inputState;
+    union {
+        InputState inputState;
+        KeyEvent keyEvent;
+    };
 } TigrMessageData;
 
 static id autoreleasePool = NULL;
@@ -127,11 +136,38 @@ void showKeyboard(int show) {
 }
 
 void insertText(id self, SEL _sel, id text) {
-	os_log_debug(OS_LOG_DEFAULT, "insert");
+    const char* inserted = UTF8StringFromNSString(text);
+    int codePoint = 0;
+
+    do {
+		inserted = tigrDecodeUTF8(inserted, &codePoint);
+        if (codePoint != 0) {
+            KeyEvent event;
+            event.codePoint = codePoint;
+            event.keyCode = (codePoint < 128) ? codePoint : 0;
+
+            TigrMessageData message = {
+                .message = KEY_EVENT,
+                .keyEvent = event,
+            };
+            writeToRenderThread(&message);
+        }
+    } while (*inserted != 0);
 }
 
 void deleteBackward(id self, SEL _sel) {
-	os_log_debug(OS_LOG_DEFAULT, "delete");
+    KeyEvent event;
+    event.codePoint = 0;
+    event.keyCode = 8; // BS
+
+    TigrMessageData message = {
+        .message = KEY_EVENT,
+        .keyEvent = {
+            .codePoint = 0,
+            .keyCode = 8,
+        }
+    };
+    writeToRenderThread(&message);
 }
 
 BOOL canBecomeFirstResponder(id self, SEL _sel) {
@@ -342,12 +378,19 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 }
 
 void processEvents(TigrInternal* win) {
+    memset(win->keys, 0, 255);
+
     TigrMessageData data;
 
     while (readFromMainThread(&data)) {
         switch(data.message) {
             case SET_INPUT:
                 gState.inputState = data.inputState;
+                break;
+            case KEY_EVENT:
+                win->keys[data.keyEvent.keyCode] = 1;
+                win->lastChar = data.keyEvent.codePoint;
+                break;
         }
     }
 }
@@ -447,6 +490,24 @@ int tigrGAPIBegin(Tigr* bmp) {
 int tigrGAPIEnd(Tigr* bmp) {
     (void)bmp;
     return 0;
+}
+
+int tigrKeyDown(Tigr* bmp, int key) {
+    TigrInternal* win;
+    assert(key < 256);
+    win = tigrInternal(bmp);
+    return win->keys[key];
+}
+
+int tigrKeyHeld(Tigr* bmp, int key) {
+    return tigrKeyDown(bmp, key);
+}
+
+int tigrReadChar(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    int c = win->lastChar;
+    win->lastChar = 0;
+    return c;
 }
 
 extern void* _tigrReadFile(const char* fileName, int* length);
