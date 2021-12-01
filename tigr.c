@@ -3529,6 +3529,7 @@ float tigrTime() {
 #include <dispatch/dispatch.h>
 #include <os/log.h>
 #include <time.h>
+#include <stdatomic.h>
 
 id makeNSString(const char* str) {
     return objc_msgSend_t(id, const char*)
@@ -3552,34 +3553,42 @@ typedef struct {
     int numPoints;
 } InputState;
 
+enum {
+    KBD_HIDDEN = 0,
+    KBD_SHOWREQ,
+    KBD_HIDEREQ,
+    KBD_SHOWN,
+};
 
 /// Global state
 static struct {
     InputState inputState;
     id viewController;
+    id view;
     id context;
     id frameCondition;
     int screenW;
     int screenH;
     double scaleFactor;
     double timeSinceLastDraw;
-    int closed;
     int renderReadFd;
     int mainWriteFd;
+    _Atomic(int) keyboardState;
 } gState = {
     .inputState = {
         .numPoints = 0,
     },
     .viewController = 0,
+    .view = 0,
     .context = 0,
     .frameCondition = 0,
     .screenW = 0,
     .screenH = 0,
     .scaleFactor = 1,
     .timeSinceLastDraw = 0,
-    .closed = 0,
     .renderReadFd = 0,
     .mainWriteFd = 0,
+    .keyboardState = ATOMIC_VAR_INIT(KBD_HIDDEN),
 };
 
 typedef enum {
@@ -3623,7 +3632,33 @@ void viewWillTransitionToSize(id self, SEL _sel, CGSize size, id transitionCoord
 }
 
 BOOL prefersStatusBarHidden(id self, SEL _sel) {
-    return true;
+    return YES;
+}
+
+BOOL hasText(id self, SEL _sel) {
+    return NO;
+}
+
+void showKeyboard(int show) {
+    int expected = show ? KBD_HIDDEN : KBD_SHOWN;
+    int desired = show ? KBD_SHOWREQ : KBD_HIDEREQ;
+    atomic_compare_exchange_weak(&gState.keyboardState, &expected, desired);
+}
+
+void insertText(id self, SEL _sel, id text) {
+	os_log_debug(OS_LOG_DEFAULT, "insert");
+}
+
+void deleteBackward(id self, SEL _sel) {
+	os_log_debug(OS_LOG_DEFAULT, "delete");
+}
+
+BOOL canBecomeFirstResponder(id self, SEL _sel) {
+    return YES;
+}
+
+BOOL canResignFirstResponder(id self, SEL _sel) {
+    return YES;
 }
 
 enum RenderState {
@@ -3653,8 +3688,19 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     context = objc_msgSend_t(id, int)(context, sel("initWithAPI:"), kEAGLRenderingAPIOpenGLES3);
     gState.context = context;
 
-    id view = objc_alloc("GLKView");
+    Class View = makeClass("TigrView", "GLKView");
+    addMethod(View, "insertText:", insertText, "v@:@");
+    addMethod(View, "deleteBackward", deleteBackward, "v@:");
+    addMethod(View, "hasText", hasText, "c@:");
+    addMethod(View, "canBecomeFirstResponder", canBecomeFirstResponder, "c@:");
+    addMethod(View, "canResignFirstResponder", canResignFirstResponder, "c@:");
+
+    Protocol* UIKeyInput = objc_getProtocol("UIKeyInput");
+    class_addProtocol(View, UIKeyInput);
+
+    id view = objc_msgSend_id((id)View, sel("alloc"));
     view = objc_msgSend_t(id, CGRect, id)(view, sel("initWithFrame:context:"), bounds, context);
+    gState.view = view;
     objc_msgSend_t(void, BOOL)(view, sel("setMultipleTouchEnabled:"), YES);
     objc_msgSend_t(void, id)(view, sel("setDelegate:"), self);
     objc_msgSend_t(void, id)(vc, sel("setView:"), view);
@@ -3685,11 +3731,24 @@ void waitForFrame() {
     objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
 }
 
+void processKeyboardRequest() {
+    int showReq = KBD_SHOWREQ;
+    int hideReq = KBD_HIDEREQ;
+
+    if (atomic_compare_exchange_weak(&gState.keyboardState, &showReq, KBD_SHOWN)) {
+        objc_msgSend_t(BOOL)(gState.view, sel("becomeFirstResponder"));
+    } else if (atomic_compare_exchange_weak(&gState.keyboardState, &hideReq, KBD_HIDDEN)) {
+        objc_msgSend_t(BOOL)(gState.view, sel("resignFirstResponder"));
+    }
+}
+
 void drawInRect(id _self, SEL _sel, id view, CGRect rect) {
     gState.timeSinceLastDraw = objc_msgSend_t(double)(gState.viewController, sel("timeSinceLastDraw"));
     objc_msgSend_t(void, int)(gState.frameCondition, sel("unlockWithCondition:"), SWAPPED);
     objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), RENDERED);
     objc_msgSend_t(void, id)(class("EAGLContext"), sel("setCurrentContext:"), gState.context);
+
+    processKeyboardRequest();
 }
 
 extern void tigrMain();
