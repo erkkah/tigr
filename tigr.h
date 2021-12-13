@@ -1,4 +1,4 @@
-// TIGR - TIny GRaphics Library - v2.3
+// TIGR - TIny GRaphics Library - v2.4
 //        ^^   ^^
 //
 // rawr.
@@ -257,6 +257,10 @@ int tigrKeyHeld(Tigr *bmp, int key);
 // Reads character input for a window.
 // Returns the Unicode value of the last key pressed, or 0 if none.
 int tigrReadChar(Tigr *bmp);
+
+// Show / hide virtual keyboard.
+// (Only available on iOS / Android)
+void tigrShowKeyboard(int show);
 
 
 // Bitmap I/O -------------------------------------------------------------
