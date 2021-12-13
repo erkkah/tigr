@@ -129,7 +129,7 @@ BOOL hasText(id self, SEL _sel) {
     return NO;
 }
 
-void showKeyboard(int show) {
+void tigrShowKeyboard(int show) {
     int expected = show ? KBD_HIDDEN : KBD_SHOWN;
     int desired = show ? KBD_SHOWREQ : KBD_HIDEREQ;
     atomic_compare_exchange_weak(&gState.keyboardState, &expected, desired);
