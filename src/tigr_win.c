@@ -1,13 +1,6 @@
 #include "tigr_internal.h"
 #include <assert.h>
 
-#pragma comment(lib, "opengl32") // glViewport
-#pragma comment(lib, "shell32")  // CommandLineToArgvW
-#pragma comment(lib, "user32")   // SetWindowLong
-#pragma comment(lib, "gdi32")    // ChoosePixelFormat
-#pragma comment(lib, "advapi32") // RegSetValueEx
-
-
 // not really windows stuff
 TigrInternal *tigrInternal(Tigr *bmp)
 {
@@ -22,6 +15,12 @@ TigrInternal *tigrInternal(Tigr *bmp)
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+
+#pragma comment(lib, "opengl32") // glViewport
+#pragma comment(lib, "shell32")  // CommandLineToArgvW
+#pragma comment(lib, "user32")   // SetWindowLong
+#pragma comment(lib, "gdi32")    // ChoosePixelFormat
+#pragma comment(lib, "advapi32") // RegSetValueEx
 
 #define WIDGET_SCALE	3
 #define WIDGET_FADE		16
