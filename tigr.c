@@ -5009,7 +5009,7 @@ static int tigrKeyFromAndroidKey(int key) {
         case AKEYCODE_META_RIGHT:
             return TK_RWIN;
 
-        case AKEYCODE_BACK:
+        case AKEYCODE_DEL:
             return TK_BACKSPACE;
         case AKEYCODE_TAB:
             return TK_TAB;
@@ -5018,6 +5018,7 @@ static int tigrKeyFromAndroidKey(int key) {
         case AKEYCODE_CAPS_LOCK:
             return TK_CAPSLOCK;
         case AKEYCODE_ESCAPE:
+        case AKEYCODE_BACK:
             return TK_ESCAPE;
         case AKEYCODE_SPACE:
             return TK_SPACE;
@@ -5041,7 +5042,7 @@ static int tigrKeyFromAndroidKey(int key) {
         
         case AKEYCODE_INSERT:
             return TK_INSERT;
-        case AKEYCODE_DEL:
+        case AKEYCODE_FORWARD_DEL:
             return TK_DELETE;
         case AKEYCODE_NUM_LOCK:
             return TK_NUMLOCK;
