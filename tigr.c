@@ -369,6 +369,25 @@ void tigrFill(Tigr *bmp, int x, int y, int w, int h, TPixel color)
 	} while(--h);
 }
 
+inline float dist_sq(int x1, int y1, int x2, int y2){
+    return (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2);
+}
+
+void tigrCircle(Tigr *bmp, int x, int y, int r, TPixel color){
+    // radius squared
+    const int r_2 = r*r;
+
+    const int left = x-r > 0 ? x-r : 0;
+    const int right = x+r < bmp->w ? x+r : bmp->w;
+    const int up = y-r > 0 ? y-r : 0;
+    const int down = y+r < bmp->h ? y+r : bmp->h;
+
+    for (int xp = left; xp <= right; xp++){
+    for (int yp = up; yp <= down; yp++){
+        if (dist_sq(x, y, xp, yp) <= r_2) bmp->pix[yp*(bmp->w) + xp] = color;
+    }}
+}
+
 void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color)
 {
 	int sx, sy, dx, dy, err, e2;
