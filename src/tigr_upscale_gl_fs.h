@@ -3,6 +3,7 @@
 
 #include "tigr_glsl_hdr.h"
 
+// clang-format off
 const char tigr_upscale_gl_fs[] = {
     GLSL_VERSION_HEADER
     "in vec2 uv;"
@@ -15,9 +16,11 @@ const char tigr_upscale_gl_fs[] = {
     "   fxShader(color, uv);"
     "}\n"
 };
+// clang-format on
 
 const int tigr_upscale_gl_fs_size = (int)sizeof(tigr_upscale_gl_fs) - 1;
 
+// clang-format off
 const char tigr_default_fx_gl_fs[] = {
     "void fxShader(out vec4 color, in vec2 uv) {"
     "   vec2 tex_size = vec2(textureSize(image, 0));"
@@ -28,8 +31,8 @@ const char tigr_default_fx_gl_fs[] = {
     "   color = c;"
     "}"
 };
+// clang-format on
 
 const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
-
 
 #endif

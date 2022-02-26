@@ -334,7 +334,7 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_ESCAPE;
         case AKEYCODE_SPACE:
             return TK_SPACE;
-        
+
         case AKEYCODE_PAGE_UP:
             return TK_PAGEUP;
         case AKEYCODE_PAGE_DOWN:
@@ -351,7 +351,7 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_UP;
         case AKEYCODE_DPAD_DOWN:
             return TK_DOWN;
-        
+
         case AKEYCODE_INSERT:
             return TK_INSERT;
         case AKEYCODE_FORWARD_DEL:
@@ -360,7 +360,7 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_NUMLOCK;
         case AKEYCODE_SCROLL_LOCK:
             return TK_SCROLL;
-        
+
         case AKEYCODE_SEMICOLON:
             return TK_SEMICOLON;
         case AKEYCODE_EQUALS:
@@ -383,8 +383,9 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_LSQUARE;
         case AKEYCODE_RIGHT_BRACKET:
             return TK_RSQUARE;
-        
-        default: return 0;
+
+        default:
+            return 0;
     }
 }
 
@@ -416,7 +417,7 @@ static int processInputEvent(AInputEvent* event, TigrInternal* win) {
             gState.inputState.numPoints = targetPointCount;
         }
         return 1;
-    } else if(AInputEvent_getType(event) == AINPUT_EVENT_TYPE_KEY) {
+    } else if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_KEY) {
         if (!win) {
             return 1;
         }
@@ -455,7 +456,7 @@ static int handleEvent(AndroidEvent event, void* userData) {
             break;
 
         case AE_INPUT:
-            return processInputEvent(event.inputEvent, (TigrInternal*) userData);
+            return processInputEvent(event.inputEvent, (TigrInternal*)userData);
 
         case AE_RESUME:
             gState.lastTime = event.time;
@@ -548,7 +549,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->lastChar = 0;
     win->flags = flags;
     win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
+    win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;

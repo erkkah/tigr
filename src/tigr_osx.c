@@ -51,7 +51,7 @@ bool terminated = false;
 static uint64_t tigrTimestamp = 0;
 
 void _tigrResetTime() {
-	tigrTimestamp = mach_absolute_time();
+    tigrTimestamp = mach_absolute_time();
 }
 
 TigrInternal* _tigrInternalCocoa(id window) {
@@ -213,15 +213,12 @@ void tigrInitOSX() {
 
     id quitTitlePrefixString =
         objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), "Quit ");
-    id quitTitle = objc_msgSend_t(id, id)(
-        quitTitlePrefixString, sel("stringByAppendingString:"), appName);
+    id quitTitle = objc_msgSend_t(id, id)(quitTitlePrefixString, sel("stringByAppendingString:"), appName);
 
-    id quitMenuItemKey =
-        objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), "q");
+    id quitMenuItemKey = objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), "q");
     id quitMenuItem = objc_alloc("NSMenuItem");
-    quitMenuItem = objc_msgSend_t(id, id, SEL, id)(
-        quitMenuItem, sel("initWithTitle:action:keyEquivalent:"), quitTitle,
-        sel("terminate:"), quitMenuItemKey);
+    quitMenuItem = objc_msgSend_t(id, id, SEL, id)(quitMenuItem, sel("initWithTitle:action:keyEquivalent:"), quitTitle,
+                                                   sel("terminate:"), quitMenuItemKey);
 
     objc_msgSend_void_id(appMenu, sel("addItem:"), quitMenuItem);
     objc_msgSend_void_id(appMenuItem, sel("setSubmenu:"), appMenu);
@@ -232,17 +229,17 @@ void tigrInitOSX() {
 }
 
 void tigrError(Tigr* bmp, const char* message, ...) {
-	char tmp[1024];
+    char tmp[1024];
 
-	va_list args;
-	va_start(args, message);
-	vsnprintf(tmp, sizeof(tmp), message, args);
-	tmp[sizeof(tmp)-1] = 0;
-	va_end(args);
+    va_list args;
+    va_start(args, message);
+    vsnprintf(tmp, sizeof(tmp), message, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
 
-	printf("tigr fatal error: %s\n", tmp);
+    printf("tigr fatal error: %s\n", tmp);
 
-	exit(1);
+    exit(1);
 }
 
 NSSize _tigrContentBackingSize(id window) {
@@ -258,8 +255,8 @@ enum {
     NSWindowStyleMaskClosable = 1 << 1,
     NSWindowStyleMaskMiniaturizable = 1 << 2,
     NSWindowStyleMaskResizable = 1 << 3,
-    NSWindowStyleRegular = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-        NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable,
+    NSWindowStyleRegular = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
+                           NSWindowStyleMaskResizable,
     NSWindowStyleMaskFullSizeContentView = 1 << 15
 };
 
@@ -273,17 +270,15 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     // In AUTO mode, window follows requested size, unless downscaled by tigrEnforceScale below.
     int windowScale = 1;
-    
+
     // In non-AUTO mode, see how big we can make it and still fit on-screen.
     if ((flags & TIGR_AUTO) == 0) {
         CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
         int maxW = CGRectGetWidth(mainMonitor);
         int maxH = CGRectGetHeight(mainMonitor);
-        NSRect screen = {{0, 0}, {maxW, maxH}};
+        NSRect screen = { { 0, 0 }, { maxW, maxH } };
         NSRect content = objc_msgSend_stret_t(NSRect, NSRect, NSUInteger)(
-            class("NSWindow"), sel("contentRectForFrameRect:styleMask:"),
-            screen, windowStyleMask
-        );
+            class("NSWindow"), sel("contentRectForFrameRect:styleMask:"), screen, windowStyleMask);
         windowScale = tigrCalcScale(w, h, content.size.width, content.size.height);
     }
 
@@ -293,7 +288,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     id windowAlloc = objc_msgSend_id(class("NSWindow"), sel("alloc"));
     id window = ((id(*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(
         windowAlloc, sel("initWithContentRect:styleMask:backing:defer:"), rect, windowStyleMask, 2, NO);
-
 
     objc_msgSend_void_bool(window, sel("setReleasedWhenClosed:"), NO);
 
@@ -325,14 +319,13 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     id contentView = objc_msgSend_id(window, sel("contentView"));
 
-	int wantsHighRes = (flags & TIGR_RETINA);
+    int wantsHighRes = (flags & TIGR_RETINA);
     objc_msgSend_void_bool(contentView, sel("setWantsBestResolutionOpenGLSurface:"), wantsHighRes);
 
     NSPoint point = { 20, 20 };
     ((void (*)(id, SEL, NSPoint))objc_msgSend)(window, sel("cascadeTopLeftFromPoint:"), point);
 
-    id titleString =
-        objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), title);
+    id titleString = objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), title);
     objc_msgSend_void_id(window, sel("setTitle:"), titleString);
 
     uint32_t glAttributes[] = { 8, 24,  //	NSOpenGLPFAColorSize, 24,
@@ -342,18 +335,16 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
                                 // 72,			//	NSOpenGLPFANoRecovery,
                                 // 55, 1,		//	NSOpenGLPFASampleBuffers, 1,
                                 // 56, 4,		//	NSOpenGLPFASamples, 4,
-                                99, 0x3200,     //	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+                                99, 0x3200,  //	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
                                 // 70, 0x00020400, // NSOpenGLPFARendererID, kCGLRendererGenericFloatID
                                 0 };
 
     id pixelFormat = objc_alloc("NSOpenGLPixelFormat");
-    pixelFormat = objc_msgSend_t(id, const uint32_t*)
-        (pixelFormat, sel("initWithAttributes:"), glAttributes);
+    pixelFormat = objc_msgSend_t(id, const uint32_t*)(pixelFormat, sel("initWithAttributes:"), glAttributes);
     objc_msgSend_void(pixelFormat, sel("autorelease"));
 
     id openGLContext = objc_alloc("NSOpenGLContext");
-    openGLContext = objc_msgSend_t(id, id, id)
-        (openGLContext, sel("initWithFormat:shareContext:"), pixelFormat, nil);
+    openGLContext = objc_msgSend_t(id, id, id)(openGLContext, sel("initWithFormat:shareContext:"), pixelFormat, nil);
 
     objc_msgSend_void_id(openGLContext, sel("setView:"), contentView);
     objc_msgSend_void_id(window, sel("makeKeyAndOrderFront:"), window);
@@ -372,10 +363,10 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     // In AUTO mode, always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
     int bitmapScale = 1;
-    
+
     // In non-AUTO mode, scale based on backing size
     if ((flags & TIGR_AUTO) == 0) {
-        bitmapScale = tigrEnforceScale(tigrCalcScale(w, h, windowContentSize.width, windowContentSize.height), flags); 
+        bitmapScale = tigrEnforceScale(tigrCalcScale(w, h, windowContentSize.width, windowContentSize.height), flags);
     } else {
         // In AUTO mode, bitmap size follows window size
         w = windowContentSize.width / windowScale;
@@ -387,16 +378,14 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
 
     {
-        #define NSTrackingMouseEnteredAndExited 1
-        #define NSTrackingActiveInKeyWindow 0x20
-        #define NSTrackingInVisibleRect 0x200
+#define NSTrackingMouseEnteredAndExited 1
+#define NSTrackingActiveInKeyWindow 0x20
+#define NSTrackingInVisibleRect 0x200
 
         int trackingFlags = NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect;
         id trackingArea = objc_msgSend_id(class("NSTrackingArea"), sel("alloc"));
         trackingArea = objc_msgSend_t(id, NSRect, int, id, id)(
-            trackingArea, sel("initWithRect:options:owner:userInfo:"),
-            rect, trackingFlags, wdg, 0
-        );
+            trackingArea, sel("initWithRect:options:owner:userInfo:"), rect, trackingFlags, wdg, 0);
         objc_msgSend_void_id(contentView, sel("addTrackingArea:"), trackingArea);
     }
 
@@ -407,8 +396,8 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->scale = bitmapScale;
     win->lastChar = 0;
     win->flags = flags;
-	win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
+    win->p1 = win->p2 = win->p3 = 0;
+    win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
@@ -788,7 +777,7 @@ void _tigrOnCocoaEvent(id event, id window) {
         return;
     }
 
-    NSUInteger eventType =  objc_msgSend_t(NSUInteger)(event, sel("type"));
+    NSUInteger eventType = objc_msgSend_t(NSUInteger)(event, sel("type"));
     switch (eventType) {
         case 1:  // NSLeftMouseDown
             if (win->mouseInView) {
@@ -922,10 +911,9 @@ void tigrUpdate(Tigr* bmp) {
     BOOL visible = 0;
 
     do {
-        event = objc_msgSend_t(id, NSUInteger, id, id, BOOL)(
-            NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"), eventMask, distantPast,
-            NSDefaultRunLoopMode, YES
-        );
+        event =
+            objc_msgSend_t(id, NSUInteger, id, id, BOOL)(NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+                                                         eventMask, distantPast, NSDefaultRunLoopMode, YES);
 
         if (event != 0) {
             processedEvents++;
@@ -982,7 +970,7 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
     window = (id)bmp->handle;
 
     id windowContentView = objc_msgSend_id(window, sel("contentView"));
-    NSRect adjustFrame =  objc_msgSend_stret_t(NSRect)(windowContentView, sel("frame"));
+    NSRect adjustFrame = objc_msgSend_stret_t(NSRect)(windowContentView, sel("frame"));
 
     // NSPoint is small enough to fit a register, so no need for
     // objc_msgSend_stret
@@ -999,7 +987,7 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
         p.y = adjustFrame.size.height;
 
     // map input to pixels
-    NSRect r = { p, {0, 0} };
+    NSRect r = { p, { 0, 0 } };
     r = objc_msgSend_stret_t(NSRect, NSRect)(windowContentView, sel("convertRectToBacking:"), r);
     p = r.origin;
 
@@ -1017,12 +1005,12 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
     }
 }
 
-int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints) {
-	int buttons = 0;
-	if (maxPoints > 0) {
-		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
-	}
-	return buttons ? 1 : 0;
+int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
+    int buttons = 0;
+    if (maxPoints > 0) {
+        tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
+    }
+    return buttons ? 1 : 0;
 }
 
 int tigrKeyDown(Tigr* bmp, int key) {

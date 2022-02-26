@@ -3,6 +3,7 @@
 
 #include "tigr_glsl_hdr.h"
 
+// clang-format off
 const char tigr_upscale_gl_vs[] = {
     GLSL_VERSION_HEADER
     "layout (location = 0) in vec2 pos_in;"
@@ -16,6 +17,7 @@ const char tigr_upscale_gl_vs[] = {
     "   gl_Position = projection * model * vec4(pos_in, 0.0, 1.0);"
     "}"
 };
+// clang-format on
 
 const int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
 
