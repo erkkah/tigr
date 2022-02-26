@@ -106,30 +106,50 @@ void tigrSetPostFX(Tigr *bmp, float p1, float p2, float p3, float p4);
 
 // Drawing ----------------------------------------------------------------
 
-// Helper for reading/writing pixels.
+// Helper for reading pixels.
 // For high performance, just access bmp->pix directly.
 TPixel tigrGet(Tigr *bmp, int x, int y);
+
+// Plots a pixel using blending.
+// For high performance, just access bmp->pix directly.
 void tigrPlot(Tigr *bmp, int x, int y, TPixel pix);
 
 // Clears a bitmap to a color.
+// No blending.
 void tigrClear(Tigr *bmp, TPixel color);
 
-// Fills in a solid rectangle.
+// Fills a rectangular area.
+// No blending.
 void tigrFill(Tigr *bmp, int x, int y, int w, int h, TPixel color);
 
 // Draws an empty rectangle.
+// Drawing a 1x1 rectangle yields the same result as calling tigrPlot.
+// Uses blending.
 void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color);
 
-// Draws a filled rectangle.
+// Fills a rectangle.
+// Fills the inside of the specified rectangular area.
+// Calling tigrRect followed by tigrFillRect using the same arguments
+// causes no overdrawing.
+// Uses blending.
 void tigrFillRect(Tigr *bmp, int x, int y, int w, int h, TPixel color);
 
 // Draws a line.
+// Uses blending.
 void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color);
 
 // Draws a circle.
+// Drawing a zero radius circle yields the same result as calling tigrPlot.
+// Drawing a circle with radius one draws a circle three pixels wide.
+// Uses blending.
 void tigrCircle(Tigr *bmp, int x, int y, int r, TPixel color);
 
 // Fills a circle.
+// Fills the inside of the specified circle.
+// Calling tigrCircle followed by tigrFillCircle using the same arguments
+// causes no overdrawing.
+// Filling a circle with zero radius has no effect.
+// Uses blending.
 void tigrFillCircle(Tigr *bmp, int x, int y, int r, TPixel color);
 
 // Sets clip rect for blit operations.
@@ -142,6 +162,7 @@ void tigrClip(Tigr *bmp, int cx, int cy, int cw, int ch);
 // w/h   = width/height
 //
 // RGBAdest = RGBAsrc
+// No blending.
 void tigrBlit(Tigr *dest, Tigr *src, int dx, int dy, int sx, int sy, int w, int h);
 
 // Same as tigrBlit, but alpha blends the source bitmap with the
