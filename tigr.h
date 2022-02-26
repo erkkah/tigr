@@ -123,6 +123,12 @@ void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color);
 // Draws a line.
 void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color);
 
+// Draws a circle.
+void tigrCircle(Tigr *bmp, int x, int y, int r, TPixel color);
+
+// Fills a circle.
+void tigrFillCircle(Tigr *bmp, int x, int y, int r, TPixel color);
+
 // Sets clip rect for blit operations.
 // Set to (0, 0, -1, -1) to reset clipping to full bitmap.
 void tigrClip(Tigr *bmp, int cx, int cy, int cw, int ch);
