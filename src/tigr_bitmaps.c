@@ -175,7 +175,7 @@ void tigrPlot(Tigr *bmp, int x, int y, TPixel pix)
 		bmp->pix[i].r += (unsigned char)((pix.r - bmp->pix[i].r)*a >> 16);
 		bmp->pix[i].g += (unsigned char)((pix.g - bmp->pix[i].g)*a >> 16);
 		bmp->pix[i].b += (unsigned char)((pix.b - bmp->pix[i].b)*a >> 16);
-		bmp->pix[i].a += (unsigned char)((pix.a - bmp->pix[i].a)*a >> 16);
+		bmp->pix[i].a += (bmp->blitMode) * (unsigned char)((pix.a - bmp->pix[i].a)*a >> 16);
 	}
 }
 
