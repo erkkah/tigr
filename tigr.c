@@ -15,10 +15,10 @@
 #define TIGR_GAPI_GL
 
 // Creates a new bitmap, with extra payload bytes.
-Tigr *tigrBitmap2(int w, int h, int extra);
+Tigr* tigrBitmap2(int w, int h, int extra);
 
 // Resizes an existing bitmap.
-void tigrResize(Tigr *bmp, int w, int h);
+void tigrResize(Tigr* bmp, int w, int h);
 
 // Calculates the biggest scale that a bitmap can fit into an area at.
 int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH);
@@ -27,7 +27,7 @@ int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH);
 int tigrEnforceScale(int scale, int flags);
 
 // Calculates the correct position for a bitmap to fit into a window.
-void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
+void tigrPosition(Tigr* bmp, int scale, int windowW, int windowH, int out[4]);
 
 // ----------------------------------------------------------
 #ifdef _WIN32
@@ -36,8 +36,8 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #endif
 
 #if __linux__ && !__ANDROID__
-#include<X11/X.h>
-#include<X11/Xlib.h>
+#include <X11/X.h>
+#include <X11/Xlib.h>
 #endif
 
 #ifdef __APPLE__
@@ -60,7 +60,7 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #if __linux__ && !__ANDROID__
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
-#include<GL/glx.h>
+#include <GL/glx.h>
 #endif
 #if __ANDROID__
 #include <EGL/egl.h>
@@ -72,89 +72,88 @@ void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4]);
 #endif
 
 typedef struct {
-	#ifdef _WIN32
-	HGLRC hglrc;
-	HDC dc;
-	#endif
-	#ifdef __APPLE__
-	void *glContext;
-	#endif
-	GLuint tex[2];
-	GLuint vao;
-	GLuint program;
-	GLuint uniform_projection;
-	GLuint uniform_model;
-	GLuint uniform_parameters;
-	int gl_legacy;
-	int gl_user_opengl_rendering;
+#ifdef _WIN32
+    HGLRC hglrc;
+    HDC dc;
+#endif
+#ifdef __APPLE__
+    void* glContext;
+#endif
+    GLuint tex[2];
+    GLuint vao;
+    GLuint program;
+    GLuint uniform_projection;
+    GLuint uniform_model;
+    GLuint uniform_parameters;
+    int gl_legacy;
+    int gl_user_opengl_rendering;
 } GLStuff;
 #endif
 
 #define MAX_TOUCH_POINTS 10
 
 typedef struct {
-	int shown, closed;
-	#ifdef TIGR_GAPI_GL
-	GLStuff gl;
-	#endif
+    int shown, closed;
+#ifdef TIGR_GAPI_GL
+    GLStuff gl;
+#endif
 
-	#ifdef _WIN32
-	wchar_t *wtitle;
-	DWORD dwStyle;
-	RECT oldPos;
-	#endif
-	#ifdef __linux__
-	#if __ANDROID__
+#ifdef _WIN32
+    wchar_t* wtitle;
+    DWORD dwStyle;
+    RECT oldPos;
+#endif
+#ifdef __linux__
+#if __ANDROID__
     EGLContext context;
-	#else
-	Display *dpy;
-	Window win;
-	GLXContext glc;
-	XIC ic;
-	#endif // __ANDROID__
-	#endif // __linux__
-	
-	Tigr *widgets;
-	int widgetsWanted;
-	unsigned char widgetAlpha;
-	float widgetsScale;
+#else
+    Display* dpy;
+    Window win;
+    GLXContext glc;
+    XIC ic;
+#endif  // __ANDROID__
+#endif  // __linux__
 
-	float p1, p2, p3, p4;
+    Tigr* widgets;
+    int widgetsWanted;
+    unsigned char widgetAlpha;
+    float widgetsScale;
 
-	int flags;
-	int scale;
-	int pos[4];
-	int lastChar;
-	char keys[256], prev[256];
-	#if defined(__ANDROID__)
-	char released[256];
-	#endif // __ANDROID__
-	#if defined(__MACOS__)
-	int mouseInView;
-	int mouseButtons;
-	#endif // __MACOS__
-	#if defined(__linux__) || defined(__IOS__)
-	int mouseButtons;
-	int mouseX;
-	int mouseY;
-	#endif // __linux__ __IOS__
-	#if defined(__ANDROID__) || defined(__IOS__)
-	int numTouchPoints;
-	TigrTouchPoint touchPoints[MAX_TOUCH_POINTS];
-	#endif // __ANDROID__ __IOS__
+    float p1, p2, p3, p4;
+
+    int flags;
+    int scale;
+    int pos[4];
+    int lastChar;
+    char keys[256], prev[256];
+#if defined(__ANDROID__)
+    char released[256];
+#endif  // __ANDROID__
+#if defined(__MACOS__)
+    int mouseInView;
+    int mouseButtons;
+#endif  // __MACOS__
+#if defined(__linux__) || defined(__IOS__)
+    int mouseButtons;
+    int mouseX;
+    int mouseY;
+#endif  // __linux__ __IOS__
+#if defined(__ANDROID__) || defined(__IOS__)
+    int numTouchPoints;
+    TigrTouchPoint touchPoints[MAX_TOUCH_POINTS];
+#endif  // __ANDROID__ __IOS__
 } TigrInternal;
 // ----------------------------------------------------------
 
-TigrInternal *tigrInternal(Tigr *bmp);
+TigrInternal* tigrInternal(Tigr* bmp);
 
-void tigrGAPICreate(Tigr *bmp);
-void tigrGAPIDestroy(Tigr *bmp);
-int  tigrGAPIBegin(Tigr *bmp);
-int  tigrGAPIEnd(Tigr *bmp);
-void tigrGAPIPresent(Tigr *bmp, int w, int h);
+void tigrGAPICreate(Tigr* bmp);
+void tigrGAPIDestroy(Tigr* bmp);
+int tigrGAPIBegin(Tigr* bmp);
+int tigrGAPIEnd(Tigr* bmp);
+void tigrGAPIPresent(Tigr* bmp, int w, int h);
 
 #endif
-
 
 //////// End of inlined file: tigr_internal.h ////////
 
@@ -170,18 +169,18 @@ void tigrGAPIPresent(Tigr *bmp, int w, int h);
 
 #if __ANDROID__ || __IOS__
 #define GLSL_VERSION_HEADER \
-    "#version 300 es\n" \
+    "#version 300 es\n"     \
     "precision mediump float;\n"
 #else
-#define GLSL_VERSION_HEADER \
-    "#version 330 core\n"
+#define GLSL_VERSION_HEADER "#version 330 core\n"
 #endif
 
-#endif // __TIGR_GLSL_HDR_H__
+#endif  // __TIGR_GLSL_HDR_H__
 
 //////// End of inlined file: tigr_glsl_hdr.h ////////
 
 
+// clang-format off
 const char tigr_upscale_gl_vs[] = {
     GLSL_VERSION_HEADER
     "layout (location = 0) in vec2 pos_in;"
@@ -195,6 +194,7 @@ const char tigr_upscale_gl_vs[] = {
     "   gl_Position = projection * model * vec4(pos_in, 0.0, 1.0);"
     "}"
 };
+// clang-format on
 
 const int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
 
@@ -209,6 +209,7 @@ const int tigr_upscale_gl_vs_size = (int)sizeof(tigr_upscale_gl_vs) - 1;
 
 //#include "tigr_glsl_hdr.h"
 
+// clang-format off
 const char tigr_upscale_gl_fs[] = {
     GLSL_VERSION_HEADER
     "in vec2 uv;"
@@ -221,9 +222,11 @@ const char tigr_upscale_gl_fs[] = {
     "   fxShader(color, uv);"
     "}\n"
 };
+// clang-format on
 
 const int tigr_upscale_gl_fs_size = (int)sizeof(tigr_upscale_gl_fs) - 1;
 
+// clang-format off
 const char tigr_default_fx_gl_fs[] = {
     "void fxShader(out vec4 color, in vec2 uv) {"
     "   vec2 tex_size = vec2(textureSize(image, 0));"
@@ -234,9 +237,9 @@ const char tigr_default_fx_gl_fs[] = {
     "   color = c;"
     "}"
 };
+// clang-format on
 
 const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
-
 
 #endif
 
@@ -252,366 +255,373 @@ const int tigr_default_fx_gl_fs_size = (int)sizeof(tigr_default_fx_gl_fs) - 1;
 // Expands 0-255 into 0-256
 #define EXPAND(X) ((X) + ((X) > 0))
 
-#define CLIP0(CX, X, X2, W) if (X < CX) { int D = CX - X; W -= D; X2 += D; X += D; }
-#define CLIP1(X, DW, W) if (X + W > DW) W = DW - X;
-#define CLIP() \
-	CLIP0(dst->cx, dx, sx, w); \
-	CLIP0(dst->cy, dy, sy, h); \
-	CLIP0(0, sx, dx, w); \
-	CLIP0(0, sy, dy, h); \
-	CLIP1(dx, dst->cx + cw, w); \
-	CLIP1(dy, dst->cy + ch, h); \
-	CLIP1(sx, src->w, w); \
-	CLIP1(sy, src->h, h); \
-	if (w <= 0 || h <= 0) \
-		return
+#define CLIP0(CX, X, X2, W) \
+    if (X < CX) {           \
+        int D = CX - X;     \
+        W -= D;             \
+        X2 += D;            \
+        X += D;             \
+    }
+#define CLIP1(X, DW, W) \
+    if (X + W > DW)     \
+        W = DW - X;
+#define CLIP()                  \
+    CLIP0(dst->cx, dx, sx, w);  \
+    CLIP0(dst->cy, dy, sy, h);  \
+    CLIP0(0, sx, dx, w);        \
+    CLIP0(0, sy, dy, h);        \
+    CLIP1(dx, dst->cx + cw, w); \
+    CLIP1(dy, dst->cy + ch, h); \
+    CLIP1(sx, src->w, w);       \
+    CLIP1(sy, src->h, h);       \
+    if (w <= 0 || h <= 0)       \
+    return
 
-
-Tigr *tigrBitmap2(int w, int h, int extra)
-{
-	Tigr *tigr = (Tigr *)calloc(1, sizeof(Tigr) + extra);
-	tigr->w = w;
-	tigr->h = h;
-	tigr->cw = -1;
-	tigr->ch = -1;
-	tigr->pix = (TPixel *)calloc(w*h, sizeof(TPixel));
-	tigr->blitMode = TIGR_BLEND_ALPHA;
-	return tigr;
+Tigr* tigrBitmap2(int w, int h, int extra) {
+    Tigr* tigr = (Tigr*)calloc(1, sizeof(Tigr) + extra);
+    tigr->w = w;
+    tigr->h = h;
+    tigr->cw = -1;
+    tigr->ch = -1;
+    tigr->pix = (TPixel*)calloc(w * h, sizeof(TPixel));
+    tigr->blitMode = TIGR_BLEND_ALPHA;
+    return tigr;
 }
 
-Tigr *tigrBitmap(int w, int h)
-{
-	return tigrBitmap2(w, h, 0);
+Tigr* tigrBitmap(int w, int h) {
+    return tigrBitmap2(w, h, 0);
 }
 
-void tigrResize(Tigr *bmp, int w, int h)
-{
-	if (bmp->w == w && bmp->h == h) {
-		return;
-	}
+void tigrResize(Tigr* bmp, int w, int h) {
+    if (bmp->w == w && bmp->h == h) {
+        return;
+    }
 
-	int y, cw, ch;
-	TPixel *newpix = (TPixel *)calloc(w*h, sizeof(TPixel));
-	cw = (w < bmp->w) ? w : bmp->w;
-	ch = (h < bmp->h) ? h : bmp->h;
+    int y, cw, ch;
+    TPixel* newpix = (TPixel*)calloc(w * h, sizeof(TPixel));
+    cw = (w < bmp->w) ? w : bmp->w;
+    ch = (h < bmp->h) ? h : bmp->h;
 
-	// Copy any old data across.
-	for (y=0;y<ch;y++)
-		memcpy(newpix+y*w, bmp->pix+y*bmp->w, cw*sizeof(TPixel));
+    // Copy any old data across.
+    for (y = 0; y < ch; y++)
+        memcpy(newpix + y * w, bmp->pix + y * bmp->w, cw * sizeof(TPixel));
 
-	free(bmp->pix);
-	bmp->pix = newpix;
-	bmp->w = w;
-	bmp->h = h;
+    free(bmp->pix);
+    bmp->pix = newpix;
+    bmp->w = w;
+    bmp->h = h;
 }
 
-int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH)
-{
-	// We want it as big as possible in the window, but still
-	// maintaining the correct aspect ratio, and always
-	// having an integer pixel size.
-	int scale = 0;
-	for(;;)
-	{
-		scale++;
-		if (bmpW*scale > areaW || bmpH*scale > areaH)
-		{
-			scale--;
-			break;
-		}
-	}
-	return (scale > 1) ? scale : 1;
+int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH) {
+    // We want it as big as possible in the window, but still
+    // maintaining the correct aspect ratio, and always
+    // having an integer pixel size.
+    int scale = 0;
+    for (;;) {
+        scale++;
+        if (bmpW * scale > areaW || bmpH * scale > areaH) {
+            scale--;
+            break;
+        }
+    }
+    return (scale > 1) ? scale : 1;
 }
 
-int tigrEnforceScale(int scale, int flags)
-{
-	if ((flags & TIGR_4X) && scale < 4) scale = 4;
-	if ((flags & TIGR_3X) && scale < 3) scale = 3;
-	if ((flags & TIGR_2X) && scale < 2) scale = 2;
-	return scale;
+int tigrEnforceScale(int scale, int flags) {
+    if ((flags & TIGR_4X) && scale < 4)
+        scale = 4;
+    if ((flags & TIGR_3X) && scale < 3)
+        scale = 3;
+    if ((flags & TIGR_2X) && scale < 2)
+        scale = 2;
+    return scale;
 }
 
-void tigrPosition(Tigr *bmp, int scale, int windowW, int windowH, int out[4])
-{
-	// Center the image on screen at this scale.
-	out[0] = (windowW - bmp->w*scale) / 2;
-	out[1] = (windowH - bmp->h*scale) / 2;
-	out[2] = out[0] + bmp->w*scale;
-	out[3] = out[1] + bmp->h*scale;
+void tigrPosition(Tigr* bmp, int scale, int windowW, int windowH, int out[4]) {
+    // Center the image on screen at this scale.
+    out[0] = (windowW - bmp->w * scale) / 2;
+    out[1] = (windowH - bmp->h * scale) / 2;
+    out[2] = out[0] + bmp->w * scale;
+    out[3] = out[1] + bmp->h * scale;
 }
 
-void tigrClear(Tigr *bmp, TPixel color)
-{
-	int count = bmp->w * bmp->h;
-	int n;
-	for (n=0;n<count;n++)
-		bmp->pix[n] = color;
+void tigrClear(Tigr* bmp, TPixel color) {
+    int count = bmp->w * bmp->h;
+    int n;
+    for (n = 0; n < count; n++)
+        bmp->pix[n] = color;
 }
 
-void tigrFill(Tigr *bmp, int x, int y, int w, int h, TPixel color)
-{
-	TPixel *td;
-	int dt, i;
+void tigrFill(Tigr* bmp, int x, int y, int w, int h, TPixel color) {
+    TPixel* td;
+    int dt, i;
 
-	if (x < 0) { w += x; x = 0; }
-	if (y < 0) { h += y; y = 0; }
-	if (x + w > bmp->w) { w = bmp->w - x; }
-	if (y + h > bmp->h) { h = bmp->h - y; }
-	if (w <= 0 || h <= 0)
-		return;
+    if (x < 0) {
+        w += x;
+        x = 0;
+    }
+    if (y < 0) {
+        h += y;
+        y = 0;
+    }
+    if (x + w > bmp->w) {
+        w = bmp->w - x;
+    }
+    if (y + h > bmp->h) {
+        h = bmp->h - y;
+    }
+    if (w <= 0 || h <= 0)
+        return;
 
-	td = &bmp->pix[y*bmp->w + x];
-	dt = bmp->w;
-	do {
-		for (i=0;i<w;i++)
-			td[i] = color;
-		td += dt;
-	} while(--h);
+    td = &bmp->pix[y * bmp->w + x];
+    dt = bmp->w;
+    do {
+        for (i = 0; i < w; i++)
+            td[i] = color;
+        td += dt;
+    } while (--h);
 }
 
-void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color)
-{
-	int sx, sy, dx, dy, err, e2;
-	dx = abs(x1 - x0);
-	dy = abs(y1 - y0);
-	if (x0 < x1) sx = 1; else sx = -1;
-	if (y0 < y1) sy = 1; else sy = -1;
-	err = dx - dy;
+void tigrLine(Tigr* bmp, int x0, int y0, int x1, int y1, TPixel color) {
+    int sx, sy, dx, dy, err, e2;
+    dx = abs(x1 - x0);
+    dy = abs(y1 - y0);
+    if (x0 < x1)
+        sx = 1;
+    else
+        sx = -1;
+    if (y0 < y1)
+        sy = 1;
+    else
+        sy = -1;
+    err = dx - dy;
 
-	do {
-		tigrPlot(bmp, x0, y0, color);
-		e2 = 2*err;
-		if (e2 > -dy) { err -= dy; x0 += sx; }
-		if (e2 <  dx) { err += dx; y0 += sy; }
-	} while (x0 != x1 || y0 != y1);
+    do {
+        tigrPlot(bmp, x0, y0, color);
+        e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    } while (x0 != x1 || y0 != y1);
 }
 
-void tigrFillRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
-{
-	x += 1;
-	y += 1;
-	w -= 2;
-	h -= 2;
+void tigrFillRect(Tigr* bmp, int x, int y, int w, int h, TPixel color) {
+    x += 1;
+    y += 1;
+    w -= 2;
+    h -= 2;
 
-	int cx = bmp->cx;
-	int cy = bmp->cy;
-	int cw = bmp->cw >= 0 ? bmp->cw : bmp->w;
-	int ch = bmp->ch >= 0 ? bmp->ch : bmp->h;
+    int cx = bmp->cx;
+    int cy = bmp->cy;
+    int cw = bmp->cw >= 0 ? bmp->cw : bmp->w;
+    int ch = bmp->ch >= 0 ? bmp->ch : bmp->h;
 
-	if (x < cx) {
-		w += (x - cx);
-		x = cx;
-	}
-	if (y < cy) {
-		h += (y - cy);
-		y = cy;
-	}
-	if (x + w > cx + cw) {
-		w -= (x + w) - (cx + cw);
-	}
-	if (y + h > cy + ch) {
-		h -= (y + h) - (cy + ch);
-	}
-	if (w <= 0 || h <= 0)
-		return;
+    if (x < cx) {
+        w += (x - cx);
+        x = cx;
+    }
+    if (y < cy) {
+        h += (y - cy);
+        y = cy;
+    }
+    if (x + w > cx + cw) {
+        w -= (x + w) - (cx + cw);
+    }
+    if (y + h > cy + ch) {
+        h -= (y + h) - (cy + ch);
+    }
+    if (w <= 0 || h <= 0)
+        return;
 
-	TPixel *td = &bmp->pix[y*bmp->w + x];
-	int dt = bmp->w;
-	int xa = EXPAND(color.a);
-	int a = xa * xa;
+    TPixel* td = &bmp->pix[y * bmp->w + x];
+    int dt = bmp->w;
+    int xa = EXPAND(color.a);
+    int a = xa * xa;
 
-	do {
-		for (int i=0;i<w;i++) {
-			td[i].r += (unsigned char)((color.r - td[i].r)*a >> 16);
-			td[i].g += (unsigned char)((color.g - td[i].g)*a >> 16);
-			td[i].b += (unsigned char)((color.b - td[i].b)*a >> 16);
-			td[i].a += (bmp->blitMode) * (unsigned char)((color.a - td[i].a)*a >> 16);
-		}
-		td += dt;
-	} while(--h);
+    do {
+        for (int i = 0; i < w; i++) {
+            td[i].r += (unsigned char)((color.r - td[i].r) * a >> 16);
+            td[i].g += (unsigned char)((color.g - td[i].g) * a >> 16);
+            td[i].b += (unsigned char)((color.b - td[i].b) * a >> 16);
+            td[i].a += (bmp->blitMode) * (unsigned char)((color.a - td[i].a) * a >> 16);
+        }
+        td += dt;
+    } while (--h);
 }
 
-void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
-{
-	int x1, y1;
-	if (w <= 0 || h <= 0)
-		return;
-	
-	x1 = x + w-1;
-	y1 = y + h-1;
-	tigrLine(bmp, x, y, x1, y, color);
-	tigrLine(bmp, x1, y, x1, y1, color);
-	tigrLine(bmp, x1, y1, x, y1, color);
-	tigrLine(bmp, x, y1, x, y, color);
+void tigrRect(Tigr* bmp, int x, int y, int w, int h, TPixel color) {
+    int x1, y1;
+    if (w <= 0 || h <= 0)
+        return;
+
+    x1 = x + w - 1;
+    y1 = y + h - 1;
+    tigrLine(bmp, x, y, x1, y, color);
+    tigrLine(bmp, x1, y, x1, y1, color);
+    tigrLine(bmp, x1, y1, x, y1, color);
+    tigrLine(bmp, x, y1, x, y, color);
 }
 
-void tigrFillCircle(Tigr *bmp, int x0, int y0, int r, TPixel color)
-{
-	if (r <= 0) {
-		return;
-	}
+void tigrFillCircle(Tigr* bmp, int x0, int y0, int r, TPixel color) {
+    if (r <= 0) {
+        return;
+    }
 
-	int E = 1 - r;
-	int dx = 0;
-	int dy = -2 * r;
-	int x = 0;
-	int y = r;
+    int E = 1 - r;
+    int dx = 0;
+    int dy = -2 * r;
+    int x = 0;
+    int y = r;
 
-	tigrLine(bmp, x0 - r + 1, y0, x0 + r, y0, color);
-	
-    while (x < y - 1)
-    {
-		x++;
+    tigrLine(bmp, x0 - r + 1, y0, x0 + r, y0, color);
+
+    while (x < y - 1) {
+        x++;
 
         if (E >= 0) {
-			y--;
-			dy += 2;
-			E += dy;
-			tigrLine(bmp, x0 - x + 1, y0 + y, x0 + x, y0 + y, color);
-			tigrLine(bmp, x0 - x + 1, y0 - y, x0 + x, y0 - y, color);
-		}
+            y--;
+            dy += 2;
+            E += dy;
+            tigrLine(bmp, x0 - x + 1, y0 + y, x0 + x, y0 + y, color);
+            tigrLine(bmp, x0 - x + 1, y0 - y, x0 + x, y0 - y, color);
+        }
 
-		dx += 2;
-		E += dx + 1;
+        dx += 2;
+        E += dx + 1;
 
-		if (x != y) {
-			tigrLine(bmp, x0 - y + 1, y0 + x, x0 + y, y0 + x, color);
-			tigrLine(bmp, x0 - y + 1, y0 - x, x0 + y, y0 - x, color);
-		}
+        if (x != y) {
+            tigrLine(bmp, x0 - y + 1, y0 + x, x0 + y, y0 + x, color);
+            tigrLine(bmp, x0 - y + 1, y0 - x, x0 + y, y0 - x, color);
+        }
     }
 }
 
-void tigrCircle(Tigr *bmp, int x0, int y0, int r, TPixel color)
-{
-	int E = 1 - r;
-	int dx = 0;
-	int dy = -2 * r;
-	int x = 0;
-	int y = r;
+void tigrCircle(Tigr* bmp, int x0, int y0, int r, TPixel color) {
+    int E = 1 - r;
+    int dx = 0;
+    int dy = -2 * r;
+    int x = 0;
+    int y = r;
 
-	tigrPlot(bmp, x0, y0 + r, color);
-	tigrPlot(bmp, x0, y0 - r, color);
-	tigrPlot(bmp, x0 + r, y0, color);
-	tigrPlot(bmp, x0 - r, y0, color);
-	
-    while (x < y - 1)
-    {
-		x++;
+    tigrPlot(bmp, x0, y0 + r, color);
+    tigrPlot(bmp, x0, y0 - r, color);
+    tigrPlot(bmp, x0 + r, y0, color);
+    tigrPlot(bmp, x0 - r, y0, color);
+
+    while (x < y - 1) {
+        x++;
 
         if (E >= 0) {
-			y--;
-			dy += 2;
-			E += dy;
-		}
+            y--;
+            dy += 2;
+            E += dy;
+        }
 
-		dx += 2;
-		E += dx + 1;
+        dx += 2;
+        E += dx + 1;
 
-		tigrPlot(bmp, x0 + x, y0 + y, color);
-		tigrPlot(bmp, x0 - x, y0 + y, color);
-		tigrPlot(bmp, x0 + x, y0 - y, color);
+        tigrPlot(bmp, x0 + x, y0 + y, color);
+        tigrPlot(bmp, x0 - x, y0 + y, color);
+        tigrPlot(bmp, x0 + x, y0 - y, color);
         tigrPlot(bmp, x0 - x, y0 - y, color);
-         
-		if (x != y) {
-			tigrPlot(bmp, x0 + y, y0 + x, color);
-			tigrPlot(bmp, x0 - y, y0 + x, color);
-			tigrPlot(bmp, x0 + y, y0 - x, color);
-			tigrPlot(bmp, x0 - y, y0 - x, color);
-		}
+
+        if (x != y) {
+            tigrPlot(bmp, x0 + y, y0 + x, color);
+            tigrPlot(bmp, x0 - y, y0 + x, color);
+            tigrPlot(bmp, x0 + y, y0 - x, color);
+            tigrPlot(bmp, x0 - y, y0 - x, color);
+        }
     }
 }
 
-TPixel tigrGet(Tigr *bmp, int x, int y)
-{
-	TPixel empty = { 0,0,0,0 };
-	if (x >= 0 && y >= 0 && x < bmp->w && y < bmp->h)
-		return bmp->pix[y*bmp->w+x];
-	return empty;
+TPixel tigrGet(Tigr* bmp, int x, int y) {
+    TPixel empty = { 0, 0, 0, 0 };
+    if (x >= 0 && y >= 0 && x < bmp->w && y < bmp->h)
+        return bmp->pix[y * bmp->w + x];
+    return empty;
 }
 
-void tigrPlot(Tigr *bmp, int x, int y, TPixel pix)
-{
-	int xa, i, a;
-	if (x >= bmp->cx && y >= bmp->cy && x < bmp->cx + bmp->cw && y < bmp->cy + bmp->h)
-	{
-		xa = EXPAND(pix.a);
-		a = xa * xa;
-		i = y*bmp->w+x;
+void tigrPlot(Tigr* bmp, int x, int y, TPixel pix) {
+    int xa, i, a;
+    if (x >= bmp->cx && y >= bmp->cy && x < bmp->cx + bmp->cw && y < bmp->cy + bmp->h) {
+        xa = EXPAND(pix.a);
+        a = xa * xa;
+        i = y * bmp->w + x;
 
-		bmp->pix[i].r += (unsigned char)((pix.r - bmp->pix[i].r)*a >> 16);
-		bmp->pix[i].g += (unsigned char)((pix.g - bmp->pix[i].g)*a >> 16);
-		bmp->pix[i].b += (unsigned char)((pix.b - bmp->pix[i].b)*a >> 16);
-		bmp->pix[i].a += (bmp->blitMode) * (unsigned char)((pix.a - bmp->pix[i].a)*a >> 16);
-	}
+        bmp->pix[i].r += (unsigned char)((pix.r - bmp->pix[i].r) * a >> 16);
+        bmp->pix[i].g += (unsigned char)((pix.g - bmp->pix[i].g) * a >> 16);
+        bmp->pix[i].b += (unsigned char)((pix.b - bmp->pix[i].b) * a >> 16);
+        bmp->pix[i].a += (bmp->blitMode) * (unsigned char)((pix.a - bmp->pix[i].a) * a >> 16);
+    }
 }
 
-void tigrClip(Tigr *bmp, int cx, int cy, int cw, int ch)
-{
-	bmp->cx = cx;
-	bmp->cy = cy;
-	bmp->cw = cw;
-	bmp->ch = ch;
+void tigrClip(Tigr* bmp, int cx, int cy, int cw, int ch) {
+    bmp->cx = cx;
+    bmp->cy = cy;
+    bmp->cw = cw;
+    bmp->ch = ch;
 }
 
-void tigrBlit(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h)
-{
-	int cw = dst->cw >= 0 ? dst->cw : dst->w;
-	int ch = dst->ch >= 0 ? dst->ch : dst->h;
+void tigrBlit(Tigr* dst, Tigr* src, int dx, int dy, int sx, int sy, int w, int h) {
+    int cw = dst->cw >= 0 ? dst->cw : dst->w;
+    int ch = dst->ch >= 0 ? dst->ch : dst->h;
 
-	CLIP();
+    CLIP();
 
-	TPixel* ts = &src->pix[sy*src->w + sx];
-	TPixel* td = &dst->pix[dy*dst->w + dx];
-	int st = src->w;
-	int dt = dst->w;
-	do {
-		memcpy(td, ts, w*sizeof(TPixel));
-		ts += st;
-		td += dt;
-	} while(--h);
+    TPixel* ts = &src->pix[sy * src->w + sx];
+    TPixel* td = &dst->pix[dy * dst->w + dx];
+    int st = src->w;
+    int dt = dst->w;
+    do {
+        memcpy(td, ts, w * sizeof(TPixel));
+        ts += st;
+        td += dt;
+    } while (--h);
 }
 
-void tigrBlitTint(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint)
-{
-	int cw = dst->cw >= 0 ? dst->cw : dst->w;
-	int ch = dst->ch >= 0 ? dst->ch : dst->h;
+void tigrBlitTint(Tigr* dst, Tigr* src, int dx, int dy, int sx, int sy, int w, int h, TPixel tint) {
+    int cw = dst->cw >= 0 ? dst->cw : dst->w;
+    int ch = dst->ch >= 0 ? dst->ch : dst->h;
 
-	CLIP();
+    CLIP();
 
-	int xr = EXPAND(tint.r);
-	int xg = EXPAND(tint.g);
-	int xb = EXPAND(tint.b);
-	int xa = EXPAND(tint.a);
+    int xr = EXPAND(tint.r);
+    int xg = EXPAND(tint.g);
+    int xb = EXPAND(tint.b);
+    int xa = EXPAND(tint.a);
 
-	TPixel* ts = &src->pix[sy*src->w + sx];
-	TPixel* td = &dst->pix[dy*dst->w + dx];
-	int st = src->w;
-	int dt = dst->w;
-	do {
-		for (int x = 0; x < w; x++)
-		{
-			unsigned r = (xr * ts[x].r) >> 8;
-			unsigned g = (xg * ts[x].g) >> 8;
-			unsigned b = (xb * ts[x].b) >> 8;
-			unsigned a = xa * EXPAND(ts[x].a);
-			td[x].r += (unsigned char)((r - td[x].r)*a >> 16);
-			td[x].g += (unsigned char)((g - td[x].g)*a >> 16);
-			td[x].b += (unsigned char)((b - td[x].b)*a >> 16);
-			td[x].a += (dst->blitMode) * (unsigned char)((ts[x].a - td[x].a)*a >> 16);
-		}
-		ts += st;
-		td += dt;
-	} while(--h);
+    TPixel* ts = &src->pix[sy * src->w + sx];
+    TPixel* td = &dst->pix[dy * dst->w + dx];
+    int st = src->w;
+    int dt = dst->w;
+    do {
+        for (int x = 0; x < w; x++) {
+            unsigned r = (xr * ts[x].r) >> 8;
+            unsigned g = (xg * ts[x].g) >> 8;
+            unsigned b = (xb * ts[x].b) >> 8;
+            unsigned a = xa * EXPAND(ts[x].a);
+            td[x].r += (unsigned char)((r - td[x].r) * a >> 16);
+            td[x].g += (unsigned char)((g - td[x].g) * a >> 16);
+            td[x].b += (unsigned char)((b - td[x].b) * a >> 16);
+            td[x].a += (dst->blitMode) * (unsigned char)((ts[x].a - td[x].a) * a >> 16);
+        }
+        ts += st;
+        td += dt;
+    } while (--h);
 }
 
-void tigrBlitAlpha(Tigr *dst, Tigr *src, int dx, int dy, int sx, int sy, int w, int h, float alpha)
-{
-	alpha = (alpha < 0) ? 0 : (alpha > 1 ? 1 : alpha);
-	tigrBlitTint(dst, src, dx, dy, sx, sy, w, h, tigrRGBA(0xff,0xff,0xff,(unsigned char)(alpha*255)));
+void tigrBlitAlpha(Tigr* dst, Tigr* src, int dx, int dy, int sx, int sy, int w, int h, float alpha) {
+    alpha = (alpha < 0) ? 0 : (alpha > 1 ? 1 : alpha);
+    tigrBlitTint(dst, src, dx, dy, sx, sy, w, h, tigrRGBA(0xff, 0xff, 0xff, (unsigned char)(alpha * 255)));
 }
 
 void tigrBlitMode(Tigr* dst, int mode) {
-	dst->blitMode = mode;
+    dst->blitMode = mode;
 }
 
 #undef CLIP0
@@ -628,266 +638,289 @@ void tigrBlitMode(Tigr* dst, int mode) {
 #include <errno.h>
 
 typedef struct {
-	const unsigned char *p, *end;
+    const unsigned char *p, *end;
 } PNG;
 
-static unsigned get32(const unsigned char *v)
-{
-	return (v[0] << 24) | (v[1] << 16) | (v[2] << 8) | v[3];
+static unsigned get32(const unsigned char* v) {
+    return (v[0] << 24) | (v[1] << 16) | (v[2] << 8) | v[3];
 }
 
-static const unsigned char *find(PNG *png, const char *chunk, unsigned minlen)
-{
-	const unsigned char *start;
-	while (png->p < png->end)
-	{
-		unsigned len = get32(png->p+0);
-		start = png->p;
-		png->p += len + 12;
-		if (memcmp(start+4, chunk, 4) == 0 && len >= minlen && png->p <= png->end)
-			return start+8;
-	}
+static const unsigned char* find(PNG* png, const char* chunk, unsigned minlen) {
+    const unsigned char* start;
+    while (png->p < png->end) {
+        unsigned len = get32(png->p + 0);
+        start = png->p;
+        png->p += len + 12;
+        if (memcmp(start + 4, chunk, 4) == 0 && len >= minlen && png->p <= png->end)
+            return start + 8;
+    }
 
-	return NULL;
+    return NULL;
 }
 
-static unsigned char paeth(unsigned char a, unsigned char b, unsigned char c)
-{
-	int p  = a + b - c;
-	int pa = abs(p-a), pb = abs(p-b), pc = abs(p-c);
-	return (pa <= pb && pa <= pc) ? a : (pb <= pc) ? b : c;
+static unsigned char paeth(unsigned char a, unsigned char b, unsigned char c) {
+    int p = a + b - c;
+    int pa = abs(p - a), pb = abs(p - b), pc = abs(p - c);
+    return (pa <= pb && pa <= pc) ? a : (pb <= pc) ? b : c;
 }
 
 static int rowBytes(int w, int bipp) {
-	int rowBits = w * bipp;
-	return rowBits / 8 + ((rowBits % 8) ? 1 : 0);
+    int rowBits = w * bipp;
+    return rowBits / 8 + ((rowBits % 8) ? 1 : 0);
 }
 
-static int unfilter(int w, int h, int bipp, unsigned char *raw)
-{
-	int len = rowBytes(w, bipp);
-	int bpp = rowBytes(1, bipp);
-	int x, y;
-	unsigned char *first = (unsigned char*) malloc(len + 1);
-	memset(first, 0, len + 1);
-	unsigned char *prev = first;
-	for (y=0;y<h;y++,prev=raw,raw+=len)
-	{
-#define LOOP(A, B) for (x=0;x<bpp;x++) raw[x] += A; for (;x<len;x++) raw[x] += B; break
-		switch (*raw++)
-		{
-		case 0: break;
-		case 1: LOOP(0,         raw[x-bpp]);
-		case 2: LOOP(prev[x],   prev[x]);
-		case 3: LOOP(prev[x]/2, (raw[x-bpp] + prev[x])/2);
-		case 4: LOOP(prev[x],   paeth(raw[x-bpp], prev[x], prev[x-bpp]));
-		default: return 0;
-		}
+static int unfilter(int w, int h, int bipp, unsigned char* raw) {
+    int len = rowBytes(w, bipp);
+    int bpp = rowBytes(1, bipp);
+    int x, y;
+    unsigned char* first = (unsigned char*)malloc(len + 1);
+    memset(first, 0, len + 1);
+    unsigned char* prev = first;
+    for (y = 0; y < h; y++, prev = raw, raw += len) {
+#define LOOP(A, B)            \
+    for (x = 0; x < bpp; x++) \
+        raw[x] += A;          \
+    for (; x < len; x++)      \
+        raw[x] += B;          \
+    break
+        switch (*raw++) {
+            case 0:
+                break;
+            case 1:
+                LOOP(0, raw[x - bpp]);
+            case 2:
+                LOOP(prev[x], prev[x]);
+            case 3:
+                LOOP(prev[x] / 2, (raw[x - bpp] + prev[x]) / 2);
+            case 4:
+                LOOP(prev[x], paeth(raw[x - bpp], prev[x], prev[x - bpp]));
+            default:
+                return 0;
+        }
 #undef LOOP
-	}
-	free(first);
-	return 1;
+    }
+    free(first);
+    return 1;
 }
 
-static void convert(
-	int bypp, int w, int h, const unsigned char *src, TPixel *dest,
-	const unsigned char *trns
-) {
-	int x,y;
-	for (y=0;y<h;y++)
-	{
-		src++; // skip filter byte
-		for (x=0;x<w;x++,src+=bypp)
-		{
-			switch (bypp) {
-			case 1: {
-				unsigned char c = src[0];
-				if (trns && c == *trns) {
-					*dest++ = tigrRGBA(c, c, c, 0); break;
-				} else {
-					*dest++ = tigrRGB (c, c, c); break;
-				}
-			}
-			case 2: *dest++ = tigrRGBA(src[0], src[0], src[0], src[1]); break;
-			case 3: {
-				unsigned char r = src[0];
-				unsigned char g = src[1];
-				unsigned char b = src[2];
-				if (trns && trns[1] == r && trns[3] == g && trns[5] == b) {
-					*dest++ = tigrRGBA(r, g, b, 0); break;
-				} else {
-					*dest++ = tigrRGB (r, g, b); break;
-				}
-			}
-			case 4: *dest++ = tigrRGBA(src[0], src[1], src[2], src[3]); break;
-			}
-		}
-	}
+static void convert(int bypp, int w, int h, const unsigned char* src, TPixel* dest, const unsigned char* trns) {
+    int x, y;
+    for (y = 0; y < h; y++) {
+        src++;  // skip filter byte
+        for (x = 0; x < w; x++, src += bypp) {
+            switch (bypp) {
+                case 1: {
+                    unsigned char c = src[0];
+                    if (trns && c == *trns) {
+                        *dest++ = tigrRGBA(c, c, c, 0);
+                        break;
+                    } else {
+                        *dest++ = tigrRGB(c, c, c);
+                        break;
+                    }
+                }
+                case 2:
+                    *dest++ = tigrRGBA(src[0], src[0], src[0], src[1]);
+                    break;
+                case 3: {
+                    unsigned char r = src[0];
+                    unsigned char g = src[1];
+                    unsigned char b = src[2];
+                    if (trns && trns[1] == r && trns[3] == g && trns[5] == b) {
+                        *dest++ = tigrRGBA(r, g, b, 0);
+                        break;
+                    } else {
+                        *dest++ = tigrRGB(r, g, b);
+                        break;
+                    }
+                }
+                case 4:
+                    *dest++ = tigrRGBA(src[0], src[1], src[2], src[3]);
+                    break;
+            }
+        }
+    }
 }
 
-static void depalette(
-	int w, int h, unsigned char *src, TPixel *dest, int bipp,
-	const unsigned char *plte, const unsigned char *trns, int trnsSize
-) {
-	int x, y, c;
-	unsigned char alpha;
-	int mask, len;
+static void depalette(int w,
+                      int h,
+                      unsigned char* src,
+                      TPixel* dest,
+                      int bipp,
+                      const unsigned char* plte,
+                      const unsigned char* trns,
+                      int trnsSize) {
+    int x, y, c;
+    unsigned char alpha;
+    int mask, len;
 
-	switch (bipp) {
-		case 4:
-			mask = 15;
-			len = 1;
-			break;
-		case 2:
-			mask = 3;
-			len = 3;
-			break;
-		case 1:
-			mask = 1;
-			len = 7;
-	}
+    switch (bipp) {
+        case 4:
+            mask = 15;
+            len = 1;
+            break;
+        case 2:
+            mask = 3;
+            len = 3;
+            break;
+        case 1:
+            mask = 1;
+            len = 7;
+    }
 
-	for (y = 0; y < h; y++)
-	{
-		src++; // skip filter byte
-		for (x = 0; x < w; x++)
-		{
-			if (bipp == 8) {
-				c = *src++;
-			} else {
-				int pos = x & len;
-				c = (src[0] >> ((len - pos) * bipp)) & mask;
-				if (pos == len) {
-					src++;
-				}
-			}
-			alpha = 255;
-			if (c < trnsSize) {
-				alpha = trns[c];
-			}
-			*dest++ = tigrRGBA(plte[c*3+0], plte[c*3+1], plte[c*3+2], alpha);
-		}
-	}
+    for (y = 0; y < h; y++) {
+        src++;  // skip filter byte
+        for (x = 0; x < w; x++) {
+            if (bipp == 8) {
+                c = *src++;
+            } else {
+                int pos = x & len;
+                c = (src[0] >> ((len - pos) * bipp)) & mask;
+                if (pos == len) {
+                    src++;
+                }
+            }
+            alpha = 255;
+            if (c < trnsSize) {
+                alpha = trns[c];
+            }
+            *dest++ = tigrRGBA(plte[c * 3 + 0], plte[c * 3 + 1], plte[c * 3 + 2], alpha);
+        }
+    }
 }
 
-#define FAIL() { errno = EINVAL; goto err; }
-#define CHECK(X) if (!(X)) FAIL()
+#define FAIL()          \
+    {                   \
+        errno = EINVAL; \
+        goto err;       \
+    }
+#define CHECK(X) \
+    if (!(X))    \
+    FAIL()
 
-static int outsize(Tigr *bmp, int bipp) {
-	return (rowBytes(bmp->w, bipp) + 1) * bmp->h;
+static int outsize(Tigr* bmp, int bipp) {
+    return (rowBytes(bmp->w, bipp) + 1) * bmp->h;
 }
 
-static Tigr *tigrLoadPng(PNG *png)
-{
-	const unsigned char *ihdr, *idat, *plte, *trns, *first;
-	int trnsSize = 0;
-	int depth, ctype, bipp;
-	int datalen = 0;
-	unsigned char *data = NULL, *out;
-	Tigr *bmp = NULL;
+static Tigr* tigrLoadPng(PNG* png) {
+    const unsigned char *ihdr, *idat, *plte, *trns, *first;
+    int trnsSize = 0;
+    int depth, ctype, bipp;
+    int datalen = 0;
+    unsigned char *data = NULL, *out;
+    Tigr* bmp = NULL;
 
-	CHECK(memcmp(png->p, "\211PNG\r\n\032\n", 8) == 0); // PNG signature
-	png->p += 8;
-	first = png->p;
+    CHECK(memcmp(png->p, "\211PNG\r\n\032\n", 8) == 0);  // PNG signature
+    png->p += 8;
+    first = png->p;
 
-	// Read IHDR
-	ihdr = find(png, "IHDR", 13);
-	CHECK(ihdr);
-	depth = ihdr[8];
-	ctype = ihdr[9];
-	switch (ctype) {
-		case 0: bipp = depth; break; // greyscale
-		case 2: bipp = 3 * depth; break; // RGB
-		case 3: bipp = depth; break; // paletted
-		case 4: bipp = 2 * depth; break; // grey+alpha
-		case 6: bipp = 4 * depth; break; // RGBA
-		default: FAIL();
-	}
+    // Read IHDR
+    ihdr = find(png, "IHDR", 13);
+    CHECK(ihdr);
+    depth = ihdr[8];
+    ctype = ihdr[9];
+    switch (ctype) {
+        case 0:
+            bipp = depth;
+            break;  // greyscale
+        case 2:
+            bipp = 3 * depth;
+            break;  // RGB
+        case 3:
+            bipp = depth;
+            break;  // paletted
+        case 4:
+            bipp = 2 * depth;
+            break;  // grey+alpha
+        case 6:
+            bipp = 4 * depth;
+            break;  // RGBA
+        default:
+            FAIL();
+    }
 
-	// Allocate bitmap (+1 width to save room for stupid PNG filter bytes)
-	bmp = tigrBitmap(get32(ihdr+0) + 1, get32(ihdr+4));
-	CHECK(bmp);
-	bmp->w--;
+    // Allocate bitmap (+1 width to save room for stupid PNG filter bytes)
+    bmp = tigrBitmap(get32(ihdr + 0) + 1, get32(ihdr + 4));
+    CHECK(bmp);
+    bmp->w--;
 
-	// We support 8-bit color components and 1, 2, 4 and 8 bit palette formats.
-	// No interlacing, or wacky filter types.
-	CHECK((depth != 16) && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
+    // We support 8-bit color components and 1, 2, 4 and 8 bit palette formats.
+    // No interlacing, or wacky filter types.
+    CHECK((depth != 16) && ihdr[10] == 0 && ihdr[11] == 0 && ihdr[12] == 0);
 
-	// Join IDAT chunks.
-	for (idat=find(png, "IDAT", 0); idat; idat=find(png, "IDAT", 0))
-	{
-		unsigned len = get32(idat-8);
-		data = (unsigned char *)realloc(data, datalen + len);
-		if (!data)
-			break;
+    // Join IDAT chunks.
+    for (idat = find(png, "IDAT", 0); idat; idat = find(png, "IDAT", 0)) {
+        unsigned len = get32(idat - 8);
+        data = (unsigned char*)realloc(data, datalen + len);
+        if (!data)
+            break;
 
-		memcpy(data+datalen, idat, len);
-		datalen += len;
-	}
+        memcpy(data + datalen, idat, len);
+        datalen += len;
+    }
 
-	// Find palette.
-	png->p = first;
-	plte = find(png, "PLTE", 0);
+    // Find palette.
+    png->p = first;
+    plte = find(png, "PLTE", 0);
 
-	// Find transparency info.
-	png->p = first;
-	trns = find(png, "tRNS", 0);
-	if (trns) {
-		trnsSize = get32(trns - 8);
-	}
+    // Find transparency info.
+    png->p = first;
+    trns = find(png, "tRNS", 0);
+    if (trns) {
+        trnsSize = get32(trns - 8);
+    }
 
-	CHECK(data && datalen >= 6);
-	CHECK((data[0] & 0x0f) == 0x08	// compression method (RFC 1950)
-	   && (data[0] & 0xf0) <= 0x70	// window size
-	   && (data[1] & 0x20) == 0);	// preset dictionary present
+    CHECK(data && datalen >= 6);
+    CHECK((data[0] & 0x0f) == 0x08     // compression method (RFC 1950)
+          && (data[0] & 0xf0) <= 0x70  // window size
+          && (data[1] & 0x20) == 0);   // preset dictionary present
 
-	out = (unsigned char *)bmp->pix + outsize(bmp, 32) - outsize(bmp, bipp);
-	CHECK(tigrInflate(out, outsize(bmp, bipp), data+2, datalen-6));
-	CHECK(unfilter(bmp->w, bmp->h, bipp, out));
+    out = (unsigned char*)bmp->pix + outsize(bmp, 32) - outsize(bmp, bipp);
+    CHECK(tigrInflate(out, outsize(bmp, bipp), data + 2, datalen - 6));
+    CHECK(unfilter(bmp->w, bmp->h, bipp, out));
 
-	if (ctype == 3) {
-		CHECK(plte);
-		depalette(bmp->w, bmp->h, out, bmp->pix, bipp, plte, trns, trnsSize);
-	} else {
-		CHECK(bipp % 8 == 0);
-		convert(bipp / 8, bmp->w, bmp->h, out, bmp->pix, trns);
-	}
-	
-	free(data);
-	return bmp;
+    if (ctype == 3) {
+        CHECK(plte);
+        depalette(bmp->w, bmp->h, out, bmp->pix, bipp, plte, trns, trnsSize);
+    } else {
+        CHECK(bipp % 8 == 0);
+        convert(bipp / 8, bmp->w, bmp->h, out, bmp->pix, trns);
+    }
+
+    free(data);
+    return bmp;
 
 err:
-	if (data) free(data);
-	if (bmp)  tigrFree(bmp);
-	return NULL;
+    if (data)
+        free(data);
+    if (bmp)
+        tigrFree(bmp);
+    return NULL;
 }
 
 #undef CHECK
 #undef FAIL
 
-Tigr *tigrLoadImageMem(const void *data, int length)
-{
-	PNG png;
-	png.p = (unsigned char *)data;
-	png.end = (unsigned char *)data + length;
-	return tigrLoadPng(&png);
+Tigr* tigrLoadImageMem(const void* data, int length) {
+    PNG png;
+    png.p = (unsigned char*)data;
+    png.end = (unsigned char*)data + length;
+    return tigrLoadPng(&png);
 }
 
-Tigr *tigrLoadImage(const char *fileName)
-{
-	int len;
-	void *data;
-	Tigr *bmp;
+Tigr* tigrLoadImage(const char* fileName) {
+    int len;
+    void* data;
+    Tigr* bmp;
 
-	data = tigrReadFile(fileName, &len);
-	if (!data)
-		return NULL;
+    data = tigrReadFile(fileName, &len);
+    if (!data)
+        return NULL;
 
-	bmp = tigrLoadImageMem(data, len);
-	free(data);
-	return bmp;
+    bmp = tigrLoadImageMem(data, len);
+    free(data);
+    return bmp;
 }
-
 
 //////// End of inlined file: tigr_loadpng.c ////////
 
@@ -900,191 +933,188 @@ Tigr *tigrLoadImage(const char *fileName)
 #include <errno.h>
 
 typedef struct {
-	unsigned crc, adler, bits, prev, runlen;
-	FILE *out;
-	unsigned crcTable[256];
+    unsigned crc, adler, bits, prev, runlen;
+    FILE* out;
+    unsigned crcTable[256];
 } Save;
 
-static const unsigned crctable[16] = { 0, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
-	0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c };
+static const unsigned crctable[16] = { 0,          0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4,
+                                       0x4db26158, 0x5005713c, 0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c,
+                                       0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c };
 
-static void put(Save *s, unsigned v)
-{
-	fputc(v, s->out);
-	s->crc = (s->crc >> 4) ^ crctable[(s->crc & 15) ^ (v & 15)];
-	s->crc = (s->crc >> 4) ^ crctable[(s->crc & 15) ^ (v >> 4)];
+static void put(Save* s, unsigned v) {
+    fputc(v, s->out);
+    s->crc = (s->crc >> 4) ^ crctable[(s->crc & 15) ^ (v & 15)];
+    s->crc = (s->crc >> 4) ^ crctable[(s->crc & 15) ^ (v >> 4)];
 }
 
-static void updateAdler(Save *s, unsigned v)
-{
-	unsigned s1 = s->adler & 0xffff, s2 = (s->adler >> 16) & 0xffff;
-	s1 = (s1 +  v) % 65521;
-	s2 = (s2 + s1) % 65521;
-	s->adler = (s2 << 16) + s1;
+static void updateAdler(Save* s, unsigned v) {
+    unsigned s1 = s->adler & 0xffff, s2 = (s->adler >> 16) & 0xffff;
+    s1 = (s1 + v) % 65521;
+    s2 = (s2 + s1) % 65521;
+    s->adler = (s2 << 16) + s1;
 }
 
-static void put32(Save *s, unsigned v)
-{
-	put(s, (v >> 24) & 0xff);
-	put(s, (v >> 16) & 0xff);
-	put(s, (v >>  8) & 0xff);
-	put(s, v & 0xff);
+static void put32(Save* s, unsigned v) {
+    put(s, (v >> 24) & 0xff);
+    put(s, (v >> 16) & 0xff);
+    put(s, (v >> 8) & 0xff);
+    put(s, v & 0xff);
 }
 
-void putbits(Save *s, unsigned data, unsigned bitcount)
-{
-	while (bitcount--)
-	{
-		unsigned prev = s->bits;
-		s->bits = (s->bits >> 1) | ((data & 1) << 7);
-		data >>= 1;
-		if (prev & 1)
-		{
-			put(s, s->bits);
-			s->bits = 0x80;
-		}
-	}
+void putbits(Save* s, unsigned data, unsigned bitcount) {
+    while (bitcount--) {
+        unsigned prev = s->bits;
+        s->bits = (s->bits >> 1) | ((data & 1) << 7);
+        data >>= 1;
+        if (prev & 1) {
+            put(s, s->bits);
+            s->bits = 0x80;
+        }
+    }
 }
 
-void putbitsr(Save *s, unsigned data, unsigned bitcount)
-{
-	while (bitcount--)
-		putbits(s, data >> bitcount, 1);
+void putbitsr(Save* s, unsigned data, unsigned bitcount) {
+    while (bitcount--)
+        putbits(s, data >> bitcount, 1);
 }
 
-static void begin(Save *s, const char *id, unsigned len)
-{
-	put32(s, len);
-	s->crc = 0xffffffff;
-	put(s, id[0]); put(s, id[1]); put(s, id[2]); put(s, id[3]);
+static void begin(Save* s, const char* id, unsigned len) {
+    put32(s, len);
+    s->crc = 0xffffffff;
+    put(s, id[0]);
+    put(s, id[1]);
+    put(s, id[2]);
+    put(s, id[3]);
 }
 
-static void literal(Save *s, unsigned v)
-{
-	// Encode a literal/length using the built-in tables.
-	// Could do better with a custom table but whatever.
-	     if (v < 144)   putbitsr(s, 0x030+v-  0, 8);
-	else if (v < 256)   putbitsr(s, 0x190+v-144, 9);
-	else if (v < 280)   putbitsr(s, 0x000+v-256, 7);
-	else                putbitsr(s, 0x0c0+v-280, 8);
+static void literal(Save* s, unsigned v) {
+    // Encode a literal/length using the built-in tables.
+    // Could do better with a custom table but whatever.
+    if (v < 144)
+        putbitsr(s, 0x030 + v - 0, 8);
+    else if (v < 256)
+        putbitsr(s, 0x190 + v - 144, 9);
+    else if (v < 280)
+        putbitsr(s, 0x000 + v - 256, 7);
+    else
+        putbitsr(s, 0x0c0 + v - 280, 8);
 }
 
-static void encodelen(Save *s, unsigned code, unsigned bits, unsigned len)
-{
-	literal(s, code + (len >> bits));
-	putbits(s, len, bits);
-	putbits(s, 0, 5);
+static void encodelen(Save* s, unsigned code, unsigned bits, unsigned len) {
+    literal(s, code + (len >> bits));
+    putbits(s, len, bits);
+    putbits(s, 0, 5);
 }
 
-static void endrun(Save *s)
-{
-	s->runlen--;
-	literal(s, s->prev);
+static void endrun(Save* s) {
+    s->runlen--;
+    literal(s, s->prev);
 
-	     if (s->runlen >= 67) encodelen(s, 277, 4, s->runlen - 67);
-	else if (s->runlen >= 35) encodelen(s, 273, 3, s->runlen - 35);
-	else if (s->runlen >= 19) encodelen(s, 269, 2, s->runlen - 19);
-	else if (s->runlen >= 11) encodelen(s, 265, 1, s->runlen - 11);
-	else if (s->runlen >=  3) encodelen(s, 257, 0, s->runlen -  3);
-	else while (s->runlen--) literal(s, s->prev);
+    if (s->runlen >= 67)
+        encodelen(s, 277, 4, s->runlen - 67);
+    else if (s->runlen >= 35)
+        encodelen(s, 273, 3, s->runlen - 35);
+    else if (s->runlen >= 19)
+        encodelen(s, 269, 2, s->runlen - 19);
+    else if (s->runlen >= 11)
+        encodelen(s, 265, 1, s->runlen - 11);
+    else if (s->runlen >= 3)
+        encodelen(s, 257, 0, s->runlen - 3);
+    else
+        while (s->runlen--)
+            literal(s, s->prev);
 }
 
-static void encodeByte(Save *s, unsigned char v)
-{
-	updateAdler(s, v);
+static void encodeByte(Save* s, unsigned char v) {
+    updateAdler(s, v);
 
-	// Simple RLE compression. We could do better by doing a search
-	// to find matches, but this works pretty well TBH.
-	if (s->prev == v && s->runlen < 115)
-	{
-		s->runlen++;
-	} else {
-		if (s->runlen)
-			endrun(s);
+    // Simple RLE compression. We could do better by doing a search
+    // to find matches, but this works pretty well TBH.
+    if (s->prev == v && s->runlen < 115) {
+        s->runlen++;
+    } else {
+        if (s->runlen)
+            endrun(s);
 
-		s->prev = v;
-		s->runlen = 1;
-	}
+        s->prev = v;
+        s->runlen = 1;
+    }
 }
 
-static void savePngHeader(Save *s, Tigr *bmp)
-{
-	fwrite("\211PNG\r\n\032\n", 8, 1, s->out);
-	begin(s, "IHDR", 13);
-	put32(s, bmp->w);
-	put32(s, bmp->h);
-	put(s, 8); // bit depth
-	put(s, 6); // RGBA
-	put(s, 0); // compression (deflate)
-	put(s, 0); // filter (standard)
-	put(s, 0); // interlace off
-	put32(s, ~s->crc);
+static void savePngHeader(Save* s, Tigr* bmp) {
+    fwrite("\211PNG\r\n\032\n", 8, 1, s->out);
+    begin(s, "IHDR", 13);
+    put32(s, bmp->w);
+    put32(s, bmp->h);
+    put(s, 8);  // bit depth
+    put(s, 6);  // RGBA
+    put(s, 0);  // compression (deflate)
+    put(s, 0);  // filter (standard)
+    put(s, 0);  // interlace off
+    put32(s, ~s->crc);
 }
 
-static long savePngData(Save *s, Tigr *bmp, long dataPos)
-{
-	int x, y;
-	long dataSize;
-	begin(s, "IDAT", 0);
-	put(s, 0x08); // zlib compression method
-	put(s, 0x1d); // zlib compression flags
-	putbits(s, 3, 3); // zlib last block + fixed dictionary
-	for (y=0;y<bmp->h;y++)
-	{
-		TPixel *row = &bmp->pix[y*bmp->w];
-		TPixel prev = tigrRGBA(0, 0, 0, 0);
+static long savePngData(Save* s, Tigr* bmp, long dataPos) {
+    int x, y;
+    long dataSize;
+    begin(s, "IDAT", 0);
+    put(s, 0x08);      // zlib compression method
+    put(s, 0x1d);      // zlib compression flags
+    putbits(s, 3, 3);  // zlib last block + fixed dictionary
+    for (y = 0; y < bmp->h; y++) {
+        TPixel* row = &bmp->pix[y * bmp->w];
+        TPixel prev = tigrRGBA(0, 0, 0, 0);
 
-		encodeByte(s, 1); // sub filter
-		for (x=0;x<bmp->w;x++)
-		{
-			encodeByte(s, row[x].r - prev.r);
-			encodeByte(s, row[x].g - prev.g);
-			encodeByte(s, row[x].b - prev.b);
-			encodeByte(s, row[x].a - prev.a);
-			prev = row[x];
-		}
-	}
-	endrun(s);
-	literal(s, 256); // terminator
-	while (s->bits != 0x80)
-		putbits(s, 0, 1);
-	put32(s, s->adler);
-	dataSize = (ftell(s->out) - dataPos) - 8;
-	put32(s, ~s->crc);
-	return dataSize;
+        encodeByte(s, 1);  // sub filter
+        for (x = 0; x < bmp->w; x++) {
+            encodeByte(s, row[x].r - prev.r);
+            encodeByte(s, row[x].g - prev.g);
+            encodeByte(s, row[x].b - prev.b);
+            encodeByte(s, row[x].a - prev.a);
+            prev = row[x];
+        }
+    }
+    endrun(s);
+    literal(s, 256);  // terminator
+    while (s->bits != 0x80)
+        putbits(s, 0, 1);
+    put32(s, s->adler);
+    dataSize = (ftell(s->out) - dataPos) - 8;
+    put32(s, ~s->crc);
+    return dataSize;
 }
 
-int tigrSaveImage(const char *fileName, Tigr *bmp)
-{
-	Save s;
-	long dataPos, dataSize, err;
-	
-	// TODO - unicode?
-	FILE *out = fopen(fileName, "wb");
-	if (!out)
-		return 1;
+int tigrSaveImage(const char* fileName, Tigr* bmp) {
+    Save s;
+    long dataPos, dataSize, err;
 
-	s.out = out;
-	s.adler = 1;
-	s.bits = 0x80;
-	s.prev = 0xffff;
-	s.runlen = 0;
+    // TODO - unicode?
+    FILE* out = fopen(fileName, "wb");
+    if (!out)
+        return 1;
 
-	savePngHeader(&s, bmp);
-	dataPos = ftell(s.out);
-	dataSize = savePngData(&s, bmp, dataPos);
+    s.out = out;
+    s.adler = 1;
+    s.bits = 0x80;
+    s.prev = 0xffff;
+    s.runlen = 0;
 
-	// End chunk.
-	begin(&s, "IEND", 0);
-	put32(&s, ~s.crc);
+    savePngHeader(&s, bmp);
+    dataPos = ftell(s.out);
+    dataSize = savePngData(&s, bmp, dataPos);
 
-	// Write back payload size.
-	fseek(out, dataPos, SEEK_SET);
-	put32(&s, dataSize);
+    // End chunk.
+    begin(&s, "IEND", 0);
+    put32(&s, ~s.crc);
 
-	err = ferror(out);
-	fclose(out);
-	return !err;
+    // Write back payload size.
+    fseek(out, dataPos, SEEK_SET);
+    put32(&s, dataSize);
+
+    err = ferror(out);
+    fclose(out);
+    return !err;
 }
 
 //////// End of inlined file: tigr_savepng.c ////////
@@ -1096,213 +1126,245 @@ int tigrSaveImage(const char *fileName, Tigr *bmp)
 #include <setjmp.h>
 
 typedef struct {
-	unsigned bits, count;
-	const unsigned char *in, *inend;
-	unsigned char *out, *outend;
-	jmp_buf jmp;
-	unsigned litcodes[288], distcodes[32], lencodes[19];
-	int tlit, tdist, tlen;
+    unsigned bits, count;
+    const unsigned char *in, *inend;
+    unsigned char *out, *outend;
+    jmp_buf jmp;
+    unsigned litcodes[288], distcodes[32], lencodes[19];
+    int tlit, tdist, tlen;
 } State;
 
 #define FAIL() longjmp(s->jmp, 1)
-#define CHECK(X) if (!(X)) FAIL()
+#define CHECK(X) \
+    if (!(X))    \
+    FAIL()
 
 // Built-in DEFLATE standard tables.
-static char order[] = { 16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
-static char lenBits[29+2] = { 0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,  0,0 };
-static int lenBase[29+2] = { 3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,  0,0 };
-static char distBits[30+2] = { 0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,  0,0 };
-static int distBase[30+2] = { 1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577 };
+static char order[] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
+static char lenBits[29 + 2] = { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
+                                3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0 };
+static int lenBase[29 + 2] = { 3,  4,  5,  6,  7,  8,  9,  10,  11,  13,  15,  17,  19,  23, 27, 31,
+                               35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0,  0 };
+static char distBits[30 + 2] = { 0, 0, 0, 0, 1, 1, 2,  2,  3,  3,  4,  4,  5,  5,  6, 6,
+                                 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 0, 0 };
+static int distBase[30 + 2] = {
+    1,   2,   3,   4,   5,   7,    9,    13,   17,   25,   33,   49,   65,    97,    129,
+    193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577
+};
 
 // Table to bit-reverse a byte.
 static const unsigned char reverseTable[256] = {
-#define R2(n)    n,     n + 128,     n + 64,     n + 192
-#define R4(n) R2(n), R2(n +  32), R2(n + 16), R2(n +  48)
-#define R6(n) R4(n), R4(n +   8), R4(n +  4), R4(n +  12)
-	R6(0), R6(2), R6(1), R6(3)
+#define R2(n) n, n + 128, n + 64, n + 192
+#define R4(n) R2(n), R2(n + 32), R2(n + 16), R2(n + 48)
+#define R6(n) R4(n), R4(n + 8), R4(n + 4), R4(n + 12)
+    R6(0), R6(2), R6(1), R6(3)
 };
 
-static unsigned rev16(unsigned n) { return (reverseTable[n&0xff] << 8) | reverseTable[(n>>8)&0xff]; }
-
-static int bits(State *s, int n)
-{
-	int v = s->bits & ((1 << n)-1);
-	s->bits >>= n;
-	s->count -= n;
-	while (s->count < 16)
-	{
-		CHECK(s->in != s->inend);
-		s->bits |= (*s->in++) << s->count;
-		s->count += 8;
-	}
-	return v;
+static unsigned rev16(unsigned n) {
+    return (reverseTable[n & 0xff] << 8) | reverseTable[(n >> 8) & 0xff];
 }
 
-static unsigned char *emit(State *s, int len)
-{
-	s->out += len;
-	CHECK(s->out <= s->outend);
-	return s->out-len;
+static int bits(State* s, int n) {
+    int v = s->bits & ((1 << n) - 1);
+    s->bits >>= n;
+    s->count -= n;
+    while (s->count < 16) {
+        CHECK(s->in != s->inend);
+        s->bits |= (*s->in++) << s->count;
+        s->count += 8;
+    }
+    return v;
 }
 
-static void copy(State *s, const unsigned char *src, int len)
-{
-	unsigned char *dest = emit(s, len);
-	while (len--) *dest++ = *src++;
+static unsigned char* emit(State* s, int len) {
+    s->out += len;
+    CHECK(s->out <= s->outend);
+    return s->out - len;
 }
 
-static int build(State *s, unsigned *tree, unsigned char *lens, int symcount)
-{
-	int n, codes[16], first[16], counts[16]={0};
-
-	// Frequency count.
-	for (n=0;n<symcount;n++) counts[lens[n]]++;
-
-	// Distribute codes.
-	counts[0] = codes[0] = first[0] = 0;
-	for (n=1;n<=15;n++) {
-		codes[n] = (codes[n-1] + counts[n-1]) << 1;
-		first[n] = first[n-1] + counts[n-1];
-	}
-	CHECK(first[15]+counts[15] <= symcount);
-
-	// Insert keys into the tree for each symbol.
-	for (n=0;n<symcount;n++)
-	{
-		int len = lens[n];
-		if (len != 0) {
-			int code = codes[len]++, slot = first[len]++;
-			tree[slot] = (code << (32-len)) | (n << 4) | len;
-		}
-	}
-
-	return first[15];
+static void copy(State* s, const unsigned char* src, int len) {
+    unsigned char* dest = emit(s, len);
+    while (len--)
+        *dest++ = *src++;
 }
 
-static int decode(State *s, unsigned tree[], int max)
-{
-	// Find the next prefix code.
-	unsigned lo = 0, hi = max, key;
-	unsigned search = (rev16(s->bits) << 16) | 0xffff;
-	while (lo < hi) {
-		unsigned guess = (lo + hi) / 2;
-		if (search < tree[guess]) hi = guess;
-		else lo = guess + 1;
-	}
+static int build(State* s, unsigned* tree, unsigned char* lens, int symcount) {
+    int n, codes[16], first[16], counts[16] = { 0 };
 
-	// Pull out the key and check it.
-	key = tree[lo-1];
-	CHECK(((search^key) >> (32-(key&0xf))) == 0);
+    // Frequency count.
+    for (n = 0; n < symcount; n++)
+        counts[lens[n]]++;
 
-	bits(s, key & 0xf);
-	return (key >> 4) & 0xfff;
+    // Distribute codes.
+    counts[0] = codes[0] = first[0] = 0;
+    for (n = 1; n <= 15; n++) {
+        codes[n] = (codes[n - 1] + counts[n - 1]) << 1;
+        first[n] = first[n - 1] + counts[n - 1];
+    }
+    CHECK(first[15] + counts[15] <= symcount);
+
+    // Insert keys into the tree for each symbol.
+    for (n = 0; n < symcount; n++) {
+        int len = lens[n];
+        if (len != 0) {
+            int code = codes[len]++, slot = first[len]++;
+            tree[slot] = (code << (32 - len)) | (n << 4) | len;
+        }
+    }
+
+    return first[15];
 }
 
-static void run(State *s, int sym)
-{
-	int length = bits(s, lenBits[sym]) + lenBase[sym];
-	int dsym = decode(s, s->distcodes, s->tdist);
-	int offs = bits(s, distBits[dsym]) + distBase[dsym];
-	copy(s, s->out - offs, length);
+static int decode(State* s, unsigned tree[], int max) {
+    // Find the next prefix code.
+    unsigned lo = 0, hi = max, key;
+    unsigned search = (rev16(s->bits) << 16) | 0xffff;
+    while (lo < hi) {
+        unsigned guess = (lo + hi) / 2;
+        if (search < tree[guess])
+            hi = guess;
+        else
+            lo = guess + 1;
+    }
+
+    // Pull out the key and check it.
+    key = tree[lo - 1];
+    CHECK(((search ^ key) >> (32 - (key & 0xf))) == 0);
+
+    bits(s, key & 0xf);
+    return (key >> 4) & 0xfff;
 }
 
-static void block(State *s)
-{
-	for (;;) {
-		int sym = decode(s, s->litcodes, s->tlit);
-		     if (sym < 256) *emit(s, 1) = (unsigned char)sym;
-		else if (sym > 256) run(s, sym-257);
-		else break;
-	}
+static void run(State* s, int sym) {
+    int length = bits(s, lenBits[sym]) + lenBase[sym];
+    int dsym = decode(s, s->distcodes, s->tdist);
+    int offs = bits(s, distBits[dsym]) + distBase[dsym];
+    copy(s, s->out - offs, length);
 }
 
-static void stored(State *s)
-{
-	// Uncompressed data block.
-	int len; 
-	bits(s, s->count & 7);
-	len = bits(s, 16);
-	CHECK(((len^s->bits)&0xffff) == 0xffff);
-	CHECK(s->in + len <= s->inend);
-
-	copy(s, s->in, len);
-	s->in += len;
-	bits(s, 16);
+static void block(State* s) {
+    for (;;) {
+        int sym = decode(s, s->litcodes, s->tlit);
+        if (sym < 256)
+            *emit(s, 1) = (unsigned char)sym;
+        else if (sym > 256)
+            run(s, sym - 257);
+        else
+            break;
+    }
 }
 
-static void fixed(State *s)
-{
-	// Fixed set of Huffman codes.
-	int n;
-	unsigned char lens[288+32];
-	for (n=  0;n<=143;n++) lens[n] = 8;
-	for (n=144;n<=255;n++) lens[n] = 9;
-	for (n=256;n<=279;n++) lens[n] = 7;
-	for (n=280;n<=287;n++) lens[n] = 8;
-	for (n=0;n<32;n++) lens[288+n] = 5;
+static void stored(State* s) {
+    // Uncompressed data block.
+    int len;
+    bits(s, s->count & 7);
+    len = bits(s, 16);
+    CHECK(((len ^ s->bits) & 0xffff) == 0xffff);
+    CHECK(s->in + len <= s->inend);
 
-	// Build lit/dist trees.
-	s->tlit  = build(s, s->litcodes, lens, 288);
-	s->tdist = build(s, s->distcodes, lens+288, 32);
+    copy(s, s->in, len);
+    s->in += len;
+    bits(s, 16);
 }
 
-static void dynamic(State *s)
-{
-	int n, i, nlit, ndist, nlen;
-	unsigned char lenlens[19] = {0}, lens[288+32];
-	nlit = 257 + bits(s, 5);
-	ndist = 1 + bits(s, 5);
-	nlen = 4 + bits(s, 4);
-	for (n=0;n<nlen;n++)
-		lenlens[order[n]] = (unsigned char)bits(s, 3);
+static void fixed(State* s) {
+    // Fixed set of Huffman codes.
+    int n;
+    unsigned char lens[288 + 32];
+    for (n = 0; n <= 143; n++)
+        lens[n] = 8;
+    for (n = 144; n <= 255; n++)
+        lens[n] = 9;
+    for (n = 256; n <= 279; n++)
+        lens[n] = 7;
+    for (n = 280; n <= 287; n++)
+        lens[n] = 8;
+    for (n = 0; n < 32; n++)
+        lens[288 + n] = 5;
 
-	// Build the tree for decoding code lengths.
-	s->tlen = build(s, s->lencodes, lenlens, 19);
-
-	// Decode code lengths.
-	for (n=0;n<nlit+ndist;)
-	{
-		int sym = decode(s, s->lencodes, s->tlen);
-		switch (sym) {
-		case 16: for (i =  3+bits(s,2); i; i--,n++) lens[n] = lens[n-1]; break;
-		case 17: for (i =  3+bits(s,3); i; i--,n++) lens[n] = 0; break;
-		case 18: for (i = 11+bits(s,7); i; i--,n++) lens[n] = 0; break;
-		default: lens[n++] = (unsigned char)sym; break;
-		}
-	}
-
-	// Build lit/dist trees.
-	s->tlit  = build(s, s->litcodes, lens, nlit);
-	s->tdist = build(s, s->distcodes, lens+nlit, ndist);
+    // Build lit/dist trees.
+    s->tlit = build(s, s->litcodes, lens, 288);
+    s->tdist = build(s, s->distcodes, lens + 288, 32);
 }
 
-int tigrInflate(void *out, unsigned outlen, const void *in, unsigned inlen)
-{
-	int last;
-	State *s = (State *)calloc(1, sizeof(State));
+static void dynamic(State* s) {
+    int n, i, nlit, ndist, nlen;
+    unsigned char lenlens[19] = { 0 }, lens[288 + 32];
+    nlit = 257 + bits(s, 5);
+    ndist = 1 + bits(s, 5);
+    nlen = 4 + bits(s, 4);
+    for (n = 0; n < nlen; n++)
+        lenlens[order[n]] = (unsigned char)bits(s, 3);
 
-	// We assume we can buffer 2 extra bytes from off the end of 'in'.
-	s->in  = (unsigned char *)in;  s->inend  = s->in  + inlen + 2;
-	s->out = (unsigned char *)out; s->outend = s->out + outlen;
-	s->bits = 0; s->count = 0; bits(s, 0);
+    // Build the tree for decoding code lengths.
+    s->tlen = build(s, s->lencodes, lenlens, 19);
 
-	if (setjmp(s->jmp) == 1) {
-		free(s);
-		return 0;
-	}
+    // Decode code lengths.
+    for (n = 0; n < nlit + ndist;) {
+        int sym = decode(s, s->lencodes, s->tlen);
+        switch (sym) {
+            case 16:
+                for (i = 3 + bits(s, 2); i; i--, n++)
+                    lens[n] = lens[n - 1];
+                break;
+            case 17:
+                for (i = 3 + bits(s, 3); i; i--, n++)
+                    lens[n] = 0;
+                break;
+            case 18:
+                for (i = 11 + bits(s, 7); i; i--, n++)
+                    lens[n] = 0;
+                break;
+            default:
+                lens[n++] = (unsigned char)sym;
+                break;
+        }
+    }
 
-	do {
-		last = bits(s, 1);
-		switch (bits(s, 2)) {
-		case 0: stored(s); break;
-		case 1: fixed(s); block(s); break;
-		case 2: dynamic(s); block(s); break;
-		case 3: FAIL();
-		}
-	} while(!last);
+    // Build lit/dist trees.
+    s->tlit = build(s, s->litcodes, lens, nlit);
+    s->tdist = build(s, s->distcodes, lens + nlit, ndist);
+}
 
-	free(s);
-	return 1;
+int tigrInflate(void* out, unsigned outlen, const void* in, unsigned inlen) {
+    int last;
+    State* s = (State*)calloc(1, sizeof(State));
+
+    // We assume we can buffer 2 extra bytes from off the end of 'in'.
+    s->in = (unsigned char*)in;
+    s->inend = s->in + inlen + 2;
+    s->out = (unsigned char*)out;
+    s->outend = s->out + outlen;
+    s->bits = 0;
+    s->count = 0;
+    bits(s, 0);
+
+    if (setjmp(s->jmp) == 1) {
+        free(s);
+        return 0;
+    }
+
+    do {
+        last = bits(s, 1);
+        switch (bits(s, 2)) {
+            case 0:
+                stored(s);
+                break;
+            case 1:
+                fixed(s);
+                block(s);
+                break;
+            case 2:
+                dynamic(s);
+                block(s);
+                break;
+            case 3:
+                FAIL();
+        }
+    } while (!last);
+
+    free(s);
+    return 1;
 }
 
 #undef CHECK
@@ -1575,204 +1637,206 @@ int tigr_font_size = (int)sizeof(tigr_font);
 #endif
 
 TigrFont tigrStockFont;
-TigrFont *tfont = &tigrStockFont;
+TigrFont* tfont = &tigrStockFont;
 
 // Converts 8-bit codepage entries into Unicode code points.
 static int cp1252[] = {
-	0x20ac,0xfffd,0x201a,0x0192,0x201e,0x2026,0x2020,0x2021,0x02c6,0x2030,0x0160,0x2039,0x0152,0xfffd,0x017d,0xfffd,
-	0xfffd,0x2018,0x2019,0x201c,0x201d,0x2022,0x2013,0x2014,0x02dc,0x2122,0x0161,0x203a,0x0153,0xfffd,0x017e,0x0178,
-	0x00a0,0x00a1,0x00a2,0x00a3,0x00a4,0x00a5,0x00a6,0x00a7,0x00a8,0x00a9,0x00aa,0x00ab,0x00ac,0x00ad,0x00ae,0x00af,
-	0x00b0,0x00b1,0x00b2,0x00b3,0x00b4,0x00b5,0x00b6,0x00b7,0x00b8,0x00b9,0x00ba,0x00bb,0x00bc,0x00bd,0x00be,0x00bf,
-	0x00c0,0x00c1,0x00c2,0x00c3,0x00c4,0x00c5,0x00c6,0x00c7,0x00c8,0x00c9,0x00ca,0x00cb,0x00cc,0x00cd,0x00ce,0x00cf,
-	0x00d0,0x00d1,0x00d2,0x00d3,0x00d4,0x00d5,0x00d6,0x00d7,0x00d8,0x00d9,0x00da,0x00db,0x00dc,0x00dd,0x00de,0x00df,
-	0x00e0,0x00e1,0x00e2,0x00e3,0x00e4,0x00e5,0x00e6,0x00e7,0x00e8,0x00e9,0x00ea,0x00eb,0x00ec,0x00ed,0x00ee,0x00ef,
-	0x00f0,0x00f1,0x00f2,0x00f3,0x00f4,0x00f5,0x00f6,0x00f7,0x00f8,0x00f9,0x00fa,0x00fb,0x00fc,0x00fd,0x00fe,0x00ff,
+    0x20ac, 0xfffd, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030, 0x0160, 0x2039, 0x0152,
+    0xfffd, 0x017d, 0xfffd, 0xfffd, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014, 0x02dc, 0x2122,
+    0x0161, 0x203a, 0x0153, 0xfffd, 0x017e, 0x0178, 0x00a0, 0x00a1, 0x00a2, 0x00a3, 0x00a4, 0x00a5, 0x00a6,
+    0x00a7, 0x00a8, 0x00a9, 0x00aa, 0x00ab, 0x00ac, 0x00ad, 0x00ae, 0x00af, 0x00b0, 0x00b1, 0x00b2, 0x00b3,
+    0x00b4, 0x00b5, 0x00b6, 0x00b7, 0x00b8, 0x00b9, 0x00ba, 0x00bb, 0x00bc, 0x00bd, 0x00be, 0x00bf, 0x00c0,
+    0x00c1, 0x00c2, 0x00c3, 0x00c4, 0x00c5, 0x00c6, 0x00c7, 0x00c8, 0x00c9, 0x00ca, 0x00cb, 0x00cc, 0x00cd,
+    0x00ce, 0x00cf, 0x00d0, 0x00d1, 0x00d2, 0x00d3, 0x00d4, 0x00d5, 0x00d6, 0x00d7, 0x00d8, 0x00d9, 0x00da,
+    0x00db, 0x00dc, 0x00dd, 0x00de, 0x00df, 0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6, 0x00e7,
+    0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef, 0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4,
+    0x00f5, 0x00f6, 0x00f7, 0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff,
 };
-static int border(Tigr *bmp, int x, int y)
-{
-	TPixel top = tigrGet(bmp, 0, 0);
-	TPixel c = tigrGet(bmp, x, y);
-	return (c.r == top.r && c.g == top.g && c.b == top.b) || x >= bmp->w || y >= bmp->h;
+static int border(Tigr* bmp, int x, int y) {
+    TPixel top = tigrGet(bmp, 0, 0);
+    TPixel c = tigrGet(bmp, x, y);
+    return (c.r == top.r && c.g == top.g && c.b == top.b) || x >= bmp->w || y >= bmp->h;
 }
 
-static void scan(Tigr *bmp, int *x, int *y, int *rowh)
-{
-	while (*y < bmp->h)
-	{
-		if (*x >= bmp->w) {
-			*x = 0;
-			(*y) += *rowh;
-			*rowh = 1;
-		}
-		if (!border(bmp, *x, *y))
-			return;
-		(*x)++;
-	}
+static void scan(Tigr* bmp, int* x, int* y, int* rowh) {
+    while (*y < bmp->h) {
+        if (*x >= bmp->w) {
+            *x = 0;
+            (*y) += *rowh;
+            *rowh = 1;
+        }
+        if (!border(bmp, *x, *y))
+            return;
+        (*x)++;
+    }
 }
 
-int tigrLoadGlyphs(TigrFont *font, int codepage)
-{
-	int i, x=0, y=0, w, h, rowh=1;
-	TigrGlyph *g;
-	switch (codepage) {
-		case 0:    font->numGlyphs = 128-32; break;
-		case 1252: font->numGlyphs = 256-32; break;
-	}
+int tigrLoadGlyphs(TigrFont* font, int codepage) {
+    int i, x = 0, y = 0, w, h, rowh = 1;
+    TigrGlyph* g;
+    switch (codepage) {
+        case 0:
+            font->numGlyphs = 128 - 32;
+            break;
+        case 1252:
+            font->numGlyphs = 256 - 32;
+            break;
+    }
 
-	font->glyphs = (TigrGlyph *)calloc(font->numGlyphs, sizeof(TigrGlyph));
-	for (i=32;i<font->numGlyphs+32;i++)
-	{
-		// Find the next glyph.
-		scan(font->bitmap, &x, &y, &rowh);
-		if (y >= font->bitmap->h)
-		{
-			errno = EINVAL;
-			return 0;
-		}
+    font->glyphs = (TigrGlyph*)calloc(font->numGlyphs, sizeof(TigrGlyph));
+    for (i = 32; i < font->numGlyphs + 32; i++) {
+        // Find the next glyph.
+        scan(font->bitmap, &x, &y, &rowh);
+        if (y >= font->bitmap->h) {
+            errno = EINVAL;
+            return 0;
+        }
 
-		// Scan the width and height
-		w = h = 0;
-		while (!border(font->bitmap, x+w, y)) w++;
-		while (!border(font->bitmap, x, y+h)) h++;
+        // Scan the width and height
+        w = h = 0;
+        while (!border(font->bitmap, x + w, y))
+            w++;
+        while (!border(font->bitmap, x, y + h))
+            h++;
 
-		// Look up the Unicode code point.
-		g = &font->glyphs[i-32];
-		if (i < 128) g->code = i; // ASCII
-		else if (codepage == 1252) g->code = cp1252[i-128];
-		else { errno = EINVAL; return 0; }
+        // Look up the Unicode code point.
+        g = &font->glyphs[i - 32];
+        if (i < 128)
+            g->code = i;  // ASCII
+        else if (codepage == 1252)
+            g->code = cp1252[i - 128];
+        else {
+            errno = EINVAL;
+            return 0;
+        }
 
-		g->x = x; g->y = y; g->w = w; g->h = h;
-		x += w;
-		if (h != font->glyphs[0].h) { errno = EINVAL; return 0; }
+        g->x = x;
+        g->y = y;
+        g->w = w;
+        g->h = h;
+        x += w;
+        if (h != font->glyphs[0].h) {
+            errno = EINVAL;
+            return 0;
+        }
 
-		if (h > rowh)
-			rowh = h;
-	}
+        if (h > rowh)
+            rowh = h;
+    }
 
-	// Sort by code point.
-	for (i=1;i<font->numGlyphs;i++)
-	{
-		int j = i;
-		TigrGlyph g = font->glyphs[i];
-		while (j > 0 && font->glyphs[j-1].code > g.code) {
-			font->glyphs[j] = font->glyphs[j-1];
-			j--;
-		}
-		font->glyphs[j] = g;
-	}
+    // Sort by code point.
+    for (i = 1; i < font->numGlyphs; i++) {
+        int j = i;
+        TigrGlyph g = font->glyphs[i];
+        while (j > 0 && font->glyphs[j - 1].code > g.code) {
+            font->glyphs[j] = font->glyphs[j - 1];
+            j--;
+        }
+        font->glyphs[j] = g;
+    }
 
-	return 1;
+    return 1;
 }
 
-TigrFont *tigrLoadFont(Tigr *bitmap, int codepage)
-{
-	TigrFont *font = (TigrFont *)calloc(1, sizeof(TigrFont));
-	font->bitmap = bitmap;
-	if (!tigrLoadGlyphs(font, codepage))
-	{
-		tigrFreeFont(font);
-		return NULL;
-	}
-	return font;
+TigrFont* tigrLoadFont(Tigr* bitmap, int codepage) {
+    TigrFont* font = (TigrFont*)calloc(1, sizeof(TigrFont));
+    font->bitmap = bitmap;
+    if (!tigrLoadGlyphs(font, codepage)) {
+        tigrFreeFont(font);
+        return NULL;
+    }
+    return font;
 }
 
-void tigrFreeFont(TigrFont *font)
-{
-	tigrFree(font->bitmap);
-	free(font->glyphs);
-	free(font);
+void tigrFreeFont(TigrFont* font) {
+    tigrFree(font->bitmap);
+    free(font->glyphs);
+    free(font);
 }
 
-static TigrGlyph *get(TigrFont *font, int code)
-{
-	unsigned lo = 0, hi = font->numGlyphs;
-	while (lo < hi) {
-		unsigned guess = (lo + hi) / 2;
-		if (code < font->glyphs[guess].code) hi = guess;
-		else lo = guess + 1;
-	}
+static TigrGlyph* get(TigrFont* font, int code) {
+    unsigned lo = 0, hi = font->numGlyphs;
+    while (lo < hi) {
+        unsigned guess = (lo + hi) / 2;
+        if (code < font->glyphs[guess].code)
+            hi = guess;
+        else
+            lo = guess + 1;
+    }
 
-	if (lo == 0 || font->glyphs[lo-1].code != code)
-		return &font->glyphs['?' - 32];
-	else
-		return &font->glyphs[lo-1];
+    if (lo == 0 || font->glyphs[lo - 1].code != code)
+        return &font->glyphs['?' - 32];
+    else
+        return &font->glyphs[lo - 1];
 }
 
-void tigrSetupFont(TigrFont *font)
-{
-	// Load the stock font if needed.
-	if (font == tfont && !tfont->bitmap)
-	{
-		tfont->bitmap = tigrLoadImageMem(tigr_font, tigr_font_size);
-		tigrLoadGlyphs(tfont, 1252);
-	}
+void tigrSetupFont(TigrFont* font) {
+    // Load the stock font if needed.
+    if (font == tfont && !tfont->bitmap) {
+        tfont->bitmap = tigrLoadImageMem(tigr_font, tigr_font_size);
+        tigrLoadGlyphs(tfont, 1252);
+    }
 }
 
-void tigrPrint(Tigr *dest, TigrFont *font, int x, int y, TPixel color, const char *text, ...)
-{
-	char tmp[1024];
-	TigrGlyph *g;
-	va_list args;
-	const char *p;
-	int start = x, c;
+void tigrPrint(Tigr* dest, TigrFont* font, int x, int y, TPixel color, const char* text, ...) {
+    char tmp[1024];
+    TigrGlyph* g;
+    va_list args;
+    const char* p;
+    int start = x, c;
 
-	tigrSetupFont(font);
+    tigrSetupFont(font);
 
-	// Expand the formatting string.
-	va_start(args, text);
-	vsnprintf(tmp, sizeof(tmp), text, args);
-	tmp[sizeof(tmp)-1] = 0;
-	va_end(args);
+    // Expand the formatting string.
+    va_start(args, text);
+    vsnprintf(tmp, sizeof(tmp), text, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
 
-	// Print each glyph.
-	p = tmp;
-	while (*p)
-	{
-		p = tigrDecodeUTF8(p, &c);
-		if (c == '\r')
-			continue;
-		if (c == '\n') {
-			x = start;
-			y += tigrTextHeight(font, "");
-			continue;
-		}
-		g = get(font, c);
-		tigrBlitTint(dest, font->bitmap, x, y, g->x, g->y, g->w, g->h, color);
-		x += g->w;
-	}
+    // Print each glyph.
+    p = tmp;
+    while (*p) {
+        p = tigrDecodeUTF8(p, &c);
+        if (c == '\r')
+            continue;
+        if (c == '\n') {
+            x = start;
+            y += tigrTextHeight(font, "");
+            continue;
+        }
+        g = get(font, c);
+        tigrBlitTint(dest, font->bitmap, x, y, g->x, g->y, g->w, g->h, color);
+        x += g->w;
+    }
 }
 
-int tigrTextWidth(TigrFont *font, const char *text)
-{
-	int x = 0, w = 0, c;
-	tigrSetupFont(font);
+int tigrTextWidth(TigrFont* font, const char* text) {
+    int x = 0, w = 0, c;
+    tigrSetupFont(font);
 
-	while (*text)
-	{
-		text = tigrDecodeUTF8(text, &c);
-		if (c == '\n' || c == '\r') {
-			x = 0;
-		} else {
-			x += get(font, c)->w;
-			w = (x > w) ? x : w;
-		}
-	}
-	return w;
+    while (*text) {
+        text = tigrDecodeUTF8(text, &c);
+        if (c == '\n' || c == '\r') {
+            x = 0;
+        } else {
+            x += get(font, c)->w;
+            w = (x > w) ? x : w;
+        }
+    }
+    return w;
 }
 
-int tigrTextHeight(TigrFont *font, const char *text)
-{
-	int rowh, h, c;
-	tigrSetupFont(font);
+int tigrTextHeight(TigrFont* font, const char* text) {
+    int rowh, h, c;
+    tigrSetupFont(font);
 
-	h = rowh = get(font, 0)->h;
-	while (*text)
-	{
-		text = tigrDecodeUTF8(text, &c);
-		if (c == '\n' && *text)
-			h += rowh; 
-	}
-	return h;
+    h = rowh = get(font, 0)->h;
+    while (*text) {
+        text = tigrDecodeUTF8(text, &c);
+        if (c == '\n' && *text)
+            h += rowh;
+    }
+    return h;
 }
 
 //////// End of inlined file: tigr_print.c ////////
@@ -1783,10 +1847,9 @@ int tigrTextHeight(TigrFont *font, const char *text)
 #include <assert.h>
 
 // not really windows stuff
-TigrInternal *tigrInternal(Tigr *bmp)
-{
-	assert(bmp->handle);
-	return (TigrInternal *)(bmp + 1);
+TigrInternal* tigrInternal(Tigr* bmp) {
+    assert(bmp->handle);
+    return (TigrInternal*)(bmp + 1);
 }
 
 #ifdef _WIN32
@@ -1797,688 +1860,748 @@ TigrInternal *tigrInternal(Tigr *bmp)
 #include <stdlib.h>
 #include <stddef.h>
 
-#pragma comment(lib, "opengl32") // glViewport
-#pragma comment(lib, "shell32")  // CommandLineToArgvW
-#pragma comment(lib, "user32")   // SetWindowLong
-#pragma comment(lib, "gdi32")    // ChoosePixelFormat
-#pragma comment(lib, "advapi32") // RegSetValueEx
+#pragma comment(lib, "opengl32")  // glViewport
+#pragma comment(lib, "shell32")   // CommandLineToArgvW
+#pragma comment(lib, "user32")    // SetWindowLong
+#pragma comment(lib, "gdi32")     // ChoosePixelFormat
+#pragma comment(lib, "advapi32")  // RegSetValueEx
 
-#define WIDGET_SCALE	3
-#define WIDGET_FADE		16
+#define WIDGET_SCALE 3
+#define WIDGET_FADE 16
 
-int main(int argc, char *argv[]);
+int main(int argc, char* argv[]);
 
 #ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
 HKEY tigrRegKey;
 #endif
 
 #ifdef __TINYC__
-	#define CP_UTF8 65001
-	int WINAPI MultiByteToWideChar();
-	int WINAPI WideCharToMultiByte();
+#define CP_UTF8 65001
+int WINAPI MultiByteToWideChar();
+int WINAPI WideCharToMultiByte();
 #endif
 
-static wchar_t *unicode(const char *str)
-{
-	int len = MultiByteToWideChar(CP_UTF8, 0, str, -1, 0, 0);
-	wchar_t *dest = (wchar_t *)malloc(sizeof(wchar_t) * len);
-	MultiByteToWideChar(CP_UTF8, 0, str, -1, dest, len);
-	return dest;
+static wchar_t* unicode(const char* str) {
+    int len = MultiByteToWideChar(CP_UTF8, 0, str, -1, 0, 0);
+    wchar_t* dest = (wchar_t*)malloc(sizeof(wchar_t) * len);
+    MultiByteToWideChar(CP_UTF8, 0, str, -1, dest, len);
+    return dest;
 }
 
-void tigrError(Tigr *bmp, const char *message, ...)
-{
-	char tmp[1024];
+void tigrError(Tigr* bmp, const char* message, ...) {
+    char tmp[1024];
 
-	va_list args;
-	va_start(args, message);
-	_vsnprintf(tmp, sizeof(tmp), message, args);
-	tmp[sizeof(tmp)-1] = 0;
-	va_end(args);
+    va_list args;
+    va_start(args, message);
+    _vsnprintf(tmp, sizeof(tmp), message, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
 
-	MessageBoxW(bmp ? (HWND)bmp->handle : NULL, unicode(tmp), bmp ? tigrInternal(bmp)->wtitle : L"Error", MB_OK|MB_ICONERROR);
-	exit(1);
+    MessageBoxW(bmp ? (HWND)bmp->handle : NULL, unicode(tmp), bmp ? tigrInternal(bmp)->wtitle : L"Error",
+                MB_OK | MB_ICONERROR);
+    exit(1);
 }
 
-void tigrEnterBorderlessWindowed(Tigr *bmp)
-{
-	// Enter borderless windowed mode.
-	MONITORINFO mi = { sizeof(mi) };
-	TigrInternal *win = tigrInternal(bmp);
+void tigrEnterBorderlessWindowed(Tigr* bmp) {
+    // Enter borderless windowed mode.
+    MONITORINFO mi = { sizeof(mi) };
+    TigrInternal* win = tigrInternal(bmp);
 
-	GetWindowRect((HWND)bmp->handle, &win->oldPos);
+    GetWindowRect((HWND)bmp->handle, &win->oldPos);
 
-	GetMonitorInfo(MonitorFromWindow((HWND)bmp->handle, MONITOR_DEFAULTTONEAREST), &mi);
-	win->dwStyle = WS_VISIBLE | WS_POPUP;
-	SetWindowLong((HWND)bmp->handle, GWL_STYLE, win->dwStyle);
-	SetWindowPos((HWND)bmp->handle, HWND_TOP,
-		mi.rcMonitor.left,
-		mi.rcMonitor.top,
-		mi.rcMonitor.right - mi.rcMonitor.left,
-		mi.rcMonitor.bottom - mi.rcMonitor.top,
-		0);
+    GetMonitorInfo(MonitorFromWindow((HWND)bmp->handle, MONITOR_DEFAULTTONEAREST), &mi);
+    win->dwStyle = WS_VISIBLE | WS_POPUP;
+    SetWindowLong((HWND)bmp->handle, GWL_STYLE, win->dwStyle);
+    SetWindowPos((HWND)bmp->handle, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
+                 mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top, 0);
 }
 
-void tigrLeaveBorderlessWindowed(Tigr *bmp)
-{
-	TigrInternal *win = tigrInternal(bmp);
+void tigrLeaveBorderlessWindowed(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
 
-	win->dwStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
-	SetWindowLong((HWND)bmp->handle, GWL_STYLE, win->dwStyle);
+    win->dwStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
+    SetWindowLong((HWND)bmp->handle, GWL_STYLE, win->dwStyle);
 
-	SetWindowPos((HWND)bmp->handle, NULL,
-		win->oldPos.left,
-		win->oldPos.top,
-		win->oldPos.right - win->oldPos.left,
-		win->oldPos.bottom - win->oldPos.top,
-		0);
+    SetWindowPos((HWND)bmp->handle, NULL, win->oldPos.left, win->oldPos.top, win->oldPos.right - win->oldPos.left,
+                 win->oldPos.bottom - win->oldPos.top, 0);
 }
 
-void tigrWinUpdateWidgets(Tigr *bmp, int dw, int dh)
-{
-	POINT pt;
-	int i, x, clicked=0;
-	char str[8];
-	TPixel col;
-	TPixel off = tigrRGB(255,255,255);
-	TPixel on = tigrRGB(0,200,255);
-	TigrInternal *win = tigrInternal(bmp);
-	(void)dh;
+void tigrWinUpdateWidgets(Tigr* bmp, int dw, int dh) {
+    POINT pt;
+    int i, x, clicked = 0;
+    char str[8];
+    TPixel col;
+    TPixel off = tigrRGB(255, 255, 255);
+    TPixel on = tigrRGB(0, 200, 255);
+    TigrInternal* win = tigrInternal(bmp);
+    (void)dh;
 
-	tigrClear(win->widgets, tigrRGBA(0,0,0,0));
+    tigrClear(win->widgets, tigrRGBA(0, 0, 0, 0));
 
-	if (!(win->dwStyle & WS_POPUP))
-	{
-		win->widgetsWanted = 0;
-		win->widgetAlpha = 0;
-		return;
-	}
+    if (!(win->dwStyle & WS_POPUP)) {
+        win->widgetsWanted = 0;
+        win->widgetAlpha = 0;
+        return;
+    }
 
-	// See if we want to be showing widgets or not.
-	GetCursorPos(&pt);
-	ScreenToClient((HWND)bmp->handle, &pt);
-	if (pt.y == 0)
-		win->widgetsWanted = 1;
-	if (pt.y > win->widgets->h*WIDGET_SCALE)
-		win->widgetsWanted = 0;
+    // See if we want to be showing widgets or not.
+    GetCursorPos(&pt);
+    ScreenToClient((HWND)bmp->handle, &pt);
+    if (pt.y == 0)
+        win->widgetsWanted = 1;
+    if (pt.y > win->widgets->h * WIDGET_SCALE)
+        win->widgetsWanted = 0;
 
-	// Track the alpha.
-	if (win->widgetsWanted)
-		win->widgetAlpha = (win->widgetAlpha <= 255-WIDGET_FADE) ? win->widgetAlpha+WIDGET_FADE : 255;
-	else
-		win->widgetAlpha = (win->widgetAlpha >= WIDGET_FADE) ? win->widgetAlpha-WIDGET_FADE : 0;
+    // Track the alpha.
+    if (win->widgetsWanted)
+        win->widgetAlpha = (win->widgetAlpha <= 255 - WIDGET_FADE) ? win->widgetAlpha + WIDGET_FADE : 255;
+    else
+        win->widgetAlpha = (win->widgetAlpha >= WIDGET_FADE) ? win->widgetAlpha - WIDGET_FADE : 0;
 
-	// Get relative coords.
-	pt.x -= (dw - win->widgets->w*WIDGET_SCALE);
-	pt.x /= WIDGET_SCALE;
-	pt.y /= WIDGET_SCALE;
+    // Get relative coords.
+    pt.x -= (dw - win->widgets->w * WIDGET_SCALE);
+    pt.x /= WIDGET_SCALE;
+    pt.y /= WIDGET_SCALE;
 
-	tigrClear(win->widgets, tigrRGBA(0,0,0,win->widgetAlpha));
+    tigrClear(win->widgets, tigrRGBA(0, 0, 0, win->widgetAlpha));
 
-	// Render it.
-	for (i=0;i<3;i++)
-	{
-		switch(i) {
-			case 0: str[0] = '_'; str[1] = 0; break; // "_" (minimize)
-			case 1: str[0] = 0xEF; str[1] = 0xBF; str[2] = 0xBD; str[3] = 0; break; // "[]" (maximize)
-			case 2: str[0] = 0xC3; str[1] = 0x97; str[2] = 0; break; // "x" (close)
-		}
-		x = win->widgets->w + (i-3)*12;
-		if (i == 2)
-			off = tigrRGB(255,0,0);
-		if (pt.x >= x && pt.x < x+10 && pt.y < win->widgets->h)
-		{
-			col = on;
-			if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
-				clicked |= 1<<i;
-		} else {
-			col = off;
-		}
-		col.a = win->widgetAlpha;
-		tigrPrint(win->widgets, tfont, x, 2, col, str);
-	}
+    // Render it.
+    for (i = 0; i < 3; i++) {
+        switch (i) {
+            case 0:
+                str[0] = '_';
+                str[1] = 0;
+                break;  // "_" (minimize)
+            case 1:
+                str[0] = 0xEF;
+                str[1] = 0xBF;
+                str[2] = 0xBD;
+                str[3] = 0;
+                break;  // "[]" (maximize)
+            case 2:
+                str[0] = 0xC3;
+                str[1] = 0x97;
+                str[2] = 0;
+                break;  // "x" (close)
+        }
+        x = win->widgets->w + (i - 3) * 12;
+        if (i == 2)
+            off = tigrRGB(255, 0, 0);
+        if (pt.x >= x && pt.x < x + 10 && pt.y < win->widgets->h) {
+            col = on;
+            if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+                clicked |= 1 << i;
+        } else {
+            col = off;
+        }
+        col.a = win->widgetAlpha;
+        tigrPrint(win->widgets, tfont, x, 2, col, str);
+    }
 
-	if (clicked & 1)
-		ShowWindow((HWND)bmp->handle, SW_MINIMIZE);
-	if (clicked & 2)
-		tigrLeaveBorderlessWindowed(bmp);
-	if (clicked & 4)
-		SendMessage((HWND)bmp->handle, WM_CLOSE, 0, 0);
+    if (clicked & 1)
+        ShowWindow((HWND)bmp->handle, SW_MINIMIZE);
+    if (clicked & 2)
+        tigrLeaveBorderlessWindowed(bmp);
+    if (clicked & 4)
+        SendMessage((HWND)bmp->handle, WM_CLOSE, 0, 0);
 }
 
-void tigrUpdate(Tigr *bmp)
-{
-	MSG msg;
-	RECT rc;
-	int dw, dh;
-	TigrInternal *win = tigrInternal(bmp);
+void tigrUpdate(Tigr* bmp) {
+    MSG msg;
+    RECT rc;
+    int dw, dh;
+    TigrInternal* win = tigrInternal(bmp);
 
-	if (!win->shown)
-	{
-		win->shown = 1;
-		UpdateWindow((HWND)bmp->handle);
-		ShowWindow((HWND)bmp->handle, SW_SHOW);
-	}
+    if (!win->shown) {
+        win->shown = 1;
+        UpdateWindow((HWND)bmp->handle);
+        ShowWindow((HWND)bmp->handle, SW_SHOW);
+    }
 
-	// Get the window size.
-	GetClientRect((HWND)bmp->handle, &rc);
-	dw = rc.right - rc.left;
-	dh = rc.bottom - rc.top;
+    // Get the window size.
+    GetClientRect((HWND)bmp->handle, &rc);
+    dw = rc.right - rc.left;
+    dh = rc.bottom - rc.top;
 
-	// Update the widget overlay.
-	tigrWinUpdateWidgets(bmp, dw, dh);
+    // Update the widget overlay.
+    tigrWinUpdateWidgets(bmp, dw, dh);
 
-	if (!tigrGAPIBegin(bmp))
-	{
-		tigrGAPIPresent(bmp, dw, dh);
-		SwapBuffers(win->gl.dc);
-		tigrGAPIEnd(bmp);
-	}
+    if (!tigrGAPIBegin(bmp)) {
+        tigrGAPIPresent(bmp, dw, dh);
+        SwapBuffers(win->gl.dc);
+        tigrGAPIEnd(bmp);
+    }
 
-	memcpy(win->prev, win->keys, 256);
+    memcpy(win->prev, win->keys, 256);
 
-	// Run the message pump.
-	while (PeekMessage(&msg, (HWND)bmp->handle, 0, 0, PM_REMOVE))
-	{
-		if (msg.message == WM_QUIT)
-			break;
+    // Run the message pump.
+    while (PeekMessage(&msg, (HWND)bmp->handle, 0, 0, PM_REMOVE)) {
+        if (msg.message == WM_QUIT)
+            break;
 
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
 }
 
-typedef BOOL (APIENTRY *PFNWGLSWAPINTERVALFARPROC_)( int );
+typedef BOOL(APIENTRY* PFNWGLSWAPINTERVALFARPROC_)(int);
 static PFNWGLSWAPINTERVALFARPROC_ wglSwapIntervalEXT_ = 0;
 
-int tigrGAPIBegin(Tigr *bmp)
-{
-	TigrInternal *win = tigrInternal(bmp);
+int tigrGAPIBegin(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
 
-	return wglMakeCurrent(win->gl.dc, win->gl.hglrc) ? 0 : -1;
+    return wglMakeCurrent(win->gl.dc, win->gl.hglrc) ? 0 : -1;
 }
 
-int tigrGAPIEnd(Tigr *bmp)
-{
-	(void)bmp;
-	return wglMakeCurrent(NULL, NULL) ? 0 : -1;
+int tigrGAPIEnd(Tigr* bmp) {
+    (void)bmp;
+    return wglMakeCurrent(NULL, NULL) ? 0 : -1;
 }
 
-
-static BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle)
-{
-	BOOL fRc;
-	RECT rc;
-	SetRectEmpty(&rc);
-	fRc = AdjustWindowRectEx(&rc, dwStyle, fMenu, dwExStyle);
-	if (fRc) {
-		prc->left -= rc.left;
-		prc->top -= rc.top;
-		prc->right -= rc.right;
-		prc->bottom -= rc.bottom;
-		}
-	return fRc;
+static BOOL UnadjustWindowRectEx(LPRECT prc, DWORD dwStyle, BOOL fMenu, DWORD dwExStyle) {
+    BOOL fRc;
+    RECT rc;
+    SetRectEmpty(&rc);
+    fRc = AdjustWindowRectEx(&rc, dwStyle, fMenu, dwExStyle);
+    if (fRc) {
+        prc->left -= rc.left;
+        prc->top -= rc.top;
+        prc->right -= rc.right;
+        prc->bottom -= rc.bottom;
+    }
+    return fRc;
 }
 
-LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	Tigr *bmp;
-	TigrInternal *win = NULL;
-	RECT rc;
-	int dw, dh;
+LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    Tigr* bmp;
+    TigrInternal* win = NULL;
+    RECT rc;
+    int dw, dh;
 
-	GetClientRect(hWnd, &rc);
-	dw = rc.right - rc.left;
-	dh = rc.bottom - rc.top;
+    GetClientRect(hWnd, &rc);
+    dw = rc.right - rc.left;
+    dh = rc.bottom - rc.top;
 
-	bmp = (Tigr *)GetPropW(hWnd, L"Tigr");
-	if (bmp)
-		win = tigrInternal(bmp);
+    bmp = (Tigr*)GetPropW(hWnd, L"Tigr");
+    if (bmp)
+        win = tigrInternal(bmp);
 
-	switch (message)
-	{
-	case WM_PAINT:
-		if (!tigrGAPIBegin(bmp))
-		{
-			tigrGAPIPresent(bmp, dw, dh);
-			SwapBuffers(win->gl.dc);
-			tigrGAPIEnd(bmp);
-		}
-		ValidateRect(hWnd, NULL);
-		break;
-	case WM_CLOSE:
-		if (win)
-			win->closed = 1;
-		break;
-	case WM_GETMINMAXINFO:
-		if (bmp)
-		{
-			MINMAXINFO *info = (MINMAXINFO *)lParam;
-			RECT rc;
-			rc.left = 0;
-			rc.top = 0;
-			if (win->flags & TIGR_AUTO)
-			{
-				rc.right = 32;
-				rc.bottom = 32;
-			} else {
-				int minscale = tigrEnforceScale(1, win->flags);
-				rc.right = bmp->w * minscale;
-				rc.bottom = bmp->h * minscale;
-			}
-			AdjustWindowRectEx(&rc, win->dwStyle, FALSE, 0);
-			info->ptMinTrackSize.x = rc.right - rc.left;
-			info->ptMinTrackSize.y = rc.bottom - rc.top;
-		}
-		return 0;
-	case WM_SIZING:
-		if (win)
-		{
-			// Calculate scale-constrained sizes.
-			RECT *rc = (RECT *)lParam;
-			int dx, dy;
-			UnadjustWindowRectEx(rc, win->dwStyle, FALSE, 0);
-			dx = (rc->right - rc->left) % win->scale;
-			dy = (rc->bottom - rc->top) % win->scale;
-			switch (wParam) {
-			case WMSZ_LEFT: rc->left += dx; break;
-			case WMSZ_RIGHT: rc->right -= dx; break;
-			case WMSZ_TOP: rc->top += dy; break;
-			case WMSZ_TOPLEFT: rc->left += dx; rc->top += dy; break;
-			case WMSZ_TOPRIGHT: rc->right -= dx; rc->top += dy; break;
-			case WMSZ_BOTTOM: rc->bottom -= dy; break;
-			case WMSZ_BOTTOMLEFT: rc->left += dx; rc->bottom -= dy; break;
-			case WMSZ_BOTTOMRIGHT: rc->right -= dx; rc->bottom -= dy; break;
-			}
-			AdjustWindowRectEx(rc, win->dwStyle, FALSE, 0);
-		}
-		return TRUE;
-	case WM_SIZE:
-		if (win)
-		{
-			if (wParam != SIZE_MINIMIZED)
-			{
-				// Detect window size changes and update our bitmap accordingly.
-				dw = LOWORD(lParam);
-				dh = HIWORD(lParam);
-				if (win->flags & TIGR_AUTO)
-				{
-					tigrResize(bmp, dw/win->scale, dh/win->scale);
-				} else {
-					win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh), win->flags);
-				}
-				tigrPosition(bmp, win->scale, dw, dh, win->pos);
-			}
+    switch (message) {
+        case WM_PAINT:
+            if (!tigrGAPIBegin(bmp)) {
+                tigrGAPIPresent(bmp, dw, dh);
+                SwapBuffers(win->gl.dc);
+                tigrGAPIEnd(bmp);
+            }
+            ValidateRect(hWnd, NULL);
+            break;
+        case WM_CLOSE:
+            if (win)
+                win->closed = 1;
+            break;
+        case WM_GETMINMAXINFO:
+            if (bmp) {
+                MINMAXINFO* info = (MINMAXINFO*)lParam;
+                RECT rc;
+                rc.left = 0;
+                rc.top = 0;
+                if (win->flags & TIGR_AUTO) {
+                    rc.right = 32;
+                    rc.bottom = 32;
+                } else {
+                    int minscale = tigrEnforceScale(1, win->flags);
+                    rc.right = bmp->w * minscale;
+                    rc.bottom = bmp->h * minscale;
+                }
+                AdjustWindowRectEx(&rc, win->dwStyle, FALSE, 0);
+                info->ptMinTrackSize.x = rc.right - rc.left;
+                info->ptMinTrackSize.y = rc.bottom - rc.top;
+            }
+            return 0;
+        case WM_SIZING:
+            if (win) {
+                // Calculate scale-constrained sizes.
+                RECT* rc = (RECT*)lParam;
+                int dx, dy;
+                UnadjustWindowRectEx(rc, win->dwStyle, FALSE, 0);
+                dx = (rc->right - rc->left) % win->scale;
+                dy = (rc->bottom - rc->top) % win->scale;
+                switch (wParam) {
+                    case WMSZ_LEFT:
+                        rc->left += dx;
+                        break;
+                    case WMSZ_RIGHT:
+                        rc->right -= dx;
+                        break;
+                    case WMSZ_TOP:
+                        rc->top += dy;
+                        break;
+                    case WMSZ_TOPLEFT:
+                        rc->left += dx;
+                        rc->top += dy;
+                        break;
+                    case WMSZ_TOPRIGHT:
+                        rc->right -= dx;
+                        rc->top += dy;
+                        break;
+                    case WMSZ_BOTTOM:
+                        rc->bottom -= dy;
+                        break;
+                    case WMSZ_BOTTOMLEFT:
+                        rc->left += dx;
+                        rc->bottom -= dy;
+                        break;
+                    case WMSZ_BOTTOMRIGHT:
+                        rc->right -= dx;
+                        rc->bottom -= dy;
+                        break;
+                }
+                AdjustWindowRectEx(rc, win->dwStyle, FALSE, 0);
+            }
+            return TRUE;
+        case WM_SIZE:
+            if (win) {
+                if (wParam != SIZE_MINIMIZED) {
+                    // Detect window size changes and update our bitmap accordingly.
+                    dw = LOWORD(lParam);
+                    dh = HIWORD(lParam);
+                    if (win->flags & TIGR_AUTO) {
+                        tigrResize(bmp, dw / win->scale, dh / win->scale);
+                    } else {
+                        win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, dw, dh), win->flags);
+                    }
+                    tigrPosition(bmp, win->scale, dw, dh, win->pos);
+                }
 
-			// If someone tried to maximize us (e.g. via shortcut launch options),
-			// prefer instead to be borderless.
-			if (wParam == SIZE_MAXIMIZED)
-			{
-				ShowWindow((HWND)bmp->handle, SW_NORMAL);
-				tigrEnterBorderlessWindowed(bmp);
-			}
-		}
-		return 0;
-	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
-	case WM_WINDOWPOSCHANGED:
-		{
-			// Save our position.
-			WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
-			GetWindowPlacement(hWnd, &wp);
-			if (win->dwStyle & WS_POPUP)
-				wp.showCmd = SW_MAXIMIZE;
-			RegSetValueExW(tigrRegKey, win->wtitle, 0, REG_BINARY, (BYTE *)&wp, sizeof(wp));
-			return DefWindowProcW(hWnd, message, wParam, lParam);
-		}
-	#endif
-	case WM_ACTIVATE:
-		if (win) {
-			memset(win->keys, 0, 256);
-			memset(win->prev, 0, 256);
-			win->lastChar = 0;
-		}
-		return 0;
-	case WM_CHAR:
-		if (win) {
-			if (wParam == '\r') {
-				wParam = '\n';
-			}
-			int repeating = (HIWORD(lParam) & KF_REPEAT) == KF_REPEAT;
-			if (!repeating) {
-				win->lastChar = wParam;
-			}
-		}
-		return DefWindowProcW(hWnd, message, wParam, lParam);
-	case WM_MENUCHAR:
-		// Disable beep on Alt+Enter
-		if (LOWORD(wParam) == VK_RETURN)
-			return MNC_CLOSE<<16;
-		return DefWindowProcW(hWnd, message, wParam, lParam);
-	case WM_SYSKEYDOWN:
-		if (win)
-		{
-			if (wParam == VK_RETURN)
-			{
-				// Alt+Enter
-				if (win->dwStyle & WS_POPUP)
-					tigrLeaveBorderlessWindowed(bmp);
-				else
-					tigrEnterBorderlessWindowed(bmp);
-				return 0;
-			}
-		}
-		// fall-thru
-	case WM_KEYDOWN:
-		if (win)
-			win->keys[wParam] = 1;
-		return DefWindowProcW(hWnd, message, wParam, lParam);
-	case WM_SYSKEYUP:
-		// fall-thru
-	case WM_KEYUP:
-		if (win)
-			win->keys[wParam] = 0;
-		return DefWindowProcW(hWnd, message, wParam, lParam);
-	default:
-		return DefWindowProcW(hWnd, message, wParam, lParam);
-	}
-	return 0;
+                // If someone tried to maximize us (e.g. via shortcut launch options),
+                // prefer instead to be borderless.
+                if (wParam == SIZE_MAXIMIZED) {
+                    ShowWindow((HWND)bmp->handle, SW_NORMAL);
+                    tigrEnterBorderlessWindowed(bmp);
+                }
+            }
+            return 0;
+#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
+        case WM_WINDOWPOSCHANGED: {
+            // Save our position.
+            WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
+            GetWindowPlacement(hWnd, &wp);
+            if (win->dwStyle & WS_POPUP)
+                wp.showCmd = SW_MAXIMIZE;
+            RegSetValueExW(tigrRegKey, win->wtitle, 0, REG_BINARY, (BYTE*)&wp, sizeof(wp));
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+        }
+#endif
+        case WM_ACTIVATE:
+            if (win) {
+                memset(win->keys, 0, 256);
+                memset(win->prev, 0, 256);
+                win->lastChar = 0;
+            }
+            return 0;
+        case WM_CHAR:
+            if (win) {
+                if (wParam == '\r') {
+                    wParam = '\n';
+                }
+                int repeating = (HIWORD(lParam) & KF_REPEAT) == KF_REPEAT;
+                if (!repeating) {
+                    win->lastChar = wParam;
+                }
+            }
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+        case WM_MENUCHAR:
+            // Disable beep on Alt+Enter
+            if (LOWORD(wParam) == VK_RETURN)
+                return MNC_CLOSE << 16;
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+        case WM_SYSKEYDOWN:
+            if (win) {
+                if (wParam == VK_RETURN) {
+                    // Alt+Enter
+                    if (win->dwStyle & WS_POPUP)
+                        tigrLeaveBorderlessWindowed(bmp);
+                    else
+                        tigrEnterBorderlessWindowed(bmp);
+                    return 0;
+                }
+            }
+            // fall-thru
+        case WM_KEYDOWN:
+            if (win)
+                win->keys[wParam] = 1;
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+        case WM_SYSKEYUP:
+            // fall-thru
+        case WM_KEYUP:
+            if (win)
+                win->keys[wParam] = 0;
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+        default:
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+    }
+    return 0;
 }
 
-Tigr *tigrWindow(int w, int h, const char *title, int flags)
-{
-	WNDCLASSEXW wcex = {0};
-	int maxW, maxH, scale;
-	HWND hWnd;
-	DWORD dwStyle;
-	RECT rc;
-	DWORD err;
-	Tigr *bmp;
-	TigrInternal *win;
-	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
-	WINDOWPLACEMENT wp;
-	DWORD wpsize = sizeof(wp);
-	#endif
-	
-	wchar_t *wtitle = unicode(title);
+Tigr* tigrWindow(int w, int h, const char* title, int flags) {
+    WNDCLASSEXW wcex = { 0 };
+    int maxW, maxH, scale;
+    HWND hWnd;
+    DWORD dwStyle;
+    RECT rc;
+    DWORD err;
+    Tigr* bmp;
+    TigrInternal* win;
+#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
+    WINDOWPLACEMENT wp;
+    DWORD wpsize = sizeof(wp);
+#endif
 
-	// Find our registry key.
-	#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
-	RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\TIGR", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &tigrRegKey, NULL);
-	#endif
+    wchar_t* wtitle = unicode(title);
 
-	// Register a window class.
-	wcex.cbSize			= sizeof(WNDCLASSEXW);
-	wcex.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	wcex.lpfnWndProc	= tigrWndProc;
-	wcex.hInstance		= GetModuleHandle(NULL);
-	wcex.hIcon			= NULL;
-	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
-	wcex.lpszClassName	= L"TIGR";
-	RegisterClassExW(&wcex);
+// Find our registry key.
+#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
+    RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\TIGR", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL,
+                    &tigrRegKey, NULL);
+#endif
 
-	if (flags & TIGR_AUTO)
-	{
-		// Always use a 1:1 pixel size.
-		scale = 1;
-	} else {
-		// See how big we can make it and still fit on-screen.
-		maxW = GetSystemMetrics(SM_CXSCREEN) * 3/4;
-		maxH = GetSystemMetrics(SM_CYSCREEN) * 3/4;
-		scale = tigrCalcScale(w, h, maxW, maxH);
-	}
+    // Register a window class.
+    wcex.cbSize = sizeof(WNDCLASSEXW);
+    wcex.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wcex.lpfnWndProc = tigrWndProc;
+    wcex.hInstance = GetModuleHandle(NULL);
+    wcex.hIcon = NULL;
+    wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wcex.lpszClassName = L"TIGR";
+    RegisterClassExW(&wcex);
 
-	scale = tigrEnforceScale(scale, flags);
+    if (flags & TIGR_AUTO) {
+        // Always use a 1:1 pixel size.
+        scale = 1;
+    } else {
+        // See how big we can make it and still fit on-screen.
+        maxW = GetSystemMetrics(SM_CXSCREEN) * 3 / 4;
+        maxH = GetSystemMetrics(SM_CYSCREEN) * 3 / 4;
+        scale = tigrCalcScale(w, h, maxW, maxH);
+    }
 
-	// Get the final window size.
-	dwStyle = WS_OVERLAPPEDWINDOW;
-	rc.left = 0; rc.top = 0; rc.right = w*scale; rc.bottom = h*scale;
-	AdjustWindowRect(&rc, dwStyle, FALSE);
+    scale = tigrEnforceScale(scale, flags);
 
-	// Make a window.
-	hWnd = CreateWindowW(L"TIGR", wtitle, dwStyle,
-		CW_USEDEFAULT, CW_USEDEFAULT, rc.right-rc.left, rc.bottom-rc.top,
-		NULL, NULL, wcex.hInstance, NULL);
-	err = GetLastError();
-	if (!hWnd)
-		ExitProcess(1);
+    // Get the final window size.
+    dwStyle = WS_OVERLAPPEDWINDOW;
+    rc.left = 0;
+    rc.top = 0;
+    rc.right = w * scale;
+    rc.bottom = h * scale;
+    AdjustWindowRect(&rc, dwStyle, FALSE);
 
-	if (flags & TIGR_NOCURSOR) {
-		ShowCursor(FALSE);
-	}
+    // Make a window.
+    hWnd = CreateWindowW(L"TIGR", wtitle, dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top,
+                         NULL, NULL, wcex.hInstance, NULL);
+    err = GetLastError();
+    if (!hWnd)
+        ExitProcess(1);
 
-	// Wrap a bitmap around it.
-	bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
-	bmp->handle = hWnd;
+    if (flags & TIGR_NOCURSOR) {
+        ShowCursor(FALSE);
+    }
 
-	// Set up the Windows parts.
-	win = tigrInternal(bmp);
-	win->dwStyle = dwStyle;
-	win->wtitle = wtitle;
-	win->shown = 0;
-	win->closed = 0;
-	win->scale = scale;
-	win->lastChar = 0;
-	win->flags = flags;
+    // Wrap a bitmap around it.
+    bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
+    bmp->handle = hWnd;
 
-	win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
+    // Set up the Windows parts.
+    win = tigrInternal(bmp);
+    win->dwStyle = dwStyle;
+    win->wtitle = wtitle;
+    win->shown = 0;
+    win->closed = 0;
+    win->scale = scale;
+    win->lastChar = 0;
+    win->flags = flags;
 
-	win->widgetsWanted = 0;
-	win->widgetAlpha = 0;
-	win->widgetsScale = WIDGET_SCALE;
-	win->widgets = tigrBitmap(40, 14);
+    win->p1 = win->p2 = win->p3 = 0;
+    win->p4 = 1;
 
-	SetPropW(hWnd, L"Tigr", bmp);
+    win->widgetsWanted = 0;
+    win->widgetAlpha = 0;
+    win->widgetsScale = WIDGET_SCALE;
+    win->widgets = tigrBitmap(40, 14);
 
-	tigrGAPICreate(bmp);
+    SetPropW(hWnd, L"Tigr", bmp);
 
-	if (flags & TIGR_FULLSCREEN) {
-		tigrEnterBorderlessWindowed(bmp);
-	} else {
-		// Try and restore our window position.
-		#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
-		if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE *)&wp, &wpsize) == ERROR_SUCCESS)
-		{
-			if (wp.showCmd == SW_MAXIMIZE)
-				tigrEnterBorderlessWindowed(bmp);
-			else
-				SetWindowPlacement(hWnd, &wp);
-		}
-		#endif
-	}
+    tigrGAPICreate(bmp);
 
-	wglSwapIntervalEXT_ = (PFNWGLSWAPINTERVALFARPROC_)wglGetProcAddress( "wglSwapIntervalEXT" );
-	if(wglSwapIntervalEXT_) wglSwapIntervalEXT_(1);
+    if (flags & TIGR_FULLSCREEN) {
+        tigrEnterBorderlessWindowed(bmp);
+    } else {
+// Try and restore our window position.
+#ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
+        if (RegQueryValueExW(tigrRegKey, wtitle, NULL, NULL, (BYTE*)&wp, &wpsize) == ERROR_SUCCESS) {
+            if (wp.showCmd == SW_MAXIMIZE)
+                tigrEnterBorderlessWindowed(bmp);
+            else
+                SetWindowPlacement(hWnd, &wp);
+        }
+#endif
+    }
 
-	return bmp;
+    wglSwapIntervalEXT_ = (PFNWGLSWAPINTERVALFARPROC_)wglGetProcAddress("wglSwapIntervalEXT");
+    if (wglSwapIntervalEXT_)
+        wglSwapIntervalEXT_(1);
+
+    return bmp;
 }
 
-void tigrFree(Tigr *bmp)
-{
-	if (bmp->handle)
-	{
-		TigrInternal *win = tigrInternal(bmp);
-		tigrGAPIDestroy(bmp);
+void tigrFree(Tigr* bmp) {
+    if (bmp->handle) {
+        TigrInternal* win = tigrInternal(bmp);
+        tigrGAPIDestroy(bmp);
 
-		if(win->gl.hglrc && !wglDeleteContext(win->gl.hglrc)) {
-			tigrError(bmp, "Cannot delete OpenGL context.\n");
-		}
-		win->gl.hglrc = NULL;
+        if (win->gl.hglrc && !wglDeleteContext(win->gl.hglrc)) {
+            tigrError(bmp, "Cannot delete OpenGL context.\n");
+        }
+        win->gl.hglrc = NULL;
 
-		if(win->gl.dc && !ReleaseDC((HWND)bmp->handle, win->gl.dc)) {
-			tigrError(bmp, "Cannot release OpenGL device context.\n");
-		}
-		win->gl.dc = NULL;
+        if (win->gl.dc && !ReleaseDC((HWND)bmp->handle, win->gl.dc)) {
+            tigrError(bmp, "Cannot release OpenGL device context.\n");
+        }
+        win->gl.dc = NULL;
 
-		DestroyWindow((HWND)bmp->handle);
-		free(win->wtitle);
-		tigrFree(win->widgets);
-	}
-	free(bmp->pix);
-	free(bmp);
+        DestroyWindow((HWND)bmp->handle);
+        free(win->wtitle);
+        tigrFree(win->widgets);
+    }
+    free(bmp->pix);
+    free(bmp);
 }
 
-int tigrClosed(Tigr *bmp)
-{
-	TigrInternal *win = tigrInternal(bmp);
-	int val = win->closed;
-	win->closed = 0;
-	return val;
+int tigrClosed(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    int val = win->closed;
+    win->closed = 0;
+    return val;
 }
 
-float tigrTime()
-{
-	static int first = 1;
-	static LARGE_INTEGER prev;
+float tigrTime() {
+    static int first = 1;
+    static LARGE_INTEGER prev;
 
-	LARGE_INTEGER cnt, freq;
-	ULONGLONG diff;
-	QueryPerformanceCounter(&cnt);
-	QueryPerformanceFrequency(&freq);
+    LARGE_INTEGER cnt, freq;
+    ULONGLONG diff;
+    QueryPerformanceCounter(&cnt);
+    QueryPerformanceFrequency(&freq);
 
-	if (first)
-	{
-		first = 0;
-		prev = cnt;
-	}
+    if (first) {
+        first = 0;
+        prev = cnt;
+    }
 
-	diff = cnt.QuadPart - prev.QuadPart;
-	prev = cnt;
-	return (float)(diff / (double)freq.QuadPart);
+    diff = cnt.QuadPart - prev.QuadPart;
+    prev = cnt;
+    return (float)(diff / (double)freq.QuadPart);
 }
 
-void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
-{
-	POINT pt;
-	TigrInternal *win;
+void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
+    POINT pt;
+    TigrInternal* win;
 
-	win = tigrInternal(bmp);
-	GetCursorPos(&pt);
-	ScreenToClient((HWND)bmp->handle, &pt);
-	*x = (pt.x - win->pos[0]) / win->scale;
-	*y = (pt.y - win->pos[1]) / win->scale;
-	*buttons = 0;
-	if (GetFocus() != bmp->handle)
-		return;
-	if (GetAsyncKeyState(VK_LBUTTON) & 0x8000) *buttons |= 1;
-	if (GetAsyncKeyState(VK_MBUTTON) & 0x8000) *buttons |= 2;
-	if (GetAsyncKeyState(VK_RBUTTON) & 0x8000) *buttons |= 4;
+    win = tigrInternal(bmp);
+    GetCursorPos(&pt);
+    ScreenToClient((HWND)bmp->handle, &pt);
+    *x = (pt.x - win->pos[0]) / win->scale;
+    *y = (pt.y - win->pos[1]) / win->scale;
+    *buttons = 0;
+    if (GetFocus() != bmp->handle)
+        return;
+    if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+        *buttons |= 1;
+    if (GetAsyncKeyState(VK_MBUTTON) & 0x8000)
+        *buttons |= 2;
+    if (GetAsyncKeyState(VK_RBUTTON) & 0x8000)
+        *buttons |= 4;
 }
 
-int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints)
-{
-	int buttons = 0;
-	if (maxPoints > 0) {
-		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
-	}
-	return buttons ? 1 : 0;
+int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
+    int buttons = 0;
+    if (maxPoints > 0) {
+        tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
+    }
+    return buttons ? 1 : 0;
 }
 
-static int tigrWinVK(int key)
-{
-	if (key >= 'A' && key <= 'Z') return key;
-	if (key >= '0' && key <= '9') return key;
-	switch (key) {
-	case TK_BACKSPACE: return VK_BACK;
-	case TK_TAB: return VK_TAB;
-	case TK_RETURN: return VK_RETURN;
-	case TK_SHIFT: return VK_SHIFT;
-	case TK_CONTROL: return VK_CONTROL;
-	case TK_ALT: return VK_MENU;
-	case TK_PAUSE: return VK_PAUSE;
-	case TK_CAPSLOCK: return VK_CAPITAL;
-	case TK_ESCAPE: return VK_ESCAPE;
-	case TK_SPACE: return VK_SPACE;
-	case TK_PAGEUP: return VK_PRIOR;
-	case TK_PAGEDN: return VK_NEXT;
-	case TK_END: return VK_END;
-	case TK_HOME: return VK_HOME;
-	case TK_LEFT: return VK_LEFT;
-	case TK_UP: return VK_UP;
-	case TK_RIGHT: return VK_RIGHT;
-	case TK_DOWN: return VK_DOWN;
-	case TK_INSERT: return VK_INSERT;
-	case TK_DELETE: return VK_DELETE;
-	case TK_LWIN: return VK_LWIN;
-	case TK_RWIN: return VK_RWIN;
-	//case TK_APPS: return VK_APPS; // this key doesn't exist on OS X
-	case TK_PAD0: return VK_NUMPAD0;
-	case TK_PAD1: return VK_NUMPAD1;
-	case TK_PAD2: return VK_NUMPAD2;
-	case TK_PAD3: return VK_NUMPAD3;
-	case TK_PAD4: return VK_NUMPAD4;
-	case TK_PAD5: return VK_NUMPAD5;
-	case TK_PAD6: return VK_NUMPAD6;
-	case TK_PAD7: return VK_NUMPAD7;
-	case TK_PAD8: return VK_NUMPAD8;
-	case TK_PAD9: return VK_NUMPAD9;
-	case TK_PADMUL: return VK_MULTIPLY;
-	case TK_PADADD: return VK_ADD;
-	case TK_PADENTER: return VK_SEPARATOR;
-	case TK_PADSUB: return VK_SUBTRACT;
-	case TK_PADDOT: return VK_DECIMAL;
-	case TK_PADDIV: return VK_DIVIDE;
-	case TK_F1: return VK_F1;
-	case TK_F2: return VK_F2;
-	case TK_F3: return VK_F3;
-	case TK_F4: return VK_F4;
-	case TK_F5: return VK_F5;
-	case TK_F6: return VK_F6;
-	case TK_F7: return VK_F7;
-	case TK_F8: return VK_F8;
-	case TK_F9: return VK_F9;
-	case TK_F10: return VK_F10;
-	case TK_F11: return VK_F11;
-	case TK_F12: return VK_F12;
-	case TK_NUMLOCK: return VK_NUMLOCK;
-	case TK_SCROLL: return VK_SCROLL;
-	case TK_LSHIFT: return VK_LSHIFT;
-	case TK_RSHIFT: return VK_RSHIFT;
-	case TK_LCONTROL: return VK_LCONTROL;
-	case TK_RCONTROL: return VK_RCONTROL;
-	case TK_LALT: return VK_LMENU;
-	case TK_RALT: return VK_RMENU;
-	case TK_SEMICOLON: return VK_OEM_1;
-	case TK_EQUALS: return VK_OEM_PLUS;
-	case TK_COMMA: return VK_OEM_COMMA;
-	case TK_MINUS: return VK_OEM_MINUS;
-	case TK_DOT: return VK_OEM_PERIOD;
-	case TK_SLASH: return VK_OEM_2;
-	case TK_BACKTICK: return VK_OEM_3;
-	case TK_LSQUARE: return VK_OEM_4;
-	case TK_BACKSLASH: return VK_OEM_5;
-	case TK_RSQUARE: return VK_OEM_6;
-	case TK_TICK: return VK_OEM_7;
-	}
-	return 0;
+static int tigrWinVK(int key) {
+    if (key >= 'A' && key <= 'Z')
+        return key;
+    if (key >= '0' && key <= '9')
+        return key;
+    switch (key) {
+        case TK_BACKSPACE:
+            return VK_BACK;
+        case TK_TAB:
+            return VK_TAB;
+        case TK_RETURN:
+            return VK_RETURN;
+        case TK_SHIFT:
+            return VK_SHIFT;
+        case TK_CONTROL:
+            return VK_CONTROL;
+        case TK_ALT:
+            return VK_MENU;
+        case TK_PAUSE:
+            return VK_PAUSE;
+        case TK_CAPSLOCK:
+            return VK_CAPITAL;
+        case TK_ESCAPE:
+            return VK_ESCAPE;
+        case TK_SPACE:
+            return VK_SPACE;
+        case TK_PAGEUP:
+            return VK_PRIOR;
+        case TK_PAGEDN:
+            return VK_NEXT;
+        case TK_END:
+            return VK_END;
+        case TK_HOME:
+            return VK_HOME;
+        case TK_LEFT:
+            return VK_LEFT;
+        case TK_UP:
+            return VK_UP;
+        case TK_RIGHT:
+            return VK_RIGHT;
+        case TK_DOWN:
+            return VK_DOWN;
+        case TK_INSERT:
+            return VK_INSERT;
+        case TK_DELETE:
+            return VK_DELETE;
+        case TK_LWIN:
+            return VK_LWIN;
+        case TK_RWIN:
+            return VK_RWIN;
+        // case TK_APPS: return VK_APPS; // this key doesn't exist on OS X
+        case TK_PAD0:
+            return VK_NUMPAD0;
+        case TK_PAD1:
+            return VK_NUMPAD1;
+        case TK_PAD2:
+            return VK_NUMPAD2;
+        case TK_PAD3:
+            return VK_NUMPAD3;
+        case TK_PAD4:
+            return VK_NUMPAD4;
+        case TK_PAD5:
+            return VK_NUMPAD5;
+        case TK_PAD6:
+            return VK_NUMPAD6;
+        case TK_PAD7:
+            return VK_NUMPAD7;
+        case TK_PAD8:
+            return VK_NUMPAD8;
+        case TK_PAD9:
+            return VK_NUMPAD9;
+        case TK_PADMUL:
+            return VK_MULTIPLY;
+        case TK_PADADD:
+            return VK_ADD;
+        case TK_PADENTER:
+            return VK_SEPARATOR;
+        case TK_PADSUB:
+            return VK_SUBTRACT;
+        case TK_PADDOT:
+            return VK_DECIMAL;
+        case TK_PADDIV:
+            return VK_DIVIDE;
+        case TK_F1:
+            return VK_F1;
+        case TK_F2:
+            return VK_F2;
+        case TK_F3:
+            return VK_F3;
+        case TK_F4:
+            return VK_F4;
+        case TK_F5:
+            return VK_F5;
+        case TK_F6:
+            return VK_F6;
+        case TK_F7:
+            return VK_F7;
+        case TK_F8:
+            return VK_F8;
+        case TK_F9:
+            return VK_F9;
+        case TK_F10:
+            return VK_F10;
+        case TK_F11:
+            return VK_F11;
+        case TK_F12:
+            return VK_F12;
+        case TK_NUMLOCK:
+            return VK_NUMLOCK;
+        case TK_SCROLL:
+            return VK_SCROLL;
+        case TK_LSHIFT:
+            return VK_LSHIFT;
+        case TK_RSHIFT:
+            return VK_RSHIFT;
+        case TK_LCONTROL:
+            return VK_LCONTROL;
+        case TK_RCONTROL:
+            return VK_RCONTROL;
+        case TK_LALT:
+            return VK_LMENU;
+        case TK_RALT:
+            return VK_RMENU;
+        case TK_SEMICOLON:
+            return VK_OEM_1;
+        case TK_EQUALS:
+            return VK_OEM_PLUS;
+        case TK_COMMA:
+            return VK_OEM_COMMA;
+        case TK_MINUS:
+            return VK_OEM_MINUS;
+        case TK_DOT:
+            return VK_OEM_PERIOD;
+        case TK_SLASH:
+            return VK_OEM_2;
+        case TK_BACKTICK:
+            return VK_OEM_3;
+        case TK_LSQUARE:
+            return VK_OEM_4;
+        case TK_BACKSLASH:
+            return VK_OEM_5;
+        case TK_RSQUARE:
+            return VK_OEM_6;
+        case TK_TICK:
+            return VK_OEM_7;
+    }
+    return 0;
 }
 
-int tigrKeyDown(Tigr *bmp, int key)
-{
-	TigrInternal *win;
-	int k = tigrWinVK(key);
-	if (GetFocus() != bmp->handle)
-		return 0;
-	win = tigrInternal(bmp);
-	return win->keys[k] && !win->prev[k];
+int tigrKeyDown(Tigr* bmp, int key) {
+    TigrInternal* win;
+    int k = tigrWinVK(key);
+    if (GetFocus() != bmp->handle)
+        return 0;
+    win = tigrInternal(bmp);
+    return win->keys[k] && !win->prev[k];
 }
 
-int tigrKeyHeld(Tigr *bmp, int key)
-{
-	TigrInternal *win;
-	int k = tigrWinVK(key);
-	if (GetFocus() != bmp->handle)
-		return 0;
-	win = tigrInternal(bmp);
-	return win->keys[k];
+int tigrKeyHeld(Tigr* bmp, int key) {
+    TigrInternal* win;
+    int k = tigrWinVK(key);
+    if (GetFocus() != bmp->handle)
+        return 0;
+    win = tigrInternal(bmp);
+    return win->keys[k];
 }
 
-int tigrReadChar(Tigr *bmp)
-{
-	TigrInternal *win = tigrInternal(bmp);
-	int c = win->lastChar;
-	win->lastChar = 0;
-	return c;
+int tigrReadChar(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    int c = win->lastChar;
+    win->lastChar = 0;
+    return c;
 }
 
 // We supply our own WinMain and just chain through to the user's
@@ -2489,19 +2612,21 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #endif
 {
-	int n, argc;
-	LPWSTR *wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
-	char **argv = (char **)calloc(argc+1, sizeof(int));
+    int n, argc;
+    LPWSTR* wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    char** argv = (char**)calloc(argc + 1, sizeof(int));
 
-	(void)hInstance; (void)hPrevInstance; (void)lpCmdLine; (void)nCmdShow;
+    (void)hInstance;
+    (void)hPrevInstance;
+    (void)lpCmdLine;
+    (void)nCmdShow;
 
-	for (n=0;n<argc;n++)
-	{
-		int len = WideCharToMultiByte(CP_UTF8, 0, wargv[n], -1, 0, 0, NULL, NULL);
-		argv[n] = (char *)malloc(len);
-		WideCharToMultiByte(CP_UTF8, 0, wargv[n], -1, argv[n], len, NULL, NULL);
-	}
-	return main(argc, argv);
+    for (n = 0; n < argc; n++) {
+        int len = WideCharToMultiByte(CP_UTF8, 0, wargv[n], -1, 0, 0, NULL, NULL);
+        argv[n] = (char*)malloc(len);
+        WideCharToMultiByte(CP_UTF8, 0, wargv[n], -1, argv[n], len, NULL, NULL);
+    }
+    return main(argc, argv);
 }
 #endif
 
@@ -2517,7 +2642,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #ifndef TIGR_OBJC_H
 #define TIGR_OBJC_H
 
-#if defined(__IOS__) || defined (__MACOS__)
+#if defined(__IOS__) || defined(__MACOS__)
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
 #error "Can't compile as objective-c code!"
@@ -2545,15 +2670,16 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 #define sel(NAME) sel_registerName(NAME)
 #define class(NAME) ((id)objc_getClass(NAME))
-#define makeClass(NAME, SUPER) \
-    objc_allocateClassPair((Class)objc_getClass(SUPER), NAME, 0)
+#define makeClass(NAME, SUPER) objc_allocateClassPair((Class)objc_getClass(SUPER), NAME, 0)
 
 // Check here to get the signature right: https://nshipster.com/type-encodings/
-#define addMethod(CLASS, NAME, IMPL, SIGNATURE) \
-    if (!class_addMethod(CLASS, sel(NAME), (IMP) (IMPL), (SIGNATURE))) assert(false)
+#define addMethod(CLASS, NAME, IMPL, SIGNATURE)                       \
+    if (!class_addMethod(CLASS, sel(NAME), (IMP)(IMPL), (SIGNATURE))) \
+    assert(false)
 
-#define addIvar(CLASS, NAME, SIZE, SIGNATURE) \
-    if (!class_addIvar(CLASS, NAME, SIZE, rint(log2(SIZE)), SIGNATURE)) assert(false)
+#define addIvar(CLASS, NAME, SIZE, SIGNATURE)                           \
+    if (!class_addIvar(CLASS, NAME, SIZE, rint(log2(SIZE)), SIGNATURE)) \
+    assert(false)
 
 #define objc_alloc(CLASS) objc_msgSend_id(class(CLASS), sel("alloc"))
 
@@ -2565,8 +2691,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #define NSUIntegerEncoding "I"
 #endif
 
-#endif // defined(__IOS__) || defined (__MACOS__)
-#endif // TIGR_OBJC_H
+#endif  // defined(__IOS__) || defined (__MACOS__)
+#endif  // TIGR_OBJC_H
 
 //////// End of inlined file: tigr_objc.h ////////
 
@@ -2619,7 +2745,7 @@ bool terminated = false;
 static uint64_t tigrTimestamp = 0;
 
 void _tigrResetTime() {
-	tigrTimestamp = mach_absolute_time();
+    tigrTimestamp = mach_absolute_time();
 }
 
 TigrInternal* _tigrInternalCocoa(id window) {
@@ -2781,15 +2907,12 @@ void tigrInitOSX() {
 
     id quitTitlePrefixString =
         objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), "Quit ");
-    id quitTitle = objc_msgSend_t(id, id)(
-        quitTitlePrefixString, sel("stringByAppendingString:"), appName);
+    id quitTitle = objc_msgSend_t(id, id)(quitTitlePrefixString, sel("stringByAppendingString:"), appName);
 
-    id quitMenuItemKey =
-        objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), "q");
+    id quitMenuItemKey = objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), "q");
     id quitMenuItem = objc_alloc("NSMenuItem");
-    quitMenuItem = objc_msgSend_t(id, id, SEL, id)(
-        quitMenuItem, sel("initWithTitle:action:keyEquivalent:"), quitTitle,
-        sel("terminate:"), quitMenuItemKey);
+    quitMenuItem = objc_msgSend_t(id, id, SEL, id)(quitMenuItem, sel("initWithTitle:action:keyEquivalent:"), quitTitle,
+                                                   sel("terminate:"), quitMenuItemKey);
 
     objc_msgSend_void_id(appMenu, sel("addItem:"), quitMenuItem);
     objc_msgSend_void_id(appMenuItem, sel("setSubmenu:"), appMenu);
@@ -2800,17 +2923,17 @@ void tigrInitOSX() {
 }
 
 void tigrError(Tigr* bmp, const char* message, ...) {
-	char tmp[1024];
+    char tmp[1024];
 
-	va_list args;
-	va_start(args, message);
-	vsnprintf(tmp, sizeof(tmp), message, args);
-	tmp[sizeof(tmp)-1] = 0;
-	va_end(args);
+    va_list args;
+    va_start(args, message);
+    vsnprintf(tmp, sizeof(tmp), message, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
 
-	printf("tigr fatal error: %s\n", tmp);
+    printf("tigr fatal error: %s\n", tmp);
 
-	exit(1);
+    exit(1);
 }
 
 NSSize _tigrContentBackingSize(id window) {
@@ -2826,8 +2949,8 @@ enum {
     NSWindowStyleMaskClosable = 1 << 1,
     NSWindowStyleMaskMiniaturizable = 1 << 2,
     NSWindowStyleMaskResizable = 1 << 3,
-    NSWindowStyleRegular = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-        NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable,
+    NSWindowStyleRegular = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
+                           NSWindowStyleMaskResizable,
     NSWindowStyleMaskFullSizeContentView = 1 << 15
 };
 
@@ -2841,17 +2964,15 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     // In AUTO mode, window follows requested size, unless downscaled by tigrEnforceScale below.
     int windowScale = 1;
-    
+
     // In non-AUTO mode, see how big we can make it and still fit on-screen.
     if ((flags & TIGR_AUTO) == 0) {
         CGRect mainMonitor = CGDisplayBounds(CGMainDisplayID());
         int maxW = CGRectGetWidth(mainMonitor);
         int maxH = CGRectGetHeight(mainMonitor);
-        NSRect screen = {{0, 0}, {maxW, maxH}};
+        NSRect screen = { { 0, 0 }, { maxW, maxH } };
         NSRect content = objc_msgSend_stret_t(NSRect, NSRect, NSUInteger)(
-            class("NSWindow"), sel("contentRectForFrameRect:styleMask:"),
-            screen, windowStyleMask
-        );
+            class("NSWindow"), sel("contentRectForFrameRect:styleMask:"), screen, windowStyleMask);
         windowScale = tigrCalcScale(w, h, content.size.width, content.size.height);
     }
 
@@ -2861,7 +2982,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     id windowAlloc = objc_msgSend_id(class("NSWindow"), sel("alloc"));
     id window = ((id(*)(id, SEL, NSRect, NSUInteger, NSUInteger, BOOL))objc_msgSend)(
         windowAlloc, sel("initWithContentRect:styleMask:backing:defer:"), rect, windowStyleMask, 2, NO);
-
 
     objc_msgSend_void_bool(window, sel("setReleasedWhenClosed:"), NO);
 
@@ -2893,14 +3013,13 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     id contentView = objc_msgSend_id(window, sel("contentView"));
 
-	int wantsHighRes = (flags & TIGR_RETINA);
+    int wantsHighRes = (flags & TIGR_RETINA);
     objc_msgSend_void_bool(contentView, sel("setWantsBestResolutionOpenGLSurface:"), wantsHighRes);
 
     NSPoint point = { 20, 20 };
     ((void (*)(id, SEL, NSPoint))objc_msgSend)(window, sel("cascadeTopLeftFromPoint:"), point);
 
-    id titleString =
-        objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), title);
+    id titleString = objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), title);
     objc_msgSend_void_id(window, sel("setTitle:"), titleString);
 
     uint32_t glAttributes[] = { 8, 24,  //	NSOpenGLPFAColorSize, 24,
@@ -2910,18 +3029,16 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
                                 // 72,			//	NSOpenGLPFANoRecovery,
                                 // 55, 1,		//	NSOpenGLPFASampleBuffers, 1,
                                 // 56, 4,		//	NSOpenGLPFASamples, 4,
-                                99, 0x3200,     //	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+                                99, 0x3200,  //	NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
                                 // 70, 0x00020400, // NSOpenGLPFARendererID, kCGLRendererGenericFloatID
                                 0 };
 
     id pixelFormat = objc_alloc("NSOpenGLPixelFormat");
-    pixelFormat = objc_msgSend_t(id, const uint32_t*)
-        (pixelFormat, sel("initWithAttributes:"), glAttributes);
+    pixelFormat = objc_msgSend_t(id, const uint32_t*)(pixelFormat, sel("initWithAttributes:"), glAttributes);
     objc_msgSend_void(pixelFormat, sel("autorelease"));
 
     id openGLContext = objc_alloc("NSOpenGLContext");
-    openGLContext = objc_msgSend_t(id, id, id)
-        (openGLContext, sel("initWithFormat:shareContext:"), pixelFormat, nil);
+    openGLContext = objc_msgSend_t(id, id, id)(openGLContext, sel("initWithFormat:shareContext:"), pixelFormat, nil);
 
     objc_msgSend_void_id(openGLContext, sel("setView:"), contentView);
     objc_msgSend_void_id(window, sel("makeKeyAndOrderFront:"), window);
@@ -2940,10 +3057,10 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     // In AUTO mode, always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
     int bitmapScale = 1;
-    
+
     // In non-AUTO mode, scale based on backing size
     if ((flags & TIGR_AUTO) == 0) {
-        bitmapScale = tigrEnforceScale(tigrCalcScale(w, h, windowContentSize.width, windowContentSize.height), flags); 
+        bitmapScale = tigrEnforceScale(tigrCalcScale(w, h, windowContentSize.width, windowContentSize.height), flags);
     } else {
         // In AUTO mode, bitmap size follows window size
         w = windowContentSize.width / windowScale;
@@ -2955,16 +3072,14 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
 
     {
-        #define NSTrackingMouseEnteredAndExited 1
-        #define NSTrackingActiveInKeyWindow 0x20
-        #define NSTrackingInVisibleRect 0x200
+#define NSTrackingMouseEnteredAndExited 1
+#define NSTrackingActiveInKeyWindow 0x20
+#define NSTrackingInVisibleRect 0x200
 
         int trackingFlags = NSTrackingMouseEnteredAndExited | NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect;
         id trackingArea = objc_msgSend_id(class("NSTrackingArea"), sel("alloc"));
         trackingArea = objc_msgSend_t(id, NSRect, int, id, id)(
-            trackingArea, sel("initWithRect:options:owner:userInfo:"),
-            rect, trackingFlags, wdg, 0
-        );
+            trackingArea, sel("initWithRect:options:owner:userInfo:"), rect, trackingFlags, wdg, 0);
         objc_msgSend_void_id(contentView, sel("addTrackingArea:"), trackingArea);
     }
 
@@ -2975,8 +3090,8 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->scale = bitmapScale;
     win->lastChar = 0;
     win->flags = flags;
-	win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
+    win->p1 = win->p2 = win->p3 = 0;
+    win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
@@ -3356,7 +3471,7 @@ void _tigrOnCocoaEvent(id event, id window) {
         return;
     }
 
-    NSUInteger eventType =  objc_msgSend_t(NSUInteger)(event, sel("type"));
+    NSUInteger eventType = objc_msgSend_t(NSUInteger)(event, sel("type"));
     switch (eventType) {
         case 1:  // NSLeftMouseDown
             if (win->mouseInView) {
@@ -3490,10 +3605,9 @@ void tigrUpdate(Tigr* bmp) {
     BOOL visible = 0;
 
     do {
-        event = objc_msgSend_t(id, NSUInteger, id, id, BOOL)(
-            NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"), eventMask, distantPast,
-            NSDefaultRunLoopMode, YES
-        );
+        event =
+            objc_msgSend_t(id, NSUInteger, id, id, BOOL)(NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+                                                         eventMask, distantPast, NSDefaultRunLoopMode, YES);
 
         if (event != 0) {
             processedEvents++;
@@ -3550,7 +3664,7 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
     window = (id)bmp->handle;
 
     id windowContentView = objc_msgSend_id(window, sel("contentView"));
-    NSRect adjustFrame =  objc_msgSend_stret_t(NSRect)(windowContentView, sel("frame"));
+    NSRect adjustFrame = objc_msgSend_stret_t(NSRect)(windowContentView, sel("frame"));
 
     // NSPoint is small enough to fit a register, so no need for
     // objc_msgSend_stret
@@ -3567,7 +3681,7 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
         p.y = adjustFrame.size.height;
 
     // map input to pixels
-    NSRect r = { p, {0, 0} };
+    NSRect r = { p, { 0, 0 } };
     r = objc_msgSend_stret_t(NSRect, NSRect)(windowContentView, sel("convertRectToBacking:"), r);
     p = r.origin;
 
@@ -3585,12 +3699,12 @@ void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
     }
 }
 
-int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints) {
-	int buttons = 0;
-	if (maxPoints > 0) {
-		tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
-	}
-	return buttons ? 1 : 0;
+int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
+    int buttons = 0;
+    if (maxPoints > 0) {
+        tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
+    }
+    return buttons ? 1 : 0;
 }
 
 int tigrKeyDown(Tigr* bmp, int key) {
@@ -3650,13 +3764,11 @@ float tigrTime() {
 #include <stdatomic.h>
 
 id makeNSString(const char* str) {
-    return objc_msgSend_t(id, const char*)
-        (class("NSString"), sel("stringWithUTF8String:"), str);
+    return objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), str);
 }
 
 id joinNSStrings(id a, id b) {
-    return objc_msgSend_t(id, id)
-        (a, sel("stringByAppendingString:"), b);
+    return objc_msgSend_t(id, id)(a, sel("stringByAppendingString:"), b);
 }
 
 const char* UTF8StringFromNSString(id a) {
@@ -3777,7 +3889,7 @@ void insertText(id self, SEL _sel, id text) {
     int codePoint = 0;
 
     do {
-		inserted = tigrDecodeUTF8(inserted, &codePoint);
+        inserted = tigrDecodeUTF8(inserted, &codePoint);
         if (codePoint != 0) {
             KeyEvent event;
             event.codePoint = codePoint;
@@ -3795,15 +3907,13 @@ void insertText(id self, SEL _sel, id text) {
 void deleteBackward(id self, SEL _sel) {
     KeyEvent event;
     event.codePoint = 0;
-    event.keyCode = 8; // BS
+    event.keyCode = 8;  // BS
 
-    TigrMessageData message = {
-        .message = KEY_EVENT,
-        .keyEvent = {
-            .codePoint = 0,
-            .keyCode = 8,
-        }
-    };
+    TigrMessageData message = { .message = KEY_EVENT,
+                                .keyEvent = {
+                                    .codePoint = 0,
+                                    .keyCode = 8,
+                                } };
     writeToRenderThread(&message);
 }
 
@@ -3815,10 +3925,7 @@ BOOL canResignFirstResponder(id self, SEL _sel) {
     return YES;
 }
 
-enum RenderState {
-    SWAPPED = 5150,
-    RENDERED
-};
+enum RenderState { SWAPPED = 5150, RENDERED };
 
 BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options) {
     id screen = objc_msgSend_id(class("UIScreen"), sel("mainScreen"));
@@ -3829,7 +3936,8 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     window = objc_msgSend_t(id, CGRect)(window, sel("initWithFrame:"), bounds);
 
     Class ViewController = makeClass("TigrViewController", "GLKViewController");
-    addMethod(ViewController, "viewWillTransitionToSize:withTransitionCoordinator:", viewWillTransitionToSize, "v@:{CGSize}@");
+    addMethod(ViewController, "viewWillTransitionToSize:withTransitionCoordinator:", viewWillTransitionToSize,
+              "v@:{CGSize}@");
     addMethod(ViewController, "prefersStatusBarHidden", prefersStatusBarHidden, "c@:");
     id vc = objc_msgSend_t(id)((id)ViewController, sel("alloc"));
     vc = objc_msgSend_id(vc, sel("init"));
@@ -3869,8 +3977,8 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     gState.frameCondition = objc_msgSend_t(id, int)(objc_alloc("NSConditionLock"), sel("initWithCondition:"), RENDERED);
     objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), RENDERED);
 
-    id renderThread = objc_msgSend_t(id, id, SEL, id)
-        (objc_alloc("NSThread"), sel("initWithTarget:selector:object:"), self, sel("renderMain"), NULL);
+    id renderThread = objc_msgSend_t(id, id, SEL, id)(objc_alloc("NSThread"), sel("initWithTarget:selector:object:"),
+                                                      self, sel("renderMain"), NULL);
     objc_msgSend_t(void, int)(renderThread, sel("setQualityOfService:"), NSQualityOfServiceUserInteractive);
     objc_msgSend_t(void, id)(renderThread, sel("setName:"), makeNSString("Tigr Render Thread"));
     objc_msgSend_void(renderThread, sel("start"));
@@ -3935,10 +4043,10 @@ void touches(id self, SEL sel, id touches, id event) {
             case UITouchPhaseBegan:
             case UITouchPhaseMoved:
             case UITouchPhaseStationary:
-            input.points[input.numPoints].x = location.x * gState.scaleFactor;
-            input.points[input.numPoints].y = location.y * gState.scaleFactor;
-            input.numPoints++;
-            break;
+                input.points[input.numPoints].x = location.x * gState.scaleFactor;
+                input.points[input.numPoints].y = location.y * gState.scaleFactor;
+                input.numPoints++;
+                break;
         }
         if (input.numPoints >= MAX_TOUCH_POINTS) {
             break;
@@ -4001,7 +4109,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->lastChar = 0;
     win->flags = flags;
     win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
+    win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
@@ -4020,7 +4128,7 @@ void processEvents(TigrInternal* win) {
     TigrMessageData data;
 
     while (readFromMainThread(&data)) {
-        switch(data.message) {
+        switch (data.message) {
             case SET_INPUT:
                 gState.inputState = data.inputState;
                 break;
@@ -4157,7 +4265,7 @@ void* tigrReadFile(const char* fileName, int* length) {
     return _tigrReadFile(UTF8StringFromNSString(resourcePath), length);
 }
 
-#endif // __IOS__
+#endif  // __IOS__
 
 //////// End of inlined file: tigr_ios.c ////////
 
@@ -4226,9 +4334,9 @@ void tigr_android_destroy();
 #include <X11/XKBlib.h>
 #include <GL/glx.h>
 
-static Display *dpy;
+static Display* dpy;
 static Window root;
-static XVisualInfo *vi;
+static XVisualInfo* vi;
 static Atom wmDeleteMessage;
 static XIM inputMethod;
 static GLXFBConfig fbConfig;
@@ -4236,570 +4344,621 @@ static GLXFBConfig fbConfig;
 PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = 0;
 
 static void initX11Stuff() {
-	static int done = 0;
-	if(!done) {
-		dpy = XOpenDisplay(NULL);
-		if(dpy == NULL) {
-			tigrError(0, "Cannot connect to X server");
-		}
+    static int done = 0;
+    if (!done) {
+        dpy = XOpenDisplay(NULL);
+        if (dpy == NULL) {
+            tigrError(0, "Cannot connect to X server");
+        }
 
-		root = DefaultRootWindow(dpy);
+        root = DefaultRootWindow(dpy);
 
-		static int attribList[] = {
-        	GLX_RENDER_TYPE, GLX_RGBA_BIT,
-        	GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
-        	GLX_DOUBLEBUFFER, 1,
-        	GLX_RED_SIZE, 1,
-        	GLX_GREEN_SIZE, 1,
-        	GLX_BLUE_SIZE, 1,
-        	None
-    	};
+        static int attribList[] = { GLX_RENDER_TYPE,
+                                    GLX_RGBA_BIT,
+                                    GLX_DRAWABLE_TYPE,
+                                    GLX_WINDOW_BIT,
+                                    GLX_DOUBLEBUFFER,
+                                    1,
+                                    GLX_RED_SIZE,
+                                    1,
+                                    GLX_GREEN_SIZE,
+                                    1,
+                                    GLX_BLUE_SIZE,
+                                    1,
+                                    None };
 
-    	int fbcCount = 0;
-    	GLXFBConfig *fbc = 
-			glXChooseFBConfig(
-				dpy, DefaultScreen(dpy),
-                attribList, &fbcCount
-			);
-		if (!fbc) {
-			tigrError(0, "Failed to choose FB config");
-		}
-		fbConfig = fbc[0];
+        int fbcCount = 0;
+        GLXFBConfig* fbc = glXChooseFBConfig(dpy, DefaultScreen(dpy), attribList, &fbcCount);
+        if (!fbc) {
+            tigrError(0, "Failed to choose FB config");
+        }
+        fbConfig = fbc[0];
 
-		vi = glXGetVisualFromFBConfig(dpy, fbConfig);
-	 	if(vi == NULL) {
-	 		tigrError(0, "No appropriate visual found");
-	 	}
+        vi = glXGetVisualFromFBConfig(dpy, fbConfig);
+        if (vi == NULL) {
+            tigrError(0, "No appropriate visual found");
+        }
 
-		GLXContext tmpCtx = glXCreateContext(dpy, vi, 0, GL_TRUE);
-		glXCreateContextAttribsARB =
-			(PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddressARB((const GLubyte*)"glXCreateContextAttribsARB");
-		glXDestroyContext(dpy, tmpCtx);
-		if (!glXCreateContextAttribsARB) {
-			tigrError(0, "Failed to get glXCreateContextAttribsARB");
-		}
+        GLXContext tmpCtx = glXCreateContext(dpy, vi, 0, GL_TRUE);
+        glXCreateContextAttribsARB =
+            (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddressARB((const GLubyte*)"glXCreateContextAttribsARB");
+        glXDestroyContext(dpy, tmpCtx);
+        if (!glXCreateContextAttribsARB) {
+            tigrError(0, "Failed to get glXCreateContextAttribsARB");
+        }
 
-	 	inputMethod = XOpenIM(dpy, NULL, NULL, NULL);
-	 	if(inputMethod == NULL) {
-	 		tigrError(0, "Failed to create input method");
-	 	}
+        inputMethod = XOpenIM(dpy, NULL, NULL, NULL);
+        if (inputMethod == NULL) {
+            tigrError(0, "Failed to create input method");
+        }
 
-		wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+        wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 
-		done = 1;
-	}
+        done = 1;
+    }
 }
 
 static int hasGLXExtension(Display* display, const char* wanted) {
-	const char* extensions = glXQueryExtensionsString(display, DefaultScreen(display));
-	char* dup = strdup(extensions);
-	char* found = 0;
+    const char* extensions = glXQueryExtensionsString(display, DefaultScreen(display));
+    char* dup = strdup(extensions);
+    char* found = 0;
 
-	for (char* start = dup; ;start = 0) {
-		found = strtok(start, " ");
-		if (found == 0 || strcmp(found, wanted) == 0) {
-			break;
-		}
-	}
+    for (char* start = dup;; start = 0) {
+        found = strtok(start, " ");
+        if (found == 0 || strcmp(found, wanted) == 0) {
+            break;
+        }
+    }
 
-	free(dup);
-	return found != 0;
+    free(dup);
+    return found != 0;
 }
 
 static void setupVSync(Display* display, Window win) {
-	if (hasGLXExtension(display, "GLX_EXT_swap_control")) {
-		PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT=
-			(PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalEXT");
-		if (glXSwapIntervalEXT) {
-			glXSwapIntervalEXT(display, win, 1);
-		}
-	} else if (hasGLXExtension(display, "GLX_MESA_swap_control")) {
-		PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA =
-			(PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
-		if (glXSwapIntervalMESA) {
-			glXSwapIntervalMESA(1);
-		}
-	} else if (hasGLXExtension(display, "GLX_SGI_swap_control")) {
-		PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI =
-			(PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
-		if (glXSwapIntervalSGI) {
-			glXSwapIntervalSGI(1);
-		}
-	}
+    if (hasGLXExtension(display, "GLX_EXT_swap_control")) {
+        PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT =
+            (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalEXT");
+        if (glXSwapIntervalEXT) {
+            glXSwapIntervalEXT(display, win, 1);
+        }
+    } else if (hasGLXExtension(display, "GLX_MESA_swap_control")) {
+        PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA =
+            (PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalMESA");
+        if (glXSwapIntervalMESA) {
+            glXSwapIntervalMESA(1);
+        }
+    } else if (hasGLXExtension(display, "GLX_SGI_swap_control")) {
+        PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI =
+            (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB((const GLubyte*)"glXSwapIntervalSGI");
+        if (glXSwapIntervalSGI) {
+            glXSwapIntervalSGI(1);
+        }
+    }
 }
 
-static void tigrHideCursor(TigrInternal *win) {
-	Cursor invisibleCursor;
-	Pixmap bitmapNoData;
-	XColor black;
-	static char noData[] = { 0,0,0,0,0,0,0,0 };
-	black.red = black.green = black.blue = 0;
+static void tigrHideCursor(TigrInternal* win) {
+    Cursor invisibleCursor;
+    Pixmap bitmapNoData;
+    XColor black;
+    static char noData[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    black.red = black.green = black.blue = 0;
 
-	bitmapNoData = XCreateBitmapFromData(win->dpy, win->win, noData, 8, 8);
-	invisibleCursor = XCreatePixmapCursor(win->dpy, bitmapNoData, bitmapNoData, 
-										&black, &black, 0, 0);
-	XDefineCursor(win->dpy, win->win, invisibleCursor);
-	XFreeCursor(win->dpy, invisibleCursor);
-	XFreePixmap(win->dpy, bitmapNoData);
+    bitmapNoData = XCreateBitmapFromData(win->dpy, win->win, noData, 8, 8);
+    invisibleCursor = XCreatePixmapCursor(win->dpy, bitmapNoData, bitmapNoData, &black, &black, 0, 0);
+    XDefineCursor(win->dpy, win->win, invisibleCursor);
+    XFreeCursor(win->dpy, invisibleCursor);
+    XFreePixmap(win->dpy, bitmapNoData);
 }
-
-
 
 typedef struct {
-	unsigned long flags;
-	unsigned long functions;
-	unsigned long decorations;
-	long          inputMode;
-	unsigned long status;
+    unsigned long flags;
+    unsigned long functions;
+    unsigned long decorations;
+    long inputMode;
+    unsigned long status;
 } WindowHints;
 
+Tigr* tigrWindow(int w, int h, const char* title, int flags) {
+    Tigr* bmp = 0;
+    Colormap cmap;
+    XSetWindowAttributes swa;
+    Window xwin;
+    GLXContext glc;
+    XIC ic;
+    int scale;
 
-Tigr *tigrWindow(int w, int h, const char *title, int flags) {
-	Tigr* bmp = 0;
-	Colormap cmap;
-	XSetWindowAttributes swa;
-	Window xwin;
-	GLXContext glc;
-	XIC ic;
-	int scale;
+    initX11Stuff();
 
-	initX11Stuff();
+    if (flags & TIGR_AUTO) {
+        // Always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
+        scale = 1;
+    } else {
+        // See how big we can make it and still fit on-screen.
+        Screen* screen = DefaultScreenOfDisplay(dpy);
+        int maxW = WidthOfScreen(screen);
+        int maxH = HeightOfScreen(screen);
+        scale = tigrCalcScale(w, h, maxW, maxH);
+    }
 
-	if (flags & TIGR_AUTO) {
-		// Always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
-		scale = 1;
-	} else {
-		// See how big we can make it and still fit on-screen.
-		Screen *screen = DefaultScreenOfDisplay(dpy);
-		int maxW = WidthOfScreen(screen);
-		int maxH = HeightOfScreen(screen);
-		scale = tigrCalcScale(w, h, maxW, maxH);
-	}
+    scale = tigrEnforceScale(scale, flags);
 
-	scale = tigrEnforceScale(scale, flags);
+    cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
+    swa.colormap = cmap;
+    swa.event_mask = StructureNotifyMask;
 
-	cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
-	swa.colormap = cmap;
-	swa.event_mask = StructureNotifyMask;
+    // Create window of wanted size
+    xwin = XCreateWindow(dpy, root, 0, 0, w * scale, h * scale, 0, vi->depth, InputOutput, vi->visual,
+                         CWColormap | CWEventMask, &swa);
+    XMapWindow(dpy, xwin);
 
-	// Create window of wanted size
-	xwin = XCreateWindow(dpy, root, 0, 0, w * scale, h * scale, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
-	XMapWindow(dpy, xwin);
+    if (flags & TIGR_FULLSCREEN) {
+        // https://www.tonyobryan.com//index.php?article=9
+        WindowHints hints;
+        Atom property;
+        hints.flags = 2;
+        hints.decorations = 0;
+        property = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
+        XChangeProperty(dpy, xwin, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
+        int screen = DefaultScreen(dpy);
+        int dWidth = DisplayWidth(dpy, screen);
+        int dHeight = DisplayHeight(dpy, screen);
+        XMoveResizeWindow(dpy, xwin, 0, 0, dWidth, dHeight);
+        XMapRaised(dpy, xwin);
+        XGrabPointer(dpy, xwin, True, 0, GrabModeAsync, GrabModeAsync, xwin, 0L, CurrentTime);
+        XGrabKeyboard(dpy, xwin, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+    } else {
+        // Wait for window to get mapped
+        for (;;) {
+            XEvent e;
+            XNextEvent(dpy, &e);
+            if (e.type == MapNotify) {
+                break;
+            }
+        }
 
-	if (flags & TIGR_FULLSCREEN) {
-		// https://www.tonyobryan.com//index.php?article=9
-		WindowHints hints;
-		Atom property;
-		hints.flags = 2;
-		hints.decorations = 0;
-		property = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
-		XChangeProperty(dpy, xwin, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
-		int screen = DefaultScreen(dpy);
-		int dWidth = DisplayWidth(dpy, screen);
-		int dHeight = DisplayHeight(dpy, screen);
-		XMoveResizeWindow(dpy, xwin, 0, 0, dWidth, dHeight);
-		XMapRaised(dpy, xwin);
-		XGrabPointer(dpy, xwin, True, 0, GrabModeAsync, GrabModeAsync, xwin, 0L, CurrentTime);
-		XGrabKeyboard(dpy, xwin, False, GrabModeAsync, GrabModeAsync, CurrentTime);
-	} else  {
-		// Wait for window to get mapped
-		for(;;) {
-			XEvent e;
-			XNextEvent(dpy, &e);
-			if (e.type == MapNotify) {
-				break;
-			}
-		}
+        // Reset size if we did not get the window size we wanted above.
+        XWindowAttributes wa;
+        XGetWindowAttributes(dpy, xwin, &wa);
+        scale = tigrCalcScale(w, h, wa.width, wa.height);
+        scale = tigrEnforceScale(scale, flags);
+        XResizeWindow(dpy, xwin, w * scale, h * scale);
+    }
 
-		// Reset size if we did not get the window size we wanted above.
-		XWindowAttributes wa;
-		XGetWindowAttributes(dpy, xwin, &wa);
-		scale = tigrCalcScale(w, h, wa.width, wa.height);
-		scale = tigrEnforceScale(scale, flags);
-		XResizeWindow(dpy, xwin, w * scale, h * scale);
-	}
-
-	XTextProperty prop;
-	int result = Xutf8TextListToTextProperty(dpy, (char**) &title, 1, XUTF8StringStyle, &prop);
-	if(result == Success) {
-		Atom wmName = XInternAtom(dpy, "_NET_WM_NAME", 0);
-		XSetTextProperty(dpy, xwin, &prop, wmName);
-		XFree(prop.value);
-	}
+    XTextProperty prop;
+    int result = Xutf8TextListToTextProperty(dpy, (char**)&title, 1, XUTF8StringStyle, &prop);
+    if (result == Success) {
+        Atom wmName = XInternAtom(dpy, "_NET_WM_NAME", 0);
+        XSetTextProperty(dpy, xwin, &prop, wmName);
+        XFree(prop.value);
+    }
 
     ic = XCreateIC(inputMethod, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, xwin, NULL);
- 	if(ic == NULL) {
- 		printf("Failed to create input context\n");
- 		exit(0);
- 	}
- 	XSetICFocus(ic);
+    if (ic == NULL) {
+        printf("Failed to create input context\n");
+        exit(0);
+    }
+    XSetICFocus(ic);
 
-	XSetWMProtocols(dpy, xwin, &wmDeleteMessage, 1);
+    XSetWMProtocols(dpy, xwin, &wmDeleteMessage, 1);
 
-	glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
-	int contextAttributes[] = {
-		GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-		GLX_CONTEXT_MINOR_VERSION_ARB, 3,
-		None
-	};
-	glc = glXCreateContextAttribsARB(dpy, fbConfig, NULL, GL_TRUE, contextAttributes);
-	glXMakeCurrent(dpy, xwin, glc);
+    glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+    int contextAttributes[] = { GLX_CONTEXT_MAJOR_VERSION_ARB, 3, GLX_CONTEXT_MINOR_VERSION_ARB, 3, None };
+    glc = glXCreateContextAttribsARB(dpy, fbConfig, NULL, GL_TRUE, contextAttributes);
+    glXMakeCurrent(dpy, xwin, glc);
 
-	setupVSync(dpy, xwin);
+    setupVSync(dpy, xwin);
 
-	bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
-	bmp->handle = (void*)xwin;
+    bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
+    bmp->handle = (void*)xwin;
 
-	TigrInternal *win = tigrInternal(bmp);
-	win->win = xwin;
-	win->dpy = dpy;
-	win->glc = glc;
-	win->ic = ic;
+    TigrInternal* win = tigrInternal(bmp);
+    win->win = xwin;
+    win->dpy = dpy;
+    win->glc = glc;
+    win->ic = ic;
 
-	win->shown = 0;
-	win->closed = 0;
-	win->scale = scale;
+    win->shown = 0;
+    win->closed = 0;
+    win->scale = scale;
 
-	win->lastChar = 0;
-	win->flags = flags;
-	win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
-	win->widgetsWanted = 0;
-	win->widgetAlpha = 0;
-	win->widgetsScale = 0;
-	win->widgets = 0;
-	win->gl.gl_legacy = 0;
+    win->lastChar = 0;
+    win->flags = flags;
+    win->p1 = win->p2 = win->p3 = 0;
+    win->p4 = 1;
+    win->widgetsWanted = 0;
+    win->widgetAlpha = 0;
+    win->widgetsScale = 0;
+    win->widgets = 0;
+    win->gl.gl_legacy = 0;
 
-	memset(win->keys, 0, 256);
-	memset(win->prev, 0, 256);
+    memset(win->keys, 0, 256);
+    memset(win->prev, 0, 256);
 
-	if (flags & TIGR_NOCURSOR) {
-		tigrHideCursor(win);
-	}
+    if (flags & TIGR_NOCURSOR) {
+        tigrHideCursor(win);
+    }
 
-	tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
- 	tigrGAPICreate(bmp);
-	tigrGAPIBegin(bmp);
+    tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
+    tigrGAPICreate(bmp);
+    tigrGAPIBegin(bmp);
 
-	return bmp;
+    return bmp;
 }
 
-int tigrClosed(Tigr *bmp) {
-	TigrInternal *win = tigrInternal(bmp);
-	return win->win == 0;
+int tigrClosed(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    return win->win == 0;
 }
 
-int tigrGAPIBegin(Tigr *bmp) {
-	TigrInternal *win = tigrInternal(bmp);
-	return glXMakeCurrent(win->dpy, win->win, win->glc) ? 0 : -1;
+int tigrGAPIBegin(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    return glXMakeCurrent(win->dpy, win->win, win->glc) ? 0 : -1;
 }
 
-int tigrGAPIEnd(Tigr *bmp) {
-	(void)bmp;
-	return glXMakeCurrent(NULL, 0, 0) ? 0 : -1;
+int tigrGAPIEnd(Tigr* bmp) {
+    (void)bmp;
+    return glXMakeCurrent(NULL, 0, 0) ? 0 : -1;
 }
 
-int tigrKeyDown(Tigr *bmp, int key) {
-	TigrInternal *win;
-	assert(key < 256);
-	win = tigrInternal(bmp);
-	return win->keys[key] && !win->prev[key];
+int tigrKeyDown(Tigr* bmp, int key) {
+    TigrInternal* win;
+    assert(key < 256);
+    win = tigrInternal(bmp);
+    return win->keys[key] && !win->prev[key];
 }
 
-int tigrKeyHeld(Tigr *bmp, int key)
-{
-	TigrInternal *win;
-	assert(key < 256);
-	win = tigrInternal(bmp);
-	return win->keys[key];
+int tigrKeyHeld(Tigr* bmp, int key) {
+    TigrInternal* win;
+    assert(key < 256);
+    win = tigrInternal(bmp);
+    return win->keys[key];
 }
 
-int tigrReadChar(Tigr *bmp)
-{
-	TigrInternal *win = tigrInternal(bmp);
-	int c = win->lastChar;
-	win->lastChar = 0;
-	return c;
+int tigrReadChar(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    int c = win->lastChar;
+    win->lastChar = 0;
+    return c;
 }
-
 
 uint8_t tigrKeyFromX11(KeySym sym) {
-	if(sym >= 'a' && sym <= 'z'){
-		return (uint8_t) sym - ('a' - 'A');
-	}
+    if (sym >= 'a' && sym <= 'z') {
+        return (uint8_t)sym - ('a' - 'A');
+    }
 
-	if(sym >= '0' && sym <= '9') {
-		return (uint8_t) sym;
-	}
+    if (sym >= '0' && sym <= '9') {
+        return (uint8_t)sym;
+    }
 
-	switch(sym) {
-		case XK_KP_0: return TK_PAD0;
-		case XK_KP_1: return TK_PAD1;
-		case XK_KP_2: return TK_PAD2;
-		case XK_KP_3: return TK_PAD3;
-		case XK_KP_4: return TK_PAD4;
-		case XK_KP_5: return TK_PAD5;
-		case XK_KP_6: return TK_PAD6;
-		case XK_KP_7: return TK_PAD7;
-		case XK_KP_8: return TK_PAD8;
-		case XK_KP_9: return TK_PAD9;
+    switch (sym) {
+        case XK_KP_0:
+            return TK_PAD0;
+        case XK_KP_1:
+            return TK_PAD1;
+        case XK_KP_2:
+            return TK_PAD2;
+        case XK_KP_3:
+            return TK_PAD3;
+        case XK_KP_4:
+            return TK_PAD4;
+        case XK_KP_5:
+            return TK_PAD5;
+        case XK_KP_6:
+            return TK_PAD6;
+        case XK_KP_7:
+            return TK_PAD7;
+        case XK_KP_8:
+            return TK_PAD8;
+        case XK_KP_9:
+            return TK_PAD9;
 
-		case XK_KP_Multiply: return TK_PADMUL;
-		case XK_KP_Divide: return TK_PADDIV;
-		case XK_KP_Add: return TK_PADADD;
-		case XK_KP_Subtract: return TK_PADSUB;
-		case XK_KP_Decimal: return TK_PADDOT;
-		case XK_KP_Enter: return TK_PADENTER;
+        case XK_KP_Multiply:
+            return TK_PADMUL;
+        case XK_KP_Divide:
+            return TK_PADDIV;
+        case XK_KP_Add:
+            return TK_PADADD;
+        case XK_KP_Subtract:
+            return TK_PADSUB;
+        case XK_KP_Decimal:
+            return TK_PADDOT;
+        case XK_KP_Enter:
+            return TK_PADENTER;
 
-		case XK_F1: return TK_F1;
-		case XK_F2: return TK_F2;
-		case XK_F3: return TK_F3;
-		case XK_F4: return TK_F4;
-		case XK_F5: return TK_F5;
-		case XK_F6: return TK_F6;
-		case XK_F7: return TK_F7;
-		case XK_F8: return TK_F8;
-		case XK_F9: return TK_F9;
-		case XK_F10: return TK_F10;
-		case XK_F11: return TK_F11;
-		case XK_F12: return TK_F12;
+        case XK_F1:
+            return TK_F1;
+        case XK_F2:
+            return TK_F2;
+        case XK_F3:
+            return TK_F3;
+        case XK_F4:
+            return TK_F4;
+        case XK_F5:
+            return TK_F5;
+        case XK_F6:
+            return TK_F6;
+        case XK_F7:
+            return TK_F7;
+        case XK_F8:
+            return TK_F8;
+        case XK_F9:
+            return TK_F9;
+        case XK_F10:
+            return TK_F10;
+        case XK_F11:
+            return TK_F11;
+        case XK_F12:
+            return TK_F12;
 
-		case XK_BackSpace: return TK_BACKSPACE;
-		case XK_Tab: return TK_TAB;
-		case XK_Return: return TK_RETURN;
-		case XK_Pause: return TK_PAUSE;
-		case XK_Caps_Lock: return TK_CAPSLOCK;
-		case XK_Escape: return TK_ESCAPE;
-		case XK_space: return TK_SPACE;
+        case XK_BackSpace:
+            return TK_BACKSPACE;
+        case XK_Tab:
+            return TK_TAB;
+        case XK_Return:
+            return TK_RETURN;
+        case XK_Pause:
+            return TK_PAUSE;
+        case XK_Caps_Lock:
+            return TK_CAPSLOCK;
+        case XK_Escape:
+            return TK_ESCAPE;
+        case XK_space:
+            return TK_SPACE;
 
-		case XK_Page_Up: return TK_PAGEUP;
-		case XK_Page_Down: return TK_PAGEDN;
-		case XK_End: return TK_END;
-		case XK_Home: return TK_HOME;
-		case XK_Left: return TK_LEFT;
-		case XK_Up: return TK_UP;
-		case XK_Right: return TK_RIGHT;
-		case XK_Down: return TK_DOWN;
-		case XK_Insert: return TK_INSERT;
-		case XK_Delete: return TK_DELETE;
+        case XK_Page_Up:
+            return TK_PAGEUP;
+        case XK_Page_Down:
+            return TK_PAGEDN;
+        case XK_End:
+            return TK_END;
+        case XK_Home:
+            return TK_HOME;
+        case XK_Left:
+            return TK_LEFT;
+        case XK_Up:
+            return TK_UP;
+        case XK_Right:
+            return TK_RIGHT;
+        case XK_Down:
+            return TK_DOWN;
+        case XK_Insert:
+            return TK_INSERT;
+        case XK_Delete:
+            return TK_DELETE;
 
-		case XK_Meta_L: return TK_LWIN;
-		case XK_Meta_R: return TK_RWIN;
-		case XK_Num_Lock: return TK_NUMLOCK;
-		case XK_Scroll_Lock: return TK_SCROLL;
-		case XK_Shift_L: return TK_LSHIFT;
-		case XK_Shift_R: return TK_RSHIFT;
-		case XK_Control_L: return TK_LCONTROL;
-		case XK_Control_R: return TK_RCONTROL;
-		case XK_Alt_L: return TK_LALT;
-		case XK_Alt_R: return TK_RALT;
+        case XK_Meta_L:
+            return TK_LWIN;
+        case XK_Meta_R:
+            return TK_RWIN;
+        case XK_Num_Lock:
+            return TK_NUMLOCK;
+        case XK_Scroll_Lock:
+            return TK_SCROLL;
+        case XK_Shift_L:
+            return TK_LSHIFT;
+        case XK_Shift_R:
+            return TK_RSHIFT;
+        case XK_Control_L:
+            return TK_LCONTROL;
+        case XK_Control_R:
+            return TK_RCONTROL;
+        case XK_Alt_L:
+            return TK_LALT;
+        case XK_Alt_R:
+            return TK_RALT;
 
-		case XK_semicolon: return TK_SEMICOLON;
-		case XK_equal: return TK_EQUALS;
-		case XK_comma: return TK_COMMA;
-		case XK_minus: return TK_MINUS;
-		case XK_period: return TK_DOT;
-		case XK_slash: return TK_SLASH;
-		case XK_grave: return TK_BACKTICK;
-		case XK_bracketleft: return TK_LSQUARE;
-		case XK_backslash: return TK_BACKSLASH;
-		case XK_bracketright: return TK_RSQUARE;
-		case XK_apostrophe: return TK_TICK;
-	}
-	return 0;
+        case XK_semicolon:
+            return TK_SEMICOLON;
+        case XK_equal:
+            return TK_EQUALS;
+        case XK_comma:
+            return TK_COMMA;
+        case XK_minus:
+            return TK_MINUS;
+        case XK_period:
+            return TK_DOT;
+        case XK_slash:
+            return TK_SLASH;
+        case XK_grave:
+            return TK_BACKTICK;
+        case XK_bracketleft:
+            return TK_LSQUARE;
+        case XK_backslash:
+            return TK_BACKSLASH;
+        case XK_bracketright:
+            return TK_RSQUARE;
+        case XK_apostrophe:
+            return TK_TICK;
+    }
+    return 0;
 }
 
-static void tigrUpdateModifiers(TigrInternal *win) {
+static void tigrUpdateModifiers(TigrInternal* win) {
     win->keys[TK_SHIFT] = win->keys[TK_LSHIFT] || win->keys[TK_RSHIFT];
     win->keys[TK_CONTROL] = win->keys[TK_LCONTROL] || win->keys[TK_RCONTROL];
     win->keys[TK_ALT] = win->keys[TK_LALT] || win->keys[TK_RALT];
 }
 
 static void tigrInterpretChar(TigrInternal* win, Window root, unsigned int keycode, unsigned int mask) {
-	XKeyEvent event;
-	memset(&event, 0, sizeof(event));
-	event.type = KeyPress;
-	event.display = win->dpy;
-	event.root = root;
-	event.window = win->win;
-	event.state = mask;
-	event.keycode = keycode;
-	char inputTextUTF8[10];
-	Status status = 0;
-	Xutf8LookupString(win->ic, &event, inputTextUTF8, sizeof(inputTextUTF8), NULL, &status);
+    XKeyEvent event;
+    memset(&event, 0, sizeof(event));
+    event.type = KeyPress;
+    event.display = win->dpy;
+    event.root = root;
+    event.window = win->win;
+    event.state = mask;
+    event.keycode = keycode;
+    char inputTextUTF8[10];
+    Status status = 0;
+    Xutf8LookupString(win->ic, &event, inputTextUTF8, sizeof(inputTextUTF8), NULL, &status);
 
-	if(status == XLookupChars) {
-		tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
-	}
+    if (status == XLookupChars) {
+        tigrDecodeUTF8(inputTextUTF8, &win->lastChar);
+    }
 }
 
 static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
-	{
-		Window focused;
-		int revertTo;
-		XGetInputFocus(win->dpy, &focused, &revertTo);
+    {
+        Window focused;
+        int revertTo;
+        XGetInputFocus(win->dpy, &focused, &revertTo);
 
-		if (win->win != focused) {
-			return;
-		}
-	}
-
-	Window root;
-	Window child;
-	int rootX;
-	int rootY;
-	int winX;
-	int winY;
-	unsigned int mask;
-
-	if (XQueryPointer(win->dpy, win->win, &root, &child, &rootX, &rootY, &winX, &winY, &mask)) {
-		static unsigned int prevButtons;
-		unsigned int buttons = mask & (Button1Mask | Button2Mask | Button3Mask);
-
-		win->mouseX = (winX - win->pos[0]) / win->scale;
-		win->mouseY = (winY - win->pos[1]) / win->scale;
-
-		if (buttons != prevButtons && (winX > 0 && winX < winWidth) && (winY > 0 && winY < winHeight)) {
-			win->mouseButtons = 
-				(buttons & Button1Mask) ? 1 : 0 |
-				(buttons & Button3Mask) ? 2 : 0 |
-				(buttons & Button2Mask) ? 4 : 0 ;
-		}
-		prevButtons = buttons;
-	}
-
-	static char prevKeys[32];
-	char keys[32];
-	XQueryKeymap(win->dpy, keys);
-	for (int i = 0; i < 32; i++) {
-		char thisBlock = keys[i];
-		char prevBlock = prevKeys[i];
-		if (thisBlock != prevBlock) {
-			for (int j = 0; j < 8; j++) {
-				int thisBit = thisBlock & 1;
-				int prevBit = prevBlock & 1;
-				thisBlock >>= 1;
-				prevBlock >>= 1;
-				if (thisBit != prevBit) {
-					int keyCode = 8 * i + j;
-					KeySym keySym = XkbKeycodeToKeysym(win->dpy, keyCode, 0, 0);
-					if (keySym != NoSymbol) {
-						int key = tigrKeyFromX11(keySym);
-						win->keys[key] = thisBit;
-						tigrUpdateModifiers(win);
-
-						if (thisBit) {
-							tigrInterpretChar(win, root, keyCode, mask);
-						}
-					}
-				}
-			}
-		}
-	}
-	memcpy(prevKeys, keys, 32);
-
-	XEvent event;
-	while (XCheckTypedWindowEvent(win->dpy, win->win, ClientMessage, &event)) {
-		if(event.xclient.data.l[0] == wmDeleteMessage) {
-			glXMakeCurrent(win->dpy, None, NULL);
-			glXDestroyContext(win->dpy, win->glc);
-			XDestroyWindow(win->dpy, win->win);
-			win->win = 0;
-		}
-	}
-	XFlush(win->dpy);
-}
-
-void tigrUpdate(Tigr *bmp) {
-	XWindowAttributes gwa;
-
-	TigrInternal *win = tigrInternal(bmp);
-
-	memcpy(win->prev, win->keys, 256);
-
-	XGetWindowAttributes(win->dpy, win->win, &gwa);
-
-	if (win->flags & TIGR_AUTO)
-		tigrResize(bmp, gwa.width / win->scale, gwa.height / win->scale);
-	else
-		win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, gwa.width, gwa.height), win->flags);
-
-	tigrPosition(bmp, win->scale, gwa.width, gwa.height, win->pos);
-	glXMakeCurrent(win->dpy, win->win, win->glc);
-	tigrGAPIPresent(bmp, gwa.width, gwa.height);
-	glXSwapBuffers(win->dpy, win->win);
-
-	tigrProcessInput(win, gwa.width, gwa.height);
-}
-
-void tigrFree(Tigr *bmp) {
-	if (bmp->handle)
-	{
-		TigrInternal *win = tigrInternal(bmp);
-		if(win->win) {
-	    	glXMakeCurrent(win->dpy, None, NULL);
-        	glXDestroyContext(win->dpy, win->glc);
-        	XDestroyWindow(win->dpy, win->win);
-        	win->win = 0;
+        if (win->win != focused) {
+            return;
         }
-	}
-	free(bmp->pix);
-	free(bmp);
+    }
+
+    Window root;
+    Window child;
+    int rootX;
+    int rootY;
+    int winX;
+    int winY;
+    unsigned int mask;
+
+    if (XQueryPointer(win->dpy, win->win, &root, &child, &rootX, &rootY, &winX, &winY, &mask)) {
+        static unsigned int prevButtons;
+        unsigned int buttons = mask & (Button1Mask | Button2Mask | Button3Mask);
+
+        win->mouseX = (winX - win->pos[0]) / win->scale;
+        win->mouseY = (winY - win->pos[1]) / win->scale;
+
+        if (buttons != prevButtons && (winX > 0 && winX < winWidth) && (winY > 0 && winY < winHeight)) {
+            win->mouseButtons = (buttons & Button1Mask)       ? 1
+                                : 0 | (buttons & Button3Mask) ? 2
+                                : 0 | (buttons & Button2Mask) ? 4
+                                                              : 0;
+        }
+        prevButtons = buttons;
+    }
+
+    static char prevKeys[32];
+    char keys[32];
+    XQueryKeymap(win->dpy, keys);
+    for (int i = 0; i < 32; i++) {
+        char thisBlock = keys[i];
+        char prevBlock = prevKeys[i];
+        if (thisBlock != prevBlock) {
+            for (int j = 0; j < 8; j++) {
+                int thisBit = thisBlock & 1;
+                int prevBit = prevBlock & 1;
+                thisBlock >>= 1;
+                prevBlock >>= 1;
+                if (thisBit != prevBit) {
+                    int keyCode = 8 * i + j;
+                    KeySym keySym = XkbKeycodeToKeysym(win->dpy, keyCode, 0, 0);
+                    if (keySym != NoSymbol) {
+                        int key = tigrKeyFromX11(keySym);
+                        win->keys[key] = thisBit;
+                        tigrUpdateModifiers(win);
+
+                        if (thisBit) {
+                            tigrInterpretChar(win, root, keyCode, mask);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    memcpy(prevKeys, keys, 32);
+
+    XEvent event;
+    while (XCheckTypedWindowEvent(win->dpy, win->win, ClientMessage, &event)) {
+        if (event.xclient.data.l[0] == wmDeleteMessage) {
+            glXMakeCurrent(win->dpy, None, NULL);
+            glXDestroyContext(win->dpy, win->glc);
+            XDestroyWindow(win->dpy, win->win);
+            win->win = 0;
+        }
+    }
+    XFlush(win->dpy);
 }
 
-void tigrError(Tigr *bmp, const char *message, ...)
-{
-	char tmp[1024];
+void tigrUpdate(Tigr* bmp) {
+    XWindowAttributes gwa;
 
-	va_list args;
-	va_start(args, message);
-	vsnprintf(tmp, sizeof(tmp), message, args);
-	tmp[sizeof(tmp)-1] = 0;
-	va_end(args);
+    TigrInternal* win = tigrInternal(bmp);
 
-	printf("tigr fatal error: %s\n", tmp);
+    memcpy(win->prev, win->keys, 256);
 
-	exit(1);
+    XGetWindowAttributes(win->dpy, win->win, &gwa);
+
+    if (win->flags & TIGR_AUTO)
+        tigrResize(bmp, gwa.width / win->scale, gwa.height / win->scale);
+    else
+        win->scale = tigrEnforceScale(tigrCalcScale(bmp->w, bmp->h, gwa.width, gwa.height), win->flags);
+
+    tigrPosition(bmp, win->scale, gwa.width, gwa.height, win->pos);
+    glXMakeCurrent(win->dpy, win->win, win->glc);
+    tigrGAPIPresent(bmp, gwa.width, gwa.height);
+    glXSwapBuffers(win->dpy, win->win);
+
+    tigrProcessInput(win, gwa.width, gwa.height);
 }
 
-float tigrTime()
-{
-	static double lastTime = 0;
-
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-
-	double now = (double)tv.tv_sec + (tv.tv_usec / 1000000.0);
-	double elapsed = lastTime == 0 ? 0 : now - lastTime;
-	lastTime = now;
-
-	return (float) elapsed;
+void tigrFree(Tigr* bmp) {
+    if (bmp->handle) {
+        TigrInternal* win = tigrInternal(bmp);
+        if (win->win) {
+            glXMakeCurrent(win->dpy, None, NULL);
+            glXDestroyContext(win->dpy, win->glc);
+            XDestroyWindow(win->dpy, win->win);
+            win->win = 0;
+        }
+    }
+    free(bmp->pix);
+    free(bmp);
 }
 
-void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons)
-{
-	TigrInternal *win = tigrInternal(bmp);
-	if(x) {
-		*x = win->mouseX;
-	}
-	if(y) {
-		*y = win->mouseY;
-	}
-	if(buttons) {
-		*buttons = win->mouseButtons;
-	}
+void tigrError(Tigr* bmp, const char* message, ...) {
+    char tmp[1024];
+
+    va_list args;
+    va_start(args, message);
+    vsnprintf(tmp, sizeof(tmp), message, args);
+    tmp[sizeof(tmp) - 1] = 0;
+    va_end(args);
+
+    printf("tigr fatal error: %s\n", tmp);
+
+    exit(1);
 }
 
-int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints)
-{
-	int buttons = 0;
-	if (maxPoints > 0) {
-		tigrMouse(bmp, &points->x, &points->y, &buttons);
-	}
-	return buttons ? 1 : 0;
+float tigrTime() {
+    static double lastTime = 0;
+
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    double now = (double)tv.tv_sec + (tv.tv_usec / 1000000.0);
+    double elapsed = lastTime == 0 ? 0 : now - lastTime;
+    lastTime = now;
+
+    return (float)elapsed;
 }
 
-#endif // __linux__ && !__ANDROID__
+void tigrMouse(Tigr* bmp, int* x, int* y, int* buttons) {
+    TigrInternal* win = tigrInternal(bmp);
+    if (x) {
+        *x = win->mouseX;
+    }
+    if (y) {
+        *y = win->mouseY;
+    }
+    if (buttons) {
+        *buttons = win->mouseButtons;
+    }
+}
+
+int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
+    int buttons = 0;
+    if (maxPoints > 0) {
+        tigrMouse(bmp, &points->x, &points->y, &buttons);
+    }
+    return buttons ? 1 : 0;
+}
+
+#endif  // __linux__ && !__ANDROID__
 
 //////// End of inlined file: tigr_linux.c ////////
 
@@ -5141,7 +5300,7 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_ESCAPE;
         case AKEYCODE_SPACE:
             return TK_SPACE;
-        
+
         case AKEYCODE_PAGE_UP:
             return TK_PAGEUP;
         case AKEYCODE_PAGE_DOWN:
@@ -5158,7 +5317,7 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_UP;
         case AKEYCODE_DPAD_DOWN:
             return TK_DOWN;
-        
+
         case AKEYCODE_INSERT:
             return TK_INSERT;
         case AKEYCODE_FORWARD_DEL:
@@ -5167,7 +5326,7 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_NUMLOCK;
         case AKEYCODE_SCROLL_LOCK:
             return TK_SCROLL;
-        
+
         case AKEYCODE_SEMICOLON:
             return TK_SEMICOLON;
         case AKEYCODE_EQUALS:
@@ -5190,8 +5349,9 @@ static int tigrKeyFromAndroidKey(int key) {
             return TK_LSQUARE;
         case AKEYCODE_RIGHT_BRACKET:
             return TK_RSQUARE;
-        
-        default: return 0;
+
+        default:
+            return 0;
     }
 }
 
@@ -5223,7 +5383,7 @@ static int processInputEvent(AInputEvent* event, TigrInternal* win) {
             gState.inputState.numPoints = targetPointCount;
         }
         return 1;
-    } else if(AInputEvent_getType(event) == AINPUT_EVENT_TYPE_KEY) {
+    } else if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_KEY) {
         if (!win) {
             return 1;
         }
@@ -5262,7 +5422,7 @@ static int handleEvent(AndroidEvent event, void* userData) {
             break;
 
         case AE_INPUT:
-            return processInputEvent(event.inputEvent, (TigrInternal*) userData);
+            return processInputEvent(event.inputEvent, (TigrInternal*)userData);
 
         case AE_RESUME:
             gState.lastTime = event.time;
@@ -5355,7 +5515,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->lastChar = 0;
     win->flags = flags;
     win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
+    win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
@@ -5584,59 +5744,75 @@ extern const int tigr_upscale_gl_vs_size, tigr_upscale_gl_fs_size, tigr_default_
 #ifdef TIGR_GAPI_GL_WIN_USE_GLEXT
 #include <glext.h>
 #include <wglext.h>
-#else // short version of glext.h and wglext.h so we don't need to depend on them
+#else  // short version of glext.h and wglext.h so we don't need to depend on them
 #ifndef APIENTRY
 #define APIENTRY
 #endif
 #ifndef APIENTRYP
-#define APIENTRYP APIENTRY *
+#define APIENTRYP APIENTRY*
 #endif
 typedef ptrdiff_t GLsizeiptr;
-#define GL_COMPILE_STATUS                 0x8B81
-#define GL_LINK_STATUS                    0x8B82
-#define GL_ARRAY_BUFFER                   0x8892
-#define GL_STATIC_DRAW                    0x88E4
-#define GL_VERTEX_SHADER                  0x8B31
-#define GL_FRAGMENT_SHADER                0x8B30
-#define GL_BGRA                           0x80E1
-#define GL_TEXTURE0                       0x84C0
-typedef void (APIENTRYP PFNGLGENVERTEXARRAYSPROC) (GLsizei n, GLuint *arrays);
-typedef void (APIENTRYP PFNGLGENBUFFERSARBPROC) (GLsizei n, GLuint *buffers);
-typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
-typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const void *data, GLenum usage);
-typedef void (APIENTRYP PFNGLBINDVERTEXARRAYPROC) (GLuint array);
-typedef void (APIENTRYP PFNGLENABLEVERTEXATTRIBARRAYPROC) (GLuint index);
-typedef void (APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
-typedef GLuint (APIENTRYP PFNGLCREATESHADERPROC) (GLenum type);
+#define GL_COMPILE_STATUS 0x8B81
+#define GL_LINK_STATUS 0x8B82
+#define GL_ARRAY_BUFFER 0x8892
+#define GL_STATIC_DRAW 0x88E4
+#define GL_VERTEX_SHADER 0x8B31
+#define GL_FRAGMENT_SHADER 0x8B30
+#define GL_BGRA 0x80E1
+#define GL_TEXTURE0 0x84C0
+typedef void(APIENTRYP PFNGLGENVERTEXARRAYSPROC)(GLsizei n, GLuint* arrays);
+typedef void(APIENTRYP PFNGLGENBUFFERSARBPROC)(GLsizei n, GLuint* buffers);
+typedef void(APIENTRYP PFNGLBINDBUFFERPROC)(GLenum target, GLuint buffer);
+typedef void(APIENTRYP PFNGLBUFFERDATAPROC)(GLenum target, GLsizeiptr size, const void* data, GLenum usage);
+typedef void(APIENTRYP PFNGLBINDVERTEXARRAYPROC)(GLuint array);
+typedef void(APIENTRYP PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint index);
+typedef void(APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC)(GLuint index,
+                                                     GLint size,
+                                                     GLenum type,
+                                                     GLboolean normalized,
+                                                     GLsizei stride,
+                                                     const void* pointer);
+typedef GLuint(APIENTRYP PFNGLCREATESHADERPROC)(GLenum type);
 typedef char GLchar;
-typedef void (APIENTRYP PFNGLSHADERSOURCEPROC) (GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
-typedef void (APIENTRYP PFNGLCOMPILESHADERPROC) (GLuint shader);
-typedef GLuint (APIENTRYP PFNGLCREATEPROGRAMPROC) (void);
-typedef void (APIENTRYP PFNGLATTACHSHADERPROC) (GLuint program, GLuint shader);
-typedef void (APIENTRYP PFNGLLINKPROGRAMPROC) (GLuint program);
-typedef void (APIENTRYP PFNGLDELETESHADERPROC) (GLuint shader);
-typedef void (APIENTRYP PFNGLDELETEPROGRAMPROC) (GLuint program);
-typedef void (APIENTRYP PFNGLGETSHADERIVPROC) (GLuint shader, GLenum pname, GLint *params);
-typedef void (APIENTRYP PFNGLGETSHADERINFOLOGPROC) (GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-typedef void (APIENTRYP PFNGLGETPROGRAMIVPROC) (GLuint program, GLenum pname, GLint *params);
-typedef void (APIENTRYP PFNGLGETPROGRAMINFOLOGPROC) (GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-typedef void (APIENTRYP PFNGLUSEPROGRAMPROC) (GLuint program);
-typedef GLint (APIENTRYP PFNGLGETUNIFORMLOCATIONPROC) (GLuint program, const GLchar *name);
-typedef void (APIENTRYP PFNGLUNIFORM4FPROC) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
-typedef void (APIENTRYP PFNGLUNIFORMMATRIX4FVPROC) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
-typedef void (APIENTRYP PFNGLACTIVETEXTUREPROC) (GLenum texture);
-#define WGL_DRAW_TO_WINDOW_ARB            0x2001
-#define WGL_SUPPORT_OPENGL_ARB            0x2010
-#define WGL_DOUBLE_BUFFER_ARB             0x2011
-#define WGL_PIXEL_TYPE_ARB                0x2013
-#define WGL_COLOR_BITS_ARB                0x2014
-#define WGL_DEPTH_BITS_ARB                0x2022
-#define WGL_STENCIL_BITS_ARB              0x2023
-#define WGL_TYPE_RGBA_ARB                 0x202B
-#define WGL_CONTEXT_MAJOR_VERSION_ARB     0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB     0x2092
-typedef BOOL (WINAPI * PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
-typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
+typedef void(APIENTRYP PFNGLSHADERSOURCEPROC)(GLuint shader,
+                                              GLsizei count,
+                                              const GLchar* const* string,
+                                              const GLint* length);
+typedef void(APIENTRYP PFNGLCOMPILESHADERPROC)(GLuint shader);
+typedef GLuint(APIENTRYP PFNGLCREATEPROGRAMPROC)(void);
+typedef void(APIENTRYP PFNGLATTACHSHADERPROC)(GLuint program, GLuint shader);
+typedef void(APIENTRYP PFNGLLINKPROGRAMPROC)(GLuint program);
+typedef void(APIENTRYP PFNGLDELETESHADERPROC)(GLuint shader);
+typedef void(APIENTRYP PFNGLDELETEPROGRAMPROC)(GLuint program);
+typedef void(APIENTRYP PFNGLGETSHADERIVPROC)(GLuint shader, GLenum pname, GLint* params);
+typedef void(APIENTRYP PFNGLGETSHADERINFOLOGPROC)(GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog);
+typedef void(APIENTRYP PFNGLGETPROGRAMIVPROC)(GLuint program, GLenum pname, GLint* params);
+typedef void(APIENTRYP PFNGLGETPROGRAMINFOLOGPROC)(GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog);
+typedef void(APIENTRYP PFNGLUSEPROGRAMPROC)(GLuint program);
+typedef GLint(APIENTRYP PFNGLGETUNIFORMLOCATIONPROC)(GLuint program, const GLchar* name);
+typedef void(APIENTRYP PFNGLUNIFORM4FPROC)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+typedef void(APIENTRYP PFNGLUNIFORMMATRIX4FVPROC)(GLint location,
+                                                  GLsizei count,
+                                                  GLboolean transpose,
+                                                  const GLfloat* value);
+typedef void(APIENTRYP PFNGLACTIVETEXTUREPROC)(GLenum texture);
+#define WGL_DRAW_TO_WINDOW_ARB 0x2001
+#define WGL_SUPPORT_OPENGL_ARB 0x2010
+#define WGL_DOUBLE_BUFFER_ARB 0x2011
+#define WGL_PIXEL_TYPE_ARB 0x2013
+#define WGL_COLOR_BITS_ARB 0x2014
+#define WGL_DEPTH_BITS_ARB 0x2022
+#define WGL_STENCIL_BITS_ARB 0x2023
+#define WGL_TYPE_RGBA_ARB 0x202B
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+typedef BOOL(WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc,
+                                                     const int* piAttribIList,
+                                                     const FLOAT* pfAttribFList,
+                                                     UINT nMaxFormats,
+                                                     int* piFormats,
+                                                     UINT* nNumFormats);
+typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int* attribList);
 #endif
 
 PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormat;
@@ -5665,338 +5841,343 @@ PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
 PFNGLUNIFORM4FPROC glUniform4f;
 PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
 PFNGLACTIVETEXTUREPROC glActiveTexture;
-int tigrGL11Init(Tigr *bmp)
-{
-	int pixel_format;
-	TigrInternal *win = tigrInternal(bmp);
-	GLStuff *gl= &win->gl;
-	PIXELFORMATDESCRIPTOR pfd =
-	{
-		sizeof(PIXELFORMATDESCRIPTOR),
-		1,
-		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SWAP_EXCHANGE,
-		PFD_TYPE_RGBA,
-		32, // color bits
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0,
-		24, // depth
-		8,  // stencil
-		0,
-		PFD_MAIN_PLANE, // is it ignored ?
-		0,
-		0, 0, 0
-	};
-	if(!(gl->dc = GetDC((HWND)bmp->handle))) {tigrError(bmp, "Cannot create OpenGL device context.\n"); return -1;}
-	if(!(pixel_format = ChoosePixelFormat(gl->dc, &pfd))) {tigrError(bmp, "Cannot choose OpenGL pixel format.\n"); return -1;}
-	if(!SetPixelFormat(gl->dc, pixel_format, &pfd)) {tigrError(bmp, "Cannot set OpenGL pixel format.\n"); return -1;}
-	if(!(gl->hglrc = wglCreateContext(gl->dc))) {tigrError(bmp, "Cannot create OpenGL context.\n"); return -1;}
-	if(!wglMakeCurrent(gl->dc, gl->hglrc)) {tigrError(bmp, "Cannot activate OpenGL context.\n"); return -1;}
-	gl->gl_legacy = 1;
-	return 0;
+int tigrGL11Init(Tigr* bmp) {
+    int pixel_format;
+    TigrInternal* win = tigrInternal(bmp);
+    GLStuff* gl = &win->gl;
+    PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR),
+                                  1,
+                                  PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SWAP_EXCHANGE,
+                                  PFD_TYPE_RGBA,
+                                  32,  // color bits
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  24,  // depth
+                                  8,   // stencil
+                                  0,
+                                  PFD_MAIN_PLANE,  // is it ignored ?
+                                  0,
+                                  0,
+                                  0,
+                                  0 };
+    if (!(gl->dc = GetDC((HWND)bmp->handle))) {
+        tigrError(bmp, "Cannot create OpenGL device context.\n");
+        return -1;
+    }
+    if (!(pixel_format = ChoosePixelFormat(gl->dc, &pfd))) {
+        tigrError(bmp, "Cannot choose OpenGL pixel format.\n");
+        return -1;
+    }
+    if (!SetPixelFormat(gl->dc, pixel_format, &pfd)) {
+        tigrError(bmp, "Cannot set OpenGL pixel format.\n");
+        return -1;
+    }
+    if (!(gl->hglrc = wglCreateContext(gl->dc))) {
+        tigrError(bmp, "Cannot create OpenGL context.\n");
+        return -1;
+    }
+    if (!wglMakeCurrent(gl->dc, gl->hglrc)) {
+        tigrError(bmp, "Cannot activate OpenGL context.\n");
+        return -1;
+    }
+    gl->gl_legacy = 1;
+    return 0;
 }
-int tigrGL33Init(Tigr *bmp)
-{
-	int pixel_format;
-	UINT num_formats;
-	TigrInternal *win = tigrInternal(bmp);
-	GLStuff *gl= &win->gl;
+int tigrGL33Init(Tigr* bmp) {
+    int pixel_format;
+    UINT num_formats;
+    TigrInternal* win = tigrInternal(bmp);
+    GLStuff* gl = &win->gl;
 
-	wglChoosePixelFormat = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
-	wglCreateContextAttribs = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-	glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)wglGetProcAddress("glGenVertexArrays");
-	glGenBuffers = (PFNGLGENBUFFERSARBPROC)wglGetProcAddress("glGenBuffers");
-	glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
-	glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
-	glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
-	glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glEnableVertexAttribArray");
-	glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
-	glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
-	glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
-	glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
-	glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
-	glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
-	glLinkProgram = (PFNGLLINKPROGRAMPROC)wglGetProcAddress("glLinkProgram");
-	glDeleteShader = (PFNGLDELETESHADERPROC)wglGetProcAddress("glDeleteShader");
-	glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
-	glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");
-	glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
-	glGetProgramiv = (PFNGLGETPROGRAMIVPROC)wglGetProcAddress("glGetProgramiv");
-	glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog");
-	glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
-	glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
-	glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
-	glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)wglGetProcAddress("glUniformMatrix4fv");
-	glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
+    wglChoosePixelFormat = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
+    wglCreateContextAttribs = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+    glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)wglGetProcAddress("glGenVertexArrays");
+    glGenBuffers = (PFNGLGENBUFFERSARBPROC)wglGetProcAddress("glGenBuffers");
+    glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
+    glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
+    glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
+    glEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glEnableVertexAttribArray");
+    glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
+    glCreateShader = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");
+    glShaderSource = (PFNGLSHADERSOURCEPROC)wglGetProcAddress("glShaderSource");
+    glCompileShader = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
+    glCreateProgram = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
+    glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
+    glLinkProgram = (PFNGLLINKPROGRAMPROC)wglGetProcAddress("glLinkProgram");
+    glDeleteShader = (PFNGLDELETESHADERPROC)wglGetProcAddress("glDeleteShader");
+    glDeleteProgram = (PFNGLDELETEPROGRAMPROC)wglGetProcAddress("glDeleteProgram");
+    glGetShaderiv = (PFNGLGETSHADERIVPROC)wglGetProcAddress("glGetShaderiv");
+    glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)wglGetProcAddress("glGetShaderInfoLog");
+    glGetProgramiv = (PFNGLGETPROGRAMIVPROC)wglGetProcAddress("glGetProgramiv");
+    glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)wglGetProcAddress("glGetProgramInfoLog");
+    glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
+    glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)wglGetProcAddress("glGetUniformLocation");
+    glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
+    glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)wglGetProcAddress("glUniformMatrix4fv");
+    glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
 
-	if(!wglChoosePixelFormat || !wglCreateContextAttribs) {tigrError(bmp, "Cannot create OpenGL context.\n"); return -1;}
-	const int attribList[] =
-	{
-		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-		WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-		WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-		WGL_COLOR_BITS_ARB, 32,
-		WGL_DEPTH_BITS_ARB, 24,
-		WGL_STENCIL_BITS_ARB, 8,
-		0
-	};
-	int attribs[] = {
-		WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-		WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-		0
-	};
-	if(!wglChoosePixelFormat(gl->dc, attribList, NULL, 1, &pixel_format, &num_formats)) {tigrError(bmp, "Cannot choose OpenGL pixel format.\n"); return -1;}
-	if(!(gl->hglrc = wglCreateContextAttribs(gl->dc, gl->hglrc, attribs))) {tigrError(bmp, "Cannot create OpenGL context attribs.\n"); return -1;}
-	if(!wglMakeCurrent(gl->dc, gl->hglrc)) {tigrError(bmp, "Cannot activate OpenGL context.\n"); return -1;}
-	gl->gl_legacy = 0;
-	return 0;
+    if (!wglChoosePixelFormat || !wglCreateContextAttribs) {
+        tigrError(bmp, "Cannot create OpenGL context.\n");
+        return -1;
+    }
+    const int attribList[] = { WGL_DRAW_TO_WINDOW_ARB,
+                               GL_TRUE,
+                               WGL_SUPPORT_OPENGL_ARB,
+                               GL_TRUE,
+                               WGL_DOUBLE_BUFFER_ARB,
+                               GL_TRUE,
+                               WGL_PIXEL_TYPE_ARB,
+                               WGL_TYPE_RGBA_ARB,
+                               WGL_COLOR_BITS_ARB,
+                               32,
+                               WGL_DEPTH_BITS_ARB,
+                               24,
+                               WGL_STENCIL_BITS_ARB,
+                               8,
+                               0 };
+    int attribs[] = { WGL_CONTEXT_MAJOR_VERSION_ARB, 3, WGL_CONTEXT_MINOR_VERSION_ARB, 3, 0 };
+    if (!wglChoosePixelFormat(gl->dc, attribList, NULL, 1, &pixel_format, &num_formats)) {
+        tigrError(bmp, "Cannot choose OpenGL pixel format.\n");
+        return -1;
+    }
+    if (!(gl->hglrc = wglCreateContextAttribs(gl->dc, gl->hglrc, attribs))) {
+        tigrError(bmp, "Cannot create OpenGL context attribs.\n");
+        return -1;
+    }
+    if (!wglMakeCurrent(gl->dc, gl->hglrc)) {
+        tigrError(bmp, "Cannot activate OpenGL context.\n");
+        return -1;
+    }
+    gl->gl_legacy = 0;
+    return 0;
 }
 #endif
 
-void tigrCheckGLError(const char *state)
-{
-	GLenum err = glGetError();
-	if(err != GL_NO_ERROR) {
-		tigrError(NULL, "got GL error %x when doing %s\n", err, state);
-	}
+void tigrCheckGLError(const char* state) {
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        tigrError(NULL, "got GL error %x when doing %s\n", err, state);
+    }
 }
 
-void tigrCheckShaderErrors(GLuint object)
-{
-	GLint success;
-	GLchar info[2048];
-	glGetShaderiv(object, GL_COMPILE_STATUS, &success);
-	if(!success)
-	{
-		glGetShaderInfoLog(object, sizeof(info), NULL, info);
-		tigrError(NULL, "shader compile error : %s\n", info);
-	}
+void tigrCheckShaderErrors(GLuint object) {
+    GLint success;
+    GLchar info[2048];
+    glGetShaderiv(object, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(object, sizeof(info), NULL, info);
+        tigrError(NULL, "shader compile error : %s\n", info);
+    }
 }
 
-void tigrCheckProgramErrors(GLuint object)
-{
-	GLint success;
-	GLchar info[2048];
-	glGetProgramiv(object, GL_LINK_STATUS, &success);
-	if(!success)
-	{
-		glGetProgramInfoLog(object, sizeof(info), NULL, info);
-		tigrError(NULL, "shader link error : %s\n", info);
-	}
+void tigrCheckProgramErrors(GLuint object) {
+    GLint success;
+    GLchar info[2048];
+    glGetProgramiv(object, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(object, sizeof(info), NULL, info);
+        tigrError(NULL, "shader link error : %s\n", info);
+    }
 }
 
 void tigrCreateShaderProgram(GLStuff* gl, const char* fxSource, int fxSize) {
-	if (gl->program != 0) {
-		glDeleteProgram(gl->program);
-		gl->program = 0;
-	}
+    if (gl->program != 0) {
+        glDeleteProgram(gl->program);
+        gl->program = 0;
+    }
 
-	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-	const char *vs_source = (const char*)&tigr_upscale_gl_vs;
-	glShaderSource(vs, 1, &vs_source, &tigr_upscale_gl_vs_size);
-	glCompileShader(vs);
-	tigrCheckShaderErrors(vs);
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    const char* vs_source = (const char*)&tigr_upscale_gl_vs;
+    glShaderSource(vs, 1, &vs_source, &tigr_upscale_gl_vs_size);
+    glCompileShader(vs);
+    tigrCheckShaderErrors(vs);
 
-	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-	const char* fs_sources[] = {
-		(const char*)tigr_upscale_gl_fs,
-		fxSource,
-	};
-	const int fs_lengths[] = {
-		tigr_upscale_gl_fs_size,
-		fxSize,
-	};
-	glShaderSource(fs, 2, fs_sources, fs_lengths);
-	glCompileShader(fs);
-	tigrCheckShaderErrors(fs);
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    const char* fs_sources[] = {
+        (const char*)tigr_upscale_gl_fs,
+        fxSource,
+    };
+    const int fs_lengths[] = {
+        tigr_upscale_gl_fs_size,
+        fxSize,
+    };
+    glShaderSource(fs, 2, fs_sources, fs_lengths);
+    glCompileShader(fs);
+    tigrCheckShaderErrors(fs);
 
+    gl->program = glCreateProgram();
+    glAttachShader(gl->program, vs);
+    glAttachShader(gl->program, fs);
+    glLinkProgram(gl->program);
+    tigrCheckProgramErrors(gl->program);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
 
-	gl->program = glCreateProgram();
-	glAttachShader(gl->program, vs);
-	glAttachShader(gl->program, fs);
-	glLinkProgram(gl->program);
-	tigrCheckProgramErrors(gl->program);
-	glDeleteShader(vs);
-	glDeleteShader(fs);
-
-	gl->uniform_projection = glGetUniformLocation(gl->program, "projection");
-	gl->uniform_model = glGetUniformLocation(gl->program, "model");
-	gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
+    gl->uniform_projection = glGetUniformLocation(gl->program, "projection");
+    gl->uniform_model = glGetUniformLocation(gl->program, "model");
+    gl->uniform_parameters = glGetUniformLocation(gl->program, "parameters");
 }
 
-void tigrGAPICreate(Tigr *bmp)
-{
-	TigrInternal *win = tigrInternal(bmp);
-	GLStuff *gl= &win->gl;
-	GLuint VBO;
-	GLfloat vertices[] = {
-		// pos      uv
-		0.0f, 1.0f, 0.0f, 1.0f,
-		1.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 1.0f,
-		1.0f, 1.0f, 1.0f, 1.0f,
-		1.0f, 0.0f, 1.0f, 0.0f
-	};
+void tigrGAPICreate(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    GLStuff* gl = &win->gl;
+    GLuint VBO;
+    GLfloat vertices[] = { // pos      uv
+                           0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                           0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f
+    };
 
-	#ifdef _WIN32
-	if(tigrGL11Init(bmp))
-		return;
-	tigrGL33Init(bmp);
-	#endif
+#ifdef _WIN32
+    if (tigrGL11Init(bmp))
+        return;
+    tigrGL33Init(bmp);
+#endif
 
-	if(!gl->gl_legacy)
-	{
-		// create vao
-		glGenVertexArrays(1, &gl->vao);
-		glGenBuffers(1, &VBO);
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glBindVertexArray(gl->vao);
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
-	
-		// create program
-		tigrCreateShaderProgram(gl, tigr_default_fx_gl_fs, tigr_default_fx_gl_fs_size);
-	}
+    if (!gl->gl_legacy) {
+        // create vao
+        glGenVertexArrays(1, &gl->vao);
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glBindVertexArray(gl->vao);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), NULL);
 
-	// create textures
-	if(gl->gl_legacy) {
-		glEnable(GL_TEXTURE_2D);
-	}
-	glGenTextures(2, gl->tex);
-	for(int i = 0; i < 2; ++i) {
-		glBindTexture(GL_TEXTURE_2D, gl->tex[i]);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->gl_legacy ? GL_NEAREST : GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->gl_legacy ? GL_NEAREST : GL_LINEAR);
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	}
+        // create program
+        tigrCreateShaderProgram(gl, tigr_default_fx_gl_fs, tigr_default_fx_gl_fs_size);
+    }
 
-	tigrCheckGLError("initialization");
+    // create textures
+    if (gl->gl_legacy) {
+        glEnable(GL_TEXTURE_2D);
+    }
+    glGenTextures(2, gl->tex);
+    for (int i = 0; i < 2; ++i) {
+        glBindTexture(GL_TEXTURE_2D, gl->tex[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->gl_legacy ? GL_NEAREST : GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->gl_legacy ? GL_NEAREST : GL_LINEAR);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    }
+
+    tigrCheckGLError("initialization");
 }
 
-void tigrGAPIDestroy(Tigr *bmp)
-{
-	TigrInternal *win = tigrInternal(bmp);
-	GLStuff *gl= &win->gl;
+void tigrGAPIDestroy(Tigr* bmp) {
+    TigrInternal* win = tigrInternal(bmp);
+    GLStuff* gl = &win->gl;
 
-	if(tigrGAPIBegin(bmp) < 0) {tigrError(bmp, "Cannot activate OpenGL context.\n"); return;}
+    if (tigrGAPIBegin(bmp) < 0) {
+        tigrError(bmp, "Cannot activate OpenGL context.\n");
+        return;
+    }
 
-	if(!gl->gl_legacy)
-	{
-		glDeleteTextures(2, gl->tex);
-		glDeleteProgram(gl->program);
-	}
+    if (!gl->gl_legacy) {
+        glDeleteTextures(2, gl->tex);
+        glDeleteProgram(gl->program);
+    }
 
-	tigrCheckGLError("destroy");
+    tigrCheckGLError("destroy");
 
-	if(tigrGAPIEnd(bmp) < 0) {tigrError(bmp, "Cannot deactivate OpenGL context.\n"); return;}
+    if (tigrGAPIEnd(bmp) < 0) {
+        tigrError(bmp, "Cannot deactivate OpenGL context.\n");
+        return;
+    }
 }
 
-void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr *bmp, int x1, int y1, int x2, int y2)
-{
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp->pix);
+void tigrGAPIDraw(int legacy, GLuint uniform_model, GLuint tex, Tigr* bmp, int x1, int y1, int x2, int y2) {
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, bmp->w, bmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp->pix);
 
-	if(!legacy)
-	{
-		float sx = (float)(x2 - x1);
-		float sy = (float)(y2 - y1);
-		float tx = (float)x1;
-		float ty = (float)y1;
+    if (!legacy) {
+        float sx = (float)(x2 - x1);
+        float sy = (float)(y2 - y1);
+        float tx = (float)x1;
+        float ty = (float)y1;
 
-		float model[16] =
-		{
-			  sx, 0.0f, 0.0f, 0.0f,
-			0.0f,   sy, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			  tx,   ty, 0.0f, 1.0f
-		};
+        float model[16] = { sx, 0.0f, 0.0f, 0.0f, 0.0f, sy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, tx, ty, 0.0f, 1.0f };
 
-		glUniformMatrix4fv(uniform_model, 1, GL_FALSE, model);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-	}
-	else
-	{
-		#if !(__APPLE__  || __ANDROID__)
-		glBegin(GL_QUADS);
-		glTexCoord2f(1.0f, 0.0f); glVertex2i(x2, y1);
-		glTexCoord2f(0.0f, 0.0f); glVertex2i(x1, y1);
-		glTexCoord2f(0.0f, 1.0f); glVertex2i(x1, y2);
-		glTexCoord2f(1.0f, 1.0f); glVertex2i(x2, y2);
-		glEnd();
-		#else
-		assert(0);
-		#endif
-	}
+        glUniformMatrix4fv(uniform_model, 1, GL_FALSE, model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    } else {
+#if !(__APPLE__ || __ANDROID__)
+        glBegin(GL_QUADS);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex2i(x2, y1);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2i(x1, y1);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex2i(x1, y2);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex2i(x2, y2);
+        glEnd();
+#else
+        assert(0);
+#endif
+    }
 }
 
-void tigrGAPIPresent(Tigr *bmp, int w, int h)
-{
-	TigrInternal *win = tigrInternal(bmp);
-	GLStuff *gl= &win->gl;
+void tigrGAPIPresent(Tigr* bmp, int w, int h) {
+    TigrInternal* win = tigrInternal(bmp);
+    GLStuff* gl = &win->gl;
 
-	glViewport(0, 0, w, h);
-	if (!gl->gl_user_opengl_rendering)
-	{
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT);
-	}
+    glViewport(0, 0, w, h);
+    if (!gl->gl_user_opengl_rendering) {
+        glClearColor(0, 0, 0, 1);
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
 
-	if(!gl->gl_legacy)
-	{
-		float projection[16] =
-		{
-			 2.0f / w,  0.0f    , 0.0f, 0.0f,
-			 0.0f    , -2.0f / h, 0.0f, 0.0f,
-			 0.0f    ,  0.0f    , 1.0f, 0.0f,
-			-1.0f    ,  1.0f    , 0.0f, 1.0f
-		};
+    if (!gl->gl_legacy) {
+        float projection[16] = { 2.0f / w, 0.0f, 0.0f, 0.0f, 0.0f,  -2.0f / h, 0.0f, 0.0f,
+                                 0.0f,     0.0f, 1.0f, 0.0f, -1.0f, 1.0f,      0.0f, 1.0f };
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindVertexArray(gl->vao);
-		glUseProgram(gl->program);
-		glUniformMatrix4fv(gl->uniform_projection, 1, GL_FALSE, projection);
-		glUniform4f(gl->uniform_parameters, win->p1, win->p2, win->p3, win->p4);
-	}
-	else
-	{
-		#if !(__APPLE__  || __ANDROID__)
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(0, w, h, 0, -1.0f, 1.0f);
-		glEnable(GL_TEXTURE_2D);
-		#else
-		assert(0);
-		#endif
-	}
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(gl->vao);
+        glUseProgram(gl->program);
+        glUniformMatrix4fv(gl->uniform_projection, 1, GL_FALSE, projection);
+        glUniform4f(gl->uniform_parameters, win->p1, win->p2, win->p3, win->p4);
+    } else {
+#if !(__APPLE__ || __ANDROID__)
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, w, h, 0, -1.0f, 1.0f);
+        glEnable(GL_TEXTURE_2D);
+#else
+        assert(0);
+#endif
+    }
 
-	if(gl->gl_user_opengl_rendering)
-	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	}
-	else
-	{
-		glDisable(GL_BLEND);
-	}
-	tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[0], bmp, win->pos[0], win->pos[1], win->pos[2], win->pos[3]);
+    if (gl->gl_user_opengl_rendering) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    } else {
+        glDisable(GL_BLEND);
+    }
+    tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[0], bmp, win->pos[0], win->pos[1], win->pos[2], win->pos[3]);
 
-	if (win->widgetsScale > 0)
-	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[1], win->widgets,
-			(int)(w - win->widgets->w * win->widgetsScale), 0,		
-			w, (int)(win->widgets->h * win->widgetsScale));
-	}
+    if (win->widgetsScale > 0) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        tigrGAPIDraw(gl->gl_legacy, gl->uniform_model, gl->tex[1], win->widgets,
+                     (int)(w - win->widgets->w * win->widgetsScale), 0, w, (int)(win->widgets->h * win->widgetsScale));
+    }
 
-	tigrCheckGLError("present");
+    tigrCheckGLError("present");
 
-	gl->gl_user_opengl_rendering = 0;
+    gl->gl_user_opengl_rendering = 0;
 }
 
 #endif
@@ -6125,11 +6306,11 @@ int tigrBeginOpenGL(Tigr* bmp) {
 #endif
 }
 
-void tigrSetPostShader(Tigr *bmp, const char* code, int size) {
+void tigrSetPostShader(Tigr* bmp, const char* code, int size) {
 #ifdef TIGR_GAPI_GL
     tigrGAPIBegin(bmp);
     TigrInternal* win = tigrInternal(bmp);
-    GLStuff *gl= &win->gl;
+    GLStuff* gl = &win->gl;
     tigrCreateShaderProgram(gl, code, size);
     tigrGAPIEnd(bmp);
 #endif
