@@ -13,13 +13,11 @@
 #include <stdatomic.h>
 
 id makeNSString(const char* str) {
-    return objc_msgSend_t(id, const char*)
-        (class("NSString"), sel("stringWithUTF8String:"), str);
+    return objc_msgSend_t(id, const char*)(class("NSString"), sel("stringWithUTF8String:"), str);
 }
 
 id joinNSStrings(id a, id b) {
-    return objc_msgSend_t(id, id)
-        (a, sel("stringByAppendingString:"), b);
+    return objc_msgSend_t(id, id)(a, sel("stringByAppendingString:"), b);
 }
 
 const char* UTF8StringFromNSString(id a) {
@@ -140,7 +138,7 @@ void insertText(id self, SEL _sel, id text) {
     int codePoint = 0;
 
     do {
-		inserted = tigrDecodeUTF8(inserted, &codePoint);
+        inserted = tigrDecodeUTF8(inserted, &codePoint);
         if (codePoint != 0) {
             KeyEvent event;
             event.codePoint = codePoint;
@@ -158,15 +156,13 @@ void insertText(id self, SEL _sel, id text) {
 void deleteBackward(id self, SEL _sel) {
     KeyEvent event;
     event.codePoint = 0;
-    event.keyCode = 8; // BS
+    event.keyCode = 8;  // BS
 
-    TigrMessageData message = {
-        .message = KEY_EVENT,
-        .keyEvent = {
-            .codePoint = 0,
-            .keyCode = 8,
-        }
-    };
+    TigrMessageData message = { .message = KEY_EVENT,
+                                .keyEvent = {
+                                    .codePoint = 0,
+                                    .keyCode = 8,
+                                } };
     writeToRenderThread(&message);
 }
 
@@ -178,10 +174,7 @@ BOOL canResignFirstResponder(id self, SEL _sel) {
     return YES;
 }
 
-enum RenderState {
-    SWAPPED = 5150,
-    RENDERED
-};
+enum RenderState { SWAPPED = 5150, RENDERED };
 
 BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options) {
     id screen = objc_msgSend_id(class("UIScreen"), sel("mainScreen"));
@@ -192,7 +185,8 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     window = objc_msgSend_t(id, CGRect)(window, sel("initWithFrame:"), bounds);
 
     Class ViewController = makeClass("TigrViewController", "GLKViewController");
-    addMethod(ViewController, "viewWillTransitionToSize:withTransitionCoordinator:", viewWillTransitionToSize, "v@:{CGSize}@");
+    addMethod(ViewController, "viewWillTransitionToSize:withTransitionCoordinator:", viewWillTransitionToSize,
+              "v@:{CGSize}@");
     addMethod(ViewController, "prefersStatusBarHidden", prefersStatusBarHidden, "c@:");
     id vc = objc_msgSend_t(id)((id)ViewController, sel("alloc"));
     vc = objc_msgSend_id(vc, sel("init"));
@@ -232,8 +226,8 @@ BOOL didFinishLaunchingWithOptions(id self, SEL _sel, id application, id options
     gState.frameCondition = objc_msgSend_t(id, int)(objc_alloc("NSConditionLock"), sel("initWithCondition:"), RENDERED);
     objc_msgSend_t(void, int)(gState.frameCondition, sel("lockWhenCondition:"), RENDERED);
 
-    id renderThread = objc_msgSend_t(id, id, SEL, id)
-        (objc_alloc("NSThread"), sel("initWithTarget:selector:object:"), self, sel("renderMain"), NULL);
+    id renderThread = objc_msgSend_t(id, id, SEL, id)(objc_alloc("NSThread"), sel("initWithTarget:selector:object:"),
+                                                      self, sel("renderMain"), NULL);
     objc_msgSend_t(void, int)(renderThread, sel("setQualityOfService:"), NSQualityOfServiceUserInteractive);
     objc_msgSend_t(void, id)(renderThread, sel("setName:"), makeNSString("Tigr Render Thread"));
     objc_msgSend_void(renderThread, sel("start"));
@@ -298,10 +292,10 @@ void touches(id self, SEL sel, id touches, id event) {
             case UITouchPhaseBegan:
             case UITouchPhaseMoved:
             case UITouchPhaseStationary:
-            input.points[input.numPoints].x = location.x * gState.scaleFactor;
-            input.points[input.numPoints].y = location.y * gState.scaleFactor;
-            input.numPoints++;
-            break;
+                input.points[input.numPoints].x = location.x * gState.scaleFactor;
+                input.points[input.numPoints].y = location.y * gState.scaleFactor;
+                input.numPoints++;
+                break;
         }
         if (input.numPoints >= MAX_TOUCH_POINTS) {
             break;
@@ -364,7 +358,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->lastChar = 0;
     win->flags = flags;
     win->p1 = win->p2 = win->p3 = 0;
-	win->p4 = 1;
+    win->p4 = 1;
     win->widgetsWanted = 0;
     win->widgetAlpha = 0;
     win->widgetsScale = 0;
@@ -383,7 +377,7 @@ void processEvents(TigrInternal* win) {
     TigrMessageData data;
 
     while (readFromMainThread(&data)) {
-        switch(data.message) {
+        switch (data.message) {
             case SET_INPUT:
                 gState.inputState = data.inputState;
                 break;
@@ -520,4 +514,4 @@ void* tigrReadFile(const char* fileName, int* length) {
     return _tigrReadFile(UTF8StringFromNSString(resourcePath), length);
 }
 
-#endif // __IOS__
+#endif  // __IOS__

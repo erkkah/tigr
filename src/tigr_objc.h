@@ -1,7 +1,7 @@
 #ifndef TIGR_OBJC_H
 #define TIGR_OBJC_H
 
-#if defined(__IOS__) || defined (__MACOS__)
+#if defined(__IOS__) || defined(__MACOS__)
 
 #if defined(__OBJC__) && __has_feature(objc_arc)
 #error "Can't compile as objective-c code!"
@@ -29,15 +29,16 @@
 
 #define sel(NAME) sel_registerName(NAME)
 #define class(NAME) ((id)objc_getClass(NAME))
-#define makeClass(NAME, SUPER) \
-    objc_allocateClassPair((Class)objc_getClass(SUPER), NAME, 0)
+#define makeClass(NAME, SUPER) objc_allocateClassPair((Class)objc_getClass(SUPER), NAME, 0)
 
 // Check here to get the signature right: https://nshipster.com/type-encodings/
-#define addMethod(CLASS, NAME, IMPL, SIGNATURE) \
-    if (!class_addMethod(CLASS, sel(NAME), (IMP) (IMPL), (SIGNATURE))) assert(false)
+#define addMethod(CLASS, NAME, IMPL, SIGNATURE)                       \
+    if (!class_addMethod(CLASS, sel(NAME), (IMP)(IMPL), (SIGNATURE))) \
+    assert(false)
 
-#define addIvar(CLASS, NAME, SIZE, SIGNATURE) \
-    if (!class_addIvar(CLASS, NAME, SIZE, rint(log2(SIZE)), SIGNATURE)) assert(false)
+#define addIvar(CLASS, NAME, SIZE, SIGNATURE)                           \
+    if (!class_addIvar(CLASS, NAME, SIZE, rint(log2(SIZE)), SIGNATURE)) \
+    assert(false)
 
 #define objc_alloc(CLASS) objc_msgSend_id(class(CLASS), sel("alloc"))
 
@@ -49,5 +50,5 @@
 #define NSUIntegerEncoding "I"
 #endif
 
-#endif // defined(__IOS__) || defined (__MACOS__)
-#endif // TIGR_OBJC_H
+#endif  // defined(__IOS__) || defined (__MACOS__)
+#endif  // TIGR_OBJC_H

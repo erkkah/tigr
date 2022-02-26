@@ -118,11 +118,11 @@ int tigrBeginOpenGL(Tigr* bmp) {
 #endif
 }
 
-void tigrSetPostShader(Tigr *bmp, const char* code, int size) {
+void tigrSetPostShader(Tigr* bmp, const char* code, int size) {
 #ifdef TIGR_GAPI_GL
     tigrGAPIBegin(bmp);
     TigrInternal* win = tigrInternal(bmp);
-    GLStuff *gl= &win->gl;
+    GLStuff* gl = &win->gl;
     tigrCreateShaderProgram(gl, code, size);
     tigrGAPIEnd(bmp);
 #endif
