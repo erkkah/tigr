@@ -50,9 +50,9 @@ void offscreen() {
 }
 
 static TPixel colors[4] = { { 0xff, 0, 0, 0xff },
-    { 0xff, 0xff, 0, 0xff },
-    { 0xff, 0, 0xff, 0xff },
-    { 0x0, 0xff, 0xff, 0xff } };
+                            { 0xff, 0xff, 0, 0xff },
+                            { 0xff, 0, 0xff, 0xff },
+                            { 0x0, 0xff, 0xff, 0xff } };
 
 void drawFauxSierpinski(Tigr* bmp) {
     int scale = 255 / bmp->w + 1;
@@ -213,17 +213,15 @@ typedef struct Test {
 } Test;
 
 int main(int argc, char* argv[]) {
-    Test tests[] = {
-        {"Create offscreen", offscreen},
-        {"Drawing API", verifyDrawing},
-        {"Window basics", windowBasics},
-        {"Unicode", unicode},
-        {"Timing", timing},
-        {"Custom fx shader", customShader},
-        {"Direct OpenGL calls", directOpenGL},
-        {"Input processing", input},
-        {0}
-    };
+    Test tests[] = { { "Create offscreen", offscreen },
+                     { "Drawing API", verifyDrawing },
+                     { "Window basics", windowBasics },
+                     { "Unicode", unicode },
+                     { "Timing", timing },
+                     { "Custom fx shader", customShader },
+                     { "Direct OpenGL calls", directOpenGL },
+                     { "Input processing", input },
+                     { 0 } };
 
     for (Test* test = tests; test->title != 0; test++) {
         printf("%s...", test->title);

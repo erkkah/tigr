@@ -6,8 +6,8 @@ Tigr* makeDemoWindow(int w, int h, int flags) {
 
 void drawDemoWindow(Tigr* win) {
     TPixel lineColor = tigrRGB(100, 100, 100);
-	tigrLine(win, 0, 0, win->w - 1, win->h - 1, lineColor);
-	tigrLine(win, 0, win->h - 1, win->w - 1, 0, lineColor);
+    tigrLine(win, 0, 0, win->w - 1, win->h - 1, lineColor);
+    tigrLine(win, 0, win->h - 1, win->w - 1, 0, lineColor);
     tigrRect(win, 0, 0, win->w, win->h, tigrRGB(200, 10, 10));
     tigrPrint(win, tfont, 5, 5, tigrRGB(20, 200, 0), "%dx%d", win->w, win->h);
 }
@@ -28,7 +28,7 @@ void drawToggle(Tigr* bmp, Toggle* toggle, int x, int y, int stride) {
     int xOffset = width / -2;
 
     tigrPrint(bmp, tfont, x + xOffset, y + yOffset, toggle->color, toggle->text);
-    
+
     yOffset += toggle->checked ? height : height / 3;
     TPixel lineColor = toggle->color;
     lineColor.a = 240;
@@ -44,13 +44,14 @@ int main(int argc, char* argv[]) {
     TPixel yellow = tigrRGB(255, 255, 0);
     TPixel black = tigrRGB(0, 0, 0);
 
-    Toggle toggles[] = { //
+    Toggle toggles[] = {
+        //
         { "(A)UTO", 0, TIGR_AUTO, 'A', white },
         { "(R)ETINA", 0, TIGR_RETINA, 'R', white },
         { "(F)ULLSCREEN", 0, TIGR_FULLSCREEN, 'F', white },
         { "(2)X", 0, TIGR_2X, '2', yellow },
-		{ "(3)X", 0, TIGR_3X, '3', yellow },
-		{ "(4)X", 0, TIGR_4X, '4', yellow },
+        { "(3)X", 0, TIGR_3X, '3', yellow },
+        { "(4)X", 0, TIGR_4X, '4', yellow },
         { "(N)OCURSOR", 0, TIGR_NOCURSOR, 'N', white },
     };
 
@@ -80,8 +81,8 @@ int main(int argc, char* argv[]) {
                 int modeChange = (flags & modeFlags) != (newFlags & modeFlags);
                 flags = newFlags;
 
-				int w = modeChange ? initialW: win->w;
-				int h = modeChange ? initialH : win->h;
+                int w = modeChange ? initialW : win->w;
+                int h = modeChange ? initialH : win->h;
                 tigrFree(win);
                 win = makeDemoWindow(w, h, flags);
             }
