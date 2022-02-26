@@ -139,6 +139,51 @@ void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color)
 	} while (x0 != x1 || y0 != y1);
 }
 
+void tigrFillRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
+{
+	x += 1;
+	y += 1;
+	w -= 2;
+	h -= 2;
+
+	int cx = bmp->cx;
+	int cy = bmp->cy;
+	int cw = bmp->cw >= 0 ? bmp->cw : bmp->w;
+	int ch = bmp->ch >= 0 ? bmp->ch : bmp->h;
+
+	if (x < cx) {
+		w += (x - cx);
+		x = cx;
+	}
+	if (y < cy) {
+		h += (y - cy);
+		y = cy;
+	}
+	if (x + w > cx + cw) {
+		w -= (x + w) - (cx + cw);
+	}
+	if (y + h > cy + ch) {
+		h -= (y + h) - (cy + ch);
+	}
+	if (w <= 0 || h <= 0)
+		return;
+
+	TPixel *td = &bmp->pix[y*bmp->w + x];
+	int dt = bmp->w;
+	int xa = EXPAND(color.a);
+	int a = xa * xa;
+
+	do {
+		for (int i=0;i<w;i++) {
+			td[i].r += (unsigned char)((color.r - td[i].r)*a >> 16);
+			td[i].g += (unsigned char)((color.g - td[i].g)*a >> 16);
+			td[i].b += (unsigned char)((color.b - td[i].b)*a >> 16);
+			td[i].a += (bmp->blitMode) * (unsigned char)((color.a - td[i].a)*a >> 16);
+		}
+		td += dt;
+	} while(--h);
+}
+
 void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
 {
 	int x1, y1;
@@ -155,6 +200,10 @@ void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
 
 void tigrFillCircle(Tigr *bmp, int x0, int y0, int r, TPixel color)
 {
+	if (r <= 0) {
+		return;
+	}
+
 	int E = 1 - r;
 	int dx = 0;
 	int dy = -2 * r;
@@ -239,9 +288,9 @@ void tigrPlot(Tigr *bmp, int x, int y, TPixel pix)
 	if (x >= 0 && y >= 0 && x < bmp->w && y < bmp->h)
 	{
 		xa = EXPAND(pix.a);
+		a = xa * xa;
 		i = y*bmp->w+x;
 
-		a = xa * EXPAND(pix.a);
 		bmp->pix[i].r += (unsigned char)((pix.r - bmp->pix[i].r)*a >> 16);
 		bmp->pix[i].g += (unsigned char)((pix.g - bmp->pix[i].g)*a >> 16);
 		bmp->pix[i].b += (unsigned char)((pix.b - bmp->pix[i].b)*a >> 16);
