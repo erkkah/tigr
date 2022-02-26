@@ -378,14 +378,12 @@ void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color)
 	if (y0 < y1) sy = 1; else sy = -1;
 	err = dx - dy;
 
-	tigrPlot(bmp, x0, y0, color);
-	while (x0 != x1 || y0 != y1)
-	{
+	do {
 		tigrPlot(bmp, x0, y0, color);
 		e2 = 2*err;
 		if (e2 > -dy) { err -= dy; x0 += sx; }
 		if (e2 <  dx) { err += dx; y0 += sy; }
-	}
+	} while (x0 != x1 || y0 != y1);
 }
 
 void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
@@ -400,6 +398,78 @@ void tigrRect(Tigr *bmp, int x, int y, int w, int h, TPixel color)
 	tigrLine(bmp, x1, y, x1, y1, color);
 	tigrLine(bmp, x1, y1, x, y1, color);
 	tigrLine(bmp, x, y1, x, y, color);
+}
+
+void tigrFillCircle(Tigr *bmp, int x0, int y0, int r, TPixel color)
+{
+	int E = 1 - r;
+	int dx = 0;
+	int dy = -2 * r;
+	int x = 0;
+	int y = r;
+
+	tigrLine(bmp, x0 - r + 1, y0, x0 + r, y0, color);
+	
+    while (x < y - 1)
+    {
+		x++;
+
+        if (E >= 0) {
+			y--;
+			dy += 2;
+			E += dy;
+			tigrLine(bmp, x0 - x + 1, y0 + y, x0 + x, y0 + y, color);
+			tigrLine(bmp, x0 - x + 1, y0 - y, x0 + x, y0 - y, color);
+		}
+
+		dx += 2;
+		E += dx + 1;
+
+		if (x != y) {
+			tigrLine(bmp, x0 - y + 1, y0 + x, x0 + y, y0 + x, color);
+			tigrLine(bmp, x0 - y + 1, y0 - x, x0 + y, y0 - x, color);
+		}
+    }
+}
+
+void tigrCircle(Tigr *bmp, int x0, int y0, int r, TPixel color)
+{
+	int E = 1 - r;
+	int dx = 0;
+	int dy = -2 * r;
+	int x = 0;
+	int y = r;
+
+	tigrPlot(bmp, x0, y0 + r, color);
+	tigrPlot(bmp, x0, y0 - r, color);
+	tigrPlot(bmp, x0 + r, y0, color);
+	tigrPlot(bmp, x0 - r, y0, color);
+	
+    while (x < y - 1)
+    {
+		x++;
+
+        if (E >= 0) {
+			y--;
+			dy += 2;
+			E += dy;
+		}
+
+		dx += 2;
+		E += dx + 1;
+
+		tigrPlot(bmp, x0 + x, y0 + y, color);
+		tigrPlot(bmp, x0 - x, y0 + y, color);
+		tigrPlot(bmp, x0 + x, y0 - y, color);
+        tigrPlot(bmp, x0 - x, y0 - y, color);
+         
+		if (x != y) {
+			tigrPlot(bmp, x0 + y, y0 + x, color);
+			tigrPlot(bmp, x0 - y, y0 + x, color);
+			tigrPlot(bmp, x0 + y, y0 - x, color);
+			tigrPlot(bmp, x0 - y, y0 - x, color);
+		}
+    }
 }
 
 TPixel tigrGet(Tigr *bmp, int x, int y)
@@ -422,7 +492,7 @@ void tigrPlot(Tigr *bmp, int x, int y, TPixel pix)
 		bmp->pix[i].r += (unsigned char)((pix.r - bmp->pix[i].r)*a >> 16);
 		bmp->pix[i].g += (unsigned char)((pix.g - bmp->pix[i].g)*a >> 16);
 		bmp->pix[i].b += (unsigned char)((pix.b - bmp->pix[i].b)*a >> 16);
-		bmp->pix[i].a += (unsigned char)((pix.a - bmp->pix[i].a)*a >> 16);
+		bmp->pix[i].a += (bmp->blitMode) * (unsigned char)((pix.a - bmp->pix[i].a)*a >> 16);
 	}
 }
 
