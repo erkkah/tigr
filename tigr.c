@@ -532,7 +532,7 @@ TPixel tigrGet(Tigr *bmp, int x, int y)
 void tigrPlot(Tigr *bmp, int x, int y, TPixel pix)
 {
 	int xa, i, a;
-	if (x >= 0 && y >= 0 && x < bmp->w && y < bmp->h)
+	if (x >= bmp->cx && y >= bmp->cy && x < bmp->cx + bmp->cw && y < bmp->cy + bmp->h)
 	{
 		xa = EXPAND(pix.a);
 		a = xa * xa;
