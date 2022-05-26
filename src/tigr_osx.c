@@ -1014,6 +1014,11 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
+float tigrMouseWheel(Tigr* bmp) {
+    // TODO
+    return 0;
+}
+
 int tigrKeyDown(Tigr* bmp, int key) {
     TigrInternal* win;
     assert(key < 256);
