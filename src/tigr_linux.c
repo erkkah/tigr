@@ -637,4 +637,9 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
+float tigrMouseWheel(Tigr* bmp) {
+    // TODO
+    return 0;
+}
+
 #endif  // __linux__ && !__ANDROID__

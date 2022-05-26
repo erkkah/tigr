@@ -142,6 +142,9 @@ typedef struct {
     int numTouchPoints;
     TigrTouchPoint touchPoints[MAX_TOUCH_POINTS];
 #endif  // __ANDROID__ __IOS__
+#if defined(_WIN32) || defined(__linux__) || defined(__MACOS__)
+    float mouseWheel;
+#endif  // _WIN32 __linux__ __MACOS__
 } TigrInternal;
 // ----------------------------------------------------------
 
@@ -2039,6 +2042,7 @@ void tigrUpdate(Tigr* bmp) {
     }
 
     memcpy(win->prev, win->keys, 256);
+    win->mouseWheel = 0;
 
     // Run the message pump.
     while (PeekMessage(&msg, (HWND)bmp->handle, 0, 0, PM_REMOVE)) {
@@ -2243,6 +2247,10 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             if (win)
                 win->keys[wParam] = 0;
             return DefWindowProcW(hWnd, message, wParam, lParam);
+        case WM_MOUSEWHEEL:
+            if (win)
+                win->mouseWheel = (float)GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
+            return DefWindowProcW(hWnd, message, wParam, lParam);
         default:
             return DefWindowProcW(hWnd, message, wParam, lParam);
     }
@@ -2434,6 +2442,13 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
         tigrMouse(bmp, &points[0].x, &points[1].y, &buttons);
     }
     return buttons ? 1 : 0;
+}
+
+float tigrMouseWheel(Tigr* bmp) {
+    TigrInternal* win;
+
+    win = tigrInternal(bmp);
+    return win->mouseWheel;
 }
 
 static int tigrWinVK(int key) {
@@ -3713,6 +3728,11 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
+float tigrMouseWheel(Tigr* bmp) {
+    // TODO
+    return 0;
+}
+
 int tigrKeyDown(Tigr* bmp, int key) {
     TigrInternal* win;
     assert(key < 256);
@@ -4962,6 +4982,11 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
         tigrMouse(bmp, &points->x, &points->y, &buttons);
     }
     return buttons ? 1 : 0;
+}
+
+float tigrMouseWheel(Tigr* bmp) {
+    // TODO
+    return 0;
 }
 
 #endif  // __linux__ && !__ANDROID__

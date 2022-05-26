@@ -135,6 +135,9 @@ typedef struct {
     int numTouchPoints;
     TigrTouchPoint touchPoints[MAX_TOUCH_POINTS];
 #endif  // __ANDROID__ __IOS__
+#if defined(_WIN32) || defined(__linux__) || defined(__MACOS__)
+    float mouseWheel;
+#endif  // _WIN32 __linux__ __MACOS__
 } TigrInternal;
 // ----------------------------------------------------------
 
