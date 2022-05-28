@@ -203,6 +203,9 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
         XResizeWindow(dpy, xwin, w * scale, h * scale);
     }
 
+    // Enable mouse events reporting (needed for mouse wheel events)
+    XSelectInput(dpy, xwin, ButtonPressMask);
+
     XTextProperty prop;
     int result = Xutf8TextListToTextProperty(dpy, (char**)&title, 1, XUTF8StringStyle, &prop);
     if (result == Success) {
@@ -511,6 +514,21 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
         prevButtons = buttons;
     }
 
+    // Retrieve mouse wheel events - Cannot be done in the XQueryPointer call
+    // -> https://comp.unix.programmer.narkive.com/eOnjkQ6L/xlib-xquerypointer-and-button4mask-button5mask#post2
+    // Button4 = WheelUp / Button5 = WheelDown
+    XEvent mouseButtonEvent;
+	if (XPending(win->dpy)) {
+		XPeekEvent(win->dpy, &mouseButtonEvent);
+		if (mouseButtonEvent.xany.type == ButtonPress) {
+			if (mouseButtonEvent.xbutton.button == Button4 || mouseButtonEvent.xbutton.button == Button5) {
+                win->mouseWheel = (mouseButtonEvent.xbutton.button == Button4 ? 1 : -1);
+			}
+
+            XNextEvent(win->dpy, &mouseButtonEvent);
+		}
+	}
+
     static char prevKeys[32];
     char keys[32];
     XQueryKeymap(win->dpy, keys);
@@ -559,6 +577,7 @@ void tigrUpdate(Tigr* bmp) {
     TigrInternal* win = tigrInternal(bmp);
 
     memcpy(win->prev, win->keys, 256);
+    win->mouseWheel = 0;
 
     XGetWindowAttributes(win->dpy, win->win, &gwa);
 
@@ -638,8 +657,10 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
 }
 
 float tigrMouseWheel(Tigr* bmp) {
-    // TODO
-    return 0;
+    TigrInternal* win;
+
+    win = tigrInternal(bmp);
+    return win->mouseWheel;
 }
 
 #endif  // __linux__ && !__ANDROID__
