@@ -124,7 +124,7 @@ void tigrClear(Tigr *bmp, TPixel color);
 void tigrFill(Tigr *bmp, int x, int y, int w, int h, TPixel color);
 
 // Draws a line.
-// Start and end pixels are drawn.
+// Start pixel is drawn, end pixel is not drawn.
 // Clips and blends.
 void tigrLine(Tigr *bmp, int x0, int y0, int x1, int y1, TPixel color);
 
