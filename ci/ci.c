@@ -102,7 +102,14 @@ void drawTestPattern(Tigr* bmp) {
     tigrBlitAlpha(bmp, sierp, sierp->w, midH + sierp->h, 0, 0, sierp->w, sierp->h, 1);
 }
 
-void assertEqual(Tigr* a, Tigr* b) {
+void assertPixelsEqual(TPixel c1, TPixel c2) {
+    assert(c1.r == c2.r);
+    assert(c1.g == c2.g);
+    assert(c1.b == c2.b);
+    assert(c1.a == c2.a);
+}
+
+void assertBitmapsEqual(Tigr* a, Tigr* b) {
     assert(a->w == b->w);
     assert(a->h == b->h);
 
@@ -110,22 +117,153 @@ void assertEqual(Tigr* a, Tigr* b) {
         for (int y = 0; y < a->h; y++) {
             TPixel c1 = tigrGet(a, x, y);
             TPixel c2 = tigrGet(b, x, y);
-            assert(c1.r == c2.r);
-            assert(c1.g == c2.g);
-            assert(c1.b == c2.b);
-            assert(c1.a == c2.a);
+            assertPixelsEqual(c1, c2);
         }
     }
 }
 
+void verifyLineContract() {
+    TPixel bg = tigrRGB(0, 0, 255);
+    TPixel fg = tigrRGB(255, 0, 0);
+
+    Tigr* bmp = tigrBitmap(10, 10);
+
+    {
+        // Single pixel line
+
+        tigrClear(bmp, bg);
+        tigrLine(bmp, 0, 0, 0, 1, fg);
+
+        TPixel firstPixel = tigrGet(bmp, 0, 0);
+        assertPixelsEqual(firstPixel, fg);
+
+        TPixel lastPixel = tigrGet(bmp, 0, 1);
+        assertPixelsEqual(lastPixel, bg);
+    }
+
+    {
+        // Diagonal line, first pixel inclusive, last pixel exclusive
+
+        tigrClear(bmp, bg);
+        tigrLine(bmp, 0, 0, 9, 9, fg);
+
+        TPixel firstPixel = tigrGet(bmp, 0, 0);
+        assertPixelsEqual(firstPixel, fg);
+
+        TPixel lastPixel = tigrGet(bmp, 9, 9);
+        assertPixelsEqual(lastPixel, bg);
+
+        TPixel nextToLastPixel = tigrGet(bmp, 8, 8);
+        assertPixelsEqual(nextToLastPixel, fg);
+    }
+
+    tigrFree(bmp);
+}
+
+void verifyRectContract() {
+    TPixel bg = tigrRGB(0, 0, 255);
+    TPixel fg = tigrRGBA(255, 0, 0, 100);
+
+    Tigr* ref = tigrBitmap(10, 10);
+    tigrClear(ref, bg);
+
+    Tigr* bmp = tigrBitmap(10, 10);
+
+    {
+        // Zero size rect
+
+        tigrClear(bmp, bg);
+        tigrRect(bmp, 0, 0, 0, 0, fg);
+
+        assertBitmapsEqual(bmp, ref);
+    }
+
+    {
+        // Zero width rect
+
+        tigrClear(bmp, bg);
+        tigrRect(bmp, 0, 0, 0, 5, fg);
+
+        assertBitmapsEqual(bmp, ref);
+    }
+
+    {
+        // Zero height rect
+
+        tigrClear(bmp, bg);
+        tigrRect(bmp, 0, 0, 5, 0, fg);
+
+        assertBitmapsEqual(bmp, ref);
+    }
+
+    {
+        // 2 pixel rect
+
+        tigrClear(ref, bg);
+        tigrPlot(ref, 0, 0, fg);
+        tigrPlot(ref, 0, 1, fg);
+        tigrPlot(ref, 1, 0, fg);
+        tigrPlot(ref, 1, 1, fg);
+
+        tigrClear(bmp, bg);
+        tigrRect(bmp, 0, 0, 2, 2, fg);
+
+        assertBitmapsEqual(bmp, ref);
+    }
+
+    {
+        // 2x1 pixel rect
+
+        tigrClear(ref, bg);
+        tigrPlot(ref, 0, 0, fg);
+        tigrPlot(ref, 1, 0, fg);
+
+        tigrClear(bmp, bg);
+        tigrRect(bmp, 0, 0, 2, 1, fg);
+
+        assertBitmapsEqual(bmp, ref);
+    }
+
+    {
+        // 1x2 pixel rect
+
+        tigrClear(ref, bg);
+        tigrPlot(ref, 0, 0, fg);
+        tigrPlot(ref, 0, 1, fg);
+
+        tigrClear(bmp, bg);
+        tigrRect(bmp, 0, 0, 1, 2, fg);
+
+        assertBitmapsEqual(bmp, ref);
+    }
+
+    {
+        // 1 pixel rect
+
+        tigrClear(ref, bg);
+        tigrPlot(ref, 1, 1, fg);
+
+        tigrClear(bmp, bg);
+        tigrRect(bmp, 1, 1, 1, 1, fg);
+
+        assertBitmapsEqual(bmp, ref);
+    }
+
+    tigrFree(bmp);
+    tigrFree(ref);
+}
+
 void verifyDrawing() {
+    verifyLineContract();
+    verifyRectContract();
+
     Tigr* bmp = tigrBitmap(200, 200);
     drawTestPattern(bmp);
 #ifdef WRITE_REFERENCE
     tigrSaveImage("reference.png", bmp);
 #endif
     Tigr* loaded = tigrLoadImage("reference.png");
-    assertEqual(bmp, loaded);
+    assertBitmapsEqual(bmp, loaded);
 }
 
 void directOpenGL() {
