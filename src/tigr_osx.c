@@ -907,7 +907,7 @@ void tigrUpdate(Tigr* bmp) {
 
     id distantPast = objc_msgSend_id(class("NSDate"), sel("distantPast"));
     id event = 0;
-    int processedEvents;
+    int processedEvents = 0;
     BOOL visible = 0;
 
     do {
