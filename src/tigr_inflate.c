@@ -171,7 +171,7 @@ static void dynamic(State* s) {
     ndist = 1 + bits(s, 5);
     nlen = 4 + bits(s, 4);
     for (n = 0; n < nlen; n++)
-        lenlens[order[n]] = (unsigned char)bits(s, 3);
+        lenlens[(int) order[n]] = (unsigned char)bits(s, 3);
 
     // Build the tree for decoding code lengths.
     s->tlen = build(s, s->lencodes, lenlens, 19);

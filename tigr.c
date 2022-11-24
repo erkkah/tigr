@@ -1307,7 +1307,7 @@ static void dynamic(State* s) {
     ndist = 1 + bits(s, 5);
     nlen = 4 + bits(s, 4);
     for (n = 0; n < nlen; n++)
-        lenlens[order[n]] = (unsigned char)bits(s, 3);
+        lenlens[(int) order[n]] = (unsigned char)bits(s, 3);
 
     // Build the tree for decoding code lengths.
     s->tlen = build(s, s->lencodes, lenlens, 19);
@@ -3614,7 +3614,7 @@ void tigrUpdate(Tigr* bmp) {
 
     id distantPast = objc_msgSend_id(class("NSDate"), sel("distantPast"));
     id event = 0;
-    int processedEvents;
+    int processedEvents = 0;
     BOOL visible = 0;
 
     do {
