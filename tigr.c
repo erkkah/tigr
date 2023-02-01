@@ -3612,29 +3612,28 @@ void tigrUpdate(Tigr* bmp) {
         eventMask &= ~(NSKeyDownMask | NSKeyUpMask);
     }
 
-    id distantPast = objc_msgSend_id(class("NSDate"), sel("distantPast"));
     id event = 0;
-    int processedEvents = 0;
     BOOL visible = 0;
+
+    uint64_t now = mach_absolute_time();
+    uint64_t passed = now - tigrTimestamp;
 
     do {
         event =
             objc_msgSend_t(id, NSUInteger, id, id, BOOL)(NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
-                                                         eventMask, distantPast, NSDefaultRunLoopMode, YES);
+                                                         eventMask, nil, NSDefaultRunLoopMode, YES);
 
         if (event != 0) {
-            processedEvents++;
             _tigrOnCocoaEvent(event, window);
         } else {
             visible = _tigrIsWindowVisible(window);
         }
     } while (event != 0 || !visible);
 
-    if (processedEvents) {
-        // The event processing loop above is blocking, which causes timing to freeze.
-        // Reset the time here to hide that fact from client code.
-        _tigrResetTime();
-    }
+    // The event processing loop above blocks during resize, which causes updates to freeze
+    // but real time keeps ticking. We pretend that the event processing took no time
+    // to avoid huge jumps in tigrTime.
+    tigrTimestamp = mach_absolute_time() - passed;
 
     // do runloop stuff
     objc_msgSend_void(NSApp, sel("updateWindows"));
