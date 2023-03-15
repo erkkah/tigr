@@ -118,7 +118,7 @@ static void depalette(int w,
                       int trnsSize) {
     int x, y, c;
     unsigned char alpha;
-    int mask, len;
+    int mask = 0, len = 0;
 
     switch (bipp) {
         case 4:
