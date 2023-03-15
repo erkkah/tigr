@@ -108,6 +108,8 @@ char* tigrEncodeUTF8(char* text, int cp) {
 #undef EMIT
 }
 
+#ifndef TIGR_HEADLESS
+
 int tigrBeginOpenGL(Tigr* bmp) {
 #ifdef TIGR_GAPI_GL
     TigrInternal* win = tigrInternal(bmp);
@@ -135,3 +137,5 @@ void tigrSetPostFX(Tigr* bmp, float p1, float p2, float p3, float p4) {
     win->p3 = p3;
     win->p4 = p4;
 }
+
+#endif // TIGR_HEADLESS

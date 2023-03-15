@@ -42,6 +42,14 @@ Tigr* tigrBitmap(int w, int h) {
     return tigrBitmap2(w, h, 0);
 }
 
+#ifdef TIGR_HEADLESS
+void tigrFree(Tigr* bmp) {
+    free(bmp->pix);
+    free(bmp);
+}
+#endif // TIGR_HEADLESS
+
+
 void tigrResize(Tigr* bmp, int w, int h) {
     if (bmp->w == w && bmp->h == h) {
         return;

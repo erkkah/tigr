@@ -1,4 +1,6 @@
-// this one is based on https://github.com/jimon/osx_app_in_plain_c
+#ifndef TIGR_HEADLESS
+
+// originally based on https://github.com/jimon/osx_app_in_plain_c
 
 #include "tigr_internal.h"
 #include "tigr_objc.h"
@@ -355,10 +357,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     objc_msgSend_void_bool(NSApp, sel("activateIgnoringOtherApps:"), YES);
 
-    // Wrap a bitmap around it.
-    bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
-    bmp->handle = window;
-
     NSSize windowContentSize = _tigrContentBackingSize(window);
 
     // In AUTO mode, always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
@@ -373,6 +371,9 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
         h = windowContentSize.height / windowScale;
         bitmapScale = tigrEnforceScale(bitmapScale, flags);
     }
+
+    bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
+    bmp->handle = window;
 
     // Set the handle
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
@@ -1048,4 +1049,5 @@ float tigrTime() {
     return (float)elapsed;
 }
 
-#endif
+#endif // __MACOS__
+#endif // #ifndef TIGR_HEADLESS

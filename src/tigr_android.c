@@ -1,3 +1,5 @@
+#ifndef TIGR_HEADLESS
+
 #include "tigr_internal.h"
 
 #ifdef __ANDROID__
@@ -753,3 +755,4 @@ void* tigrReadFile(const char* fileName, int* length) {
 }
 
 #endif  // __ANDROID__
+#endif // #ifndef TIGR_HEADLESS

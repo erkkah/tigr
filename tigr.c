@@ -292,6 +292,14 @@ Tigr* tigrBitmap(int w, int h) {
     return tigrBitmap2(w, h, 0);
 }
 
+#ifdef TIGR_HEADLESS
+void tigrFree(Tigr* bmp) {
+    free(bmp->pix);
+    free(bmp);
+}
+#endif // TIGR_HEADLESS
+
+
 void tigrResize(Tigr* bmp, int w, int h) {
     if (bmp->w == w && bmp->h == h) {
         return;
@@ -1856,6 +1864,8 @@ int tigrTextHeight(TigrFont* font, const char* text) {
 
 //////// Start of inlined file: tigr_win.c ////////
 
+#ifndef TIGR_HEADLESS
+
 //#include "tigr_internal.h"
 #include <assert.h>
 
@@ -2643,11 +2653,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 }
 #endif
 
+#endif // #ifndef TIGR_HEADLESS
 //////// End of inlined file: tigr_win.c ////////
 
 //////// Start of inlined file: tigr_osx.c ////////
 
-// this one is based on https://github.com/jimon/osx_app_in_plain_c
+#ifndef TIGR_HEADLESS
+
+// originally based on https://github.com/jimon/osx_app_in_plain_c
 
 //#include "tigr_internal.h"
 //////// Start of inlined file: tigr_objc.h ////////
@@ -3062,10 +3075,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     objc_msgSend_void_bool(NSApp, sel("activateIgnoringOtherApps:"), YES);
 
-    // Wrap a bitmap around it.
-    bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
-    bmp->handle = window;
-
     NSSize windowContentSize = _tigrContentBackingSize(window);
 
     // In AUTO mode, always use a 1:1 pixel size, unless downscaled by tigrEnforceScale below.
@@ -3080,6 +3089,9 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
         h = windowContentSize.height / windowScale;
         bitmapScale = tigrEnforceScale(bitmapScale, flags);
     }
+
+    bmp = tigrBitmap2(w, h, sizeof(TigrInternal));
+    bmp->handle = window;
 
     // Set the handle
     object_setInstanceVariable(wdg, "tigrHandle", (void*)bmp);
@@ -3755,11 +3767,14 @@ float tigrTime() {
     return (float)elapsed;
 }
 
-#endif
+#endif // __MACOS__
+#endif // #ifndef TIGR_HEADLESS
 
 //////// End of inlined file: tigr_osx.c ////////
 
 //////// Start of inlined file: tigr_ios.c ////////
+
+#ifndef TIGR_HEADLESS
 
 //#include "tigr_internal.h"
 //#include "tigr_objc.h"
@@ -4279,6 +4294,8 @@ void* tigrReadFile(const char* fileName, int* length) {
 
 #endif  // __IOS__
 
+#endif // #ifndef TIGR_HEADLESS
+
 //////// End of inlined file: tigr_ios.c ////////
 
 //////// Start of inlined file: tigr_android.h ////////
@@ -4330,6 +4347,8 @@ void tigr_android_destroy();
 //////// End of inlined file: tigr_android.h ////////
 
 //////// Start of inlined file: tigr_linux.c ////////
+
+#ifndef TIGR_HEADLESS
 
 //#include "tigr_internal.h"
 
@@ -4972,9 +4991,13 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
 
 #endif  // __linux__ && !__ANDROID__
 
+#endif // #ifndef TIGR_HEADLESS
+
 //////// End of inlined file: tigr_linux.c ////////
 
 //////// Start of inlined file: tigr_android.c ////////
+
+#ifndef TIGR_HEADLESS
 
 //#include "tigr_internal.h"
 
@@ -5731,10 +5754,13 @@ void* tigrReadFile(const char* fileName, int* length) {
 }
 
 #endif  // __ANDROID__
+#endif // #ifndef TIGR_HEADLESS
 
 //////// End of inlined file: tigr_android.c ////////
 
 //////// Start of inlined file: tigr_gl.c ////////
+
+#ifndef TIGR_HEADLESS
 
 //#include "tigr_internal.h"
 #include <assert.h>
@@ -6193,7 +6219,7 @@ void tigrGAPIPresent(Tigr* bmp, int w, int h) {
 }
 
 #endif
-
+#endif // #ifndef TIGR_HEADLESS
 //////// End of inlined file: tigr_gl.c ////////
 
 //////// Start of inlined file: tigr_utils.c ////////
@@ -6308,6 +6334,8 @@ char* tigrEncodeUTF8(char* text, int cp) {
 #undef EMIT
 }
 
+#ifndef TIGR_HEADLESS
+
 int tigrBeginOpenGL(Tigr* bmp) {
 #ifdef TIGR_GAPI_GL
     TigrInternal* win = tigrInternal(bmp);
@@ -6335,6 +6363,8 @@ void tigrSetPostFX(Tigr* bmp, float p1, float p2, float p3, float p4) {
     win->p3 = p3;
     win->p4 = p4;
 }
+
+#endif // TIGR_HEADLESS
 
 //////// End of inlined file: tigr_utils.c ////////
 

@@ -1,3 +1,5 @@
+#ifndef TIGR_HEADLESS
+
 #include "tigr_internal.h"
 #include "tigr_objc.h"
 
@@ -515,3 +517,5 @@ void* tigrReadFile(const char* fileName, int* length) {
 }
 
 #endif  // __IOS__
+
+#endif // #ifndef TIGR_HEADLESS

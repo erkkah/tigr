@@ -1,3 +1,5 @@
+#ifndef TIGR_HEADLESS
+
 #include "tigr_internal.h"
 #include <assert.h>
 
@@ -455,3 +457,4 @@ void tigrGAPIPresent(Tigr* bmp, int w, int h) {
 }
 
 #endif
+#endif // #ifndef TIGR_HEADLESS
