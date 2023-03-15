@@ -5,7 +5,9 @@
 #define _CRT_SECURE_NO_WARNINGS NOPE
 
 // Graphics configuration.
+#ifndef TIGR_HEADLESS
 #define TIGR_GAPI_GL
+#endif
 
 // Creates a new bitmap, with extra payload bytes.
 Tigr* tigrBitmap2(int w, int h, int extra);
