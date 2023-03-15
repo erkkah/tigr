@@ -1,3 +1,5 @@
+#ifndef TIGR_HEADLESS
+
 #include "tigr_internal.h"
 #include <assert.h>
 
@@ -784,3 +786,5 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     return main(argc, argv);
 }
 #endif
+
+#endif // #ifndef TIGR_HEADLESS

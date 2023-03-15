@@ -1,3 +1,5 @@
+#ifndef TIGR_HEADLESS
+
 #include "tigr_internal.h"
 
 #if __linux__ && !__ANDROID__
@@ -638,3 +640,5 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
 }
 
 #endif  // __linux__ && !__ANDROID__
+
+#endif // #ifndef TIGR_HEADLESS
