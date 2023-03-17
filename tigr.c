@@ -4374,7 +4374,7 @@ static Atom wmDeleteMessage;
 static XIM inputMethod;
 static GLXFBConfig fbConfig;
 
-PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = 0;
+static PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = 0;
 
 static void initX11Stuff() {
     static int done = 0;
