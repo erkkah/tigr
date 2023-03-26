@@ -1212,7 +1212,7 @@ static void copy(State* s, const unsigned char* src, int len) {
 }
 
 static int build(State* s, unsigned* tree, unsigned char* lens, int symcount) {
-    int n, codes[16], first[16], counts[16] = { 0 };
+    unsigned n, codes[16], first[16], counts[16] = { 0 };
 
     // Frequency count.
     for (n = 0; n < symcount; n++)
@@ -1230,7 +1230,7 @@ static int build(State* s, unsigned* tree, unsigned char* lens, int symcount) {
     for (n = 0; n < symcount; n++) {
         int len = lens[n];
         if (len != 0) {
-            int code = codes[len]++, slot = first[len]++;
+            unsigned code = codes[len]++, slot = first[len]++;
             tree[slot] = (code << (32 - len)) | (n << 4) | len;
         }
     }
