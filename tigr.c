@@ -98,8 +98,6 @@ typedef struct {
     int shown, closed;
 #ifdef TIGR_GAPI_GL
     GLStuff gl;
-#endif
-
 #ifdef _WIN32
     wchar_t* wtitle;
     DWORD dwStyle;
@@ -115,6 +113,7 @@ typedef struct {
     XIC ic;
 #endif  // __ANDROID__
 #endif  // __linux__
+#endif  // TIGR_GAPI_GL
 
     Tigr* widgets;
     int widgetsWanted;

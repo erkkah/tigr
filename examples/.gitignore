@@ -2,6 +2,7 @@ clip/clip
 demo/demo
 flags/flags
 headless/headless
+headless/headless.png
 hello/hello
 opengl/opengl
 shader/shader
