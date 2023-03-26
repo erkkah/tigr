@@ -4358,6 +4358,7 @@ void tigr_android_destroy();
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
 #include <sys/time.h>
@@ -4365,6 +4366,7 @@ void tigr_android_destroy();
 #include <X11/Xlib.h>
 #include <X11/Xlocale.h>
 #include <X11/XKBlib.h>
+#include <X11/Xatom.h>
 #include <GL/glx.h>
 
 static Display* dpy;
@@ -4525,20 +4527,10 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     XMapWindow(dpy, xwin);
 
     if (flags & TIGR_FULLSCREEN) {
-        // https://www.tonyobryan.com//index.php?article=9
-        WindowHints hints;
-        Atom property;
-        hints.flags = 2;
-        hints.decorations = 0;
-        property = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
-        XChangeProperty(dpy, xwin, property, property, 32, PropModeReplace, (unsigned char*)&hints, 5);
-        int screen = DefaultScreen(dpy);
-        int dWidth = DisplayWidth(dpy, screen);
-        int dHeight = DisplayHeight(dpy, screen);
-        XMoveResizeWindow(dpy, xwin, 0, 0, dWidth, dHeight);
-        XMapRaised(dpy, xwin);
-        XGrabPointer(dpy, xwin, True, 0, GrabModeAsync, GrabModeAsync, xwin, 0L, CurrentTime);
-        XGrabKeyboard(dpy, xwin, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+        // https://superuser.com/questions/1680077/does-x11-actually-have-a-native-fullscreen-mode
+        Atom wm_state   = XInternAtom (dpy, "_NET_WM_STATE", true );
+        Atom wm_fullscreen = XInternAtom (dpy, "_NET_WM_STATE_FULLSCREEN", true );
+        XChangeProperty(dpy, xwin, wm_state, XA_ATOM, 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
     } else {
         // Wait for window to get mapped
         for (;;) {
