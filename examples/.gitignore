@@ -1,6 +1,10 @@
-shader/shader
-opengl/opengl
-hello/hello
+clip/clip
 demo/demo
+flags/flags
+headless/headless
+hello/hello
+opengl/opengl
+shader/shader
+
 *.o
 *.exe
