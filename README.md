@@ -1,5 +1,3 @@
-![](./demo.gif)
-
 # TIGR - TIny GRaphics library
 
 ![](./tigr.png)
