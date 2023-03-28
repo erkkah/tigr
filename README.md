@@ -1,6 +1,7 @@
+![](./tigr.png)
+
 # TIGR - TIny GRaphics library
 
-![](./tigr.png)
 ![](./demo.gif)
 
 TIGR is a tiny cross-platform graphics library,
