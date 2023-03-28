@@ -33,6 +33,7 @@ There are no additional libraries to include; everything is baked right into you
 TIGR is free to copy with no restrictions; see [tigr.h](tigr.h).
 
 ## How do I program with TIGR?
+![](./demo.gif)
 
 Here's an example Hello World program. For more information, just read [tigr.h](tigr.h) to see the APIs available.
 
