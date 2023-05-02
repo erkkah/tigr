@@ -49,10 +49,10 @@ void offscreen() {
     tigrFree(bmp);
 }
 
-static TPixel colors[4] = { { 0xff, 0, 0, 0xff },
-                            { 0xff, 0xff, 0, 0xff },
-                            { 0xff, 0, 0xff, 0xff },
-                            { 0x0, 0xff, 0xff, 0xff } };
+static TPixel colors[5] = {
+    { 0xff, 0x0, 0x0, 0xff },  { 0xff, 0xff, 0, 0xff }, { 0xff, 0x0, 0xff, 0xff },
+    { 0x0, 0xff, 0xff, 0xff }, { 0x0, 0x0, 0x0, 0xff },
+};
 
 void drawFauxSierpinski(Tigr* bmp) {
     int scale = 255 / bmp->w + 1;
@@ -85,9 +85,18 @@ void drawTestPattern(Tigr* bmp) {
     tigrPrint(bmp, tfont, 14, 14 + 2 * textHeight, colors[3], "%s v%d", msg, 76);
 
     Tigr* fontImage = tigrLoadImage("5x7.png");
-    TigrFont* font = tigrLoadFont(fontImage, 0);
+    assert(fontImage != 0);
+    TigrFont* font = tigrLoadFont(fontImage, TCP_ASCII);
+    assert(font != 0);
     tigrPrint(bmp, font, 10, midH - 10, colors[1], "*** TEENY TINY FONT ***");
     tigrFreeFont(font);
+
+    fontImage = tigrLoadImage("ch.png");
+    assert(fontImage != 0);
+    font = tigrLoadFont(fontImage, TCP_UTF32);
+    assert(font != 0);
+    tigrPrint(bmp, font, 10, midH - 40, colors[4], "你好，世界！");
+    tigrFreeFont(font);   
 
     Tigr* img = tigrLoadImage("../tigr.png");
     tigrBlit(bmp, img, midW + 1, midH + 1, 42, 125, 70, 42);
