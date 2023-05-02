@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -96,7 +97,7 @@ void drawTestPattern(Tigr* bmp) {
     font = tigrLoadFont(fontImage, TCP_UTF32);
     assert(font != 0);
     tigrPrint(bmp, font, 10, midH - 40, colors[4], "你好，世界！");
-    tigrFreeFont(font);   
+    tigrFreeFont(font);
 
     Tigr* img = tigrLoadImage("../tigr.png");
     tigrBlit(bmp, img, midW + 1, midH + 1, 42, 125, 70, 42);
@@ -357,23 +358,34 @@ void unicode() {
 typedef struct Test {
     const char* title;
     void (*test)(void);
+    int level;
 } Test;
 
 int main(int argc, char* argv[]) {
-    Test tests[] = { { "Create offscreen", offscreen },
-                     { "Drawing API", verifyDrawing },
-                     { "Window basics", windowBasics },
-                     { "Unicode", unicode },
-                     { "Timing", timing },
-                     { "Custom fx shader", customShader },
-                     { "Direct OpenGL calls", directOpenGL },
-                     { "Input processing", input },
+    int limit = 1000;
+
+    if (argc > 1) {
+        limit = atoi(argv[1]);
+    }
+
+    Test tests[] = { { "Create offscreen", offscreen, 0 },
+                     { "Drawing API", verifyDrawing, 0 },
+                     { "Window basics", windowBasics, 0 },
+                     { "Unicode", unicode, 0 },
+                     { "Timing", timing, 0 },
+                     { "Custom fx shader", customShader, 2 },
+                     { "Direct OpenGL calls", directOpenGL, 1 },
+                     { "Input processing", input, 0 },
                      { 0 } };
 
     for (Test* test = tests; test->title != 0; test++) {
         printf("%s...", test->title);
-        test->test();
-        printf("OK\n");
+        if (test->level > limit) {
+            printf("skipped\n");
+        } else {
+            test->test();
+            printf("OK\n");
+        }
     }
 
     if (argc == 2 && strcmp(argv[1], "full") == 0) {
