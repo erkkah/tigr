@@ -375,7 +375,7 @@ int main(int argc, char* argv[]) {
                      { "Timing", timing, 1 },
                      { "Custom fx shader", customShader, 2 },
                      { "Direct OpenGL calls", directOpenGL, 2 },
-                     { "Input processing", input, 0 },
+                     { "Input processing", input, 1 },
                      { 0 } };
 
     for (Test* test = tests; test->title != 0; test++) {
