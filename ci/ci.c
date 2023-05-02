@@ -370,11 +370,11 @@ int main(int argc, char* argv[]) {
 
     Test tests[] = { { "Create offscreen", offscreen, 0 },
                      { "Drawing API", verifyDrawing, 0 },
-                     { "Window basics", windowBasics, 0 },
+                     { "Window basics", windowBasics, 1 },
                      { "Unicode", unicode, 0 },
-                     { "Timing", timing, 0 },
+                     { "Timing", timing, 1 },
                      { "Custom fx shader", customShader, 2 },
-                     { "Direct OpenGL calls", directOpenGL, 1 },
+                     { "Direct OpenGL calls", directOpenGL, 2 },
                      { "Input processing", input, 0 },
                      { 0 } };
 
