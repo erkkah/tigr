@@ -96,6 +96,8 @@ TIGR comes with a built-in bitmap font, accessed by the `tfont` variable. Custom
 
 Use the [tigrfont](https://github.com/erkkah/tigrfont) tool to create your own bitmap fonts from TTF or BDF font files.
 
+Since TIGR version 3.1, unicode-encoded font sheets are supported, making it possible to render any glyph in your fonts. Text is still just rendered LTR, though.
+
 ### Custom pixel shaders
 
 TIGR uses a built-in pixel shader that provides a couple of stock effects as controlled by `tigrSetPostFX`.
