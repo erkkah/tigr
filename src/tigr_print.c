@@ -25,6 +25,7 @@ static int cp1252[] = {
     0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef, 0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4,
     0x00f5, 0x00f6, 0x00f7, 0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff,
 };
+
 static int border(Tigr* bmp, int x, int y) {
     TPixel top = tigrGet(bmp, 0, 0);
     TPixel c = tigrGet(bmp, x, y);
@@ -44,20 +45,56 @@ static void scan(Tigr* bmp, int* x, int* y, int* rowh) {
     }
 }
 
+/*
+ * Watermarks are encoded vertically in the alpha channel using six pixels
+ * starting at x, y. The first and last alpha values contain the magic values
+ * 0b10101010 and 0b01010101 respectively.
+ */
+static int readWatermark(Tigr* bmp, int x, int y) {
+    const int magicHeader = 0xAA;
+    const int magicFooter = 0x55;
+
+    unsigned char watermark[6];
+
+    for (int i = 0; i < 6; i++) {
+        if (!border(bmp, x, y + i)) {
+            return -1;
+        }
+
+        TPixel c = tigrGet(bmp, x, y + i);
+        watermark[i] = c.a;
+    }
+
+    if (watermark[0] != magicHeader || watermark[5] != magicFooter) {
+        return -1;
+    }
+
+    return watermark[1] | (watermark[2] << 8) | (watermark[3] << 16) | (watermark[4] << 24);
+}
+
 int tigrLoadGlyphs(TigrFont* font, int codepage) {
-    int i, x = 0, y = 0, w, h, rowh = 1;
+    int x = 0, y = 0, w, h, rowh = 1;
+
     TigrGlyph* g;
     switch (codepage) {
-        case 0:
+        case TCP_ASCII:
             font->numGlyphs = 128 - 32;
             break;
-        case 1252:
+        case TCP_1252:
             font->numGlyphs = 256 - 32;
             break;
+        case TCP_UTF32:
+            font->numGlyphs = readWatermark(font->bitmap, 0, 1);
+            if (font->numGlyphs == -1) {
+                return 0;
+            }
+            break;
+        default:
+            return 0;
     }
 
     font->glyphs = (TigrGlyph*)calloc(font->numGlyphs, sizeof(TigrGlyph));
-    for (i = 32; i < font->numGlyphs + 32; i++) {
+    for (int index = 0; index < font->numGlyphs; index++) {
         // Find the next glyph.
         scan(font->bitmap, &x, &y, &rowh);
         if (y >= font->bitmap->h) {
@@ -67,20 +104,37 @@ int tigrLoadGlyphs(TigrFont* font, int codepage) {
 
         // Scan the width and height
         w = h = 0;
-        while (!border(font->bitmap, x + w, y))
+        while (!border(font->bitmap, x + w, y)) {
             w++;
-        while (!border(font->bitmap, x, y + h))
+        }
+
+        while (!border(font->bitmap, x, y + h)) {
             h++;
+        }
 
         // Look up the Unicode code point.
-        g = &font->glyphs[i - 32];
-        if (i < 128)
-            g->code = i;  // ASCII
-        else if (codepage == 1252)
-            g->code = cp1252[i - 128];
-        else {
-            errno = EINVAL;
-            return 0;
+        g = &font->glyphs[index];
+
+        switch (codepage) {
+            case TCP_ASCII:
+                g->code = index + 32;
+                break;
+            case TCP_1252:
+                if (index < 96) {
+                    g->code = index + 32;
+                } else {
+                    g->code = cp1252[index - 96];
+                }
+                break;
+            case TCP_UTF32:
+                g->code = readWatermark(font->bitmap, x + w, y);
+                if (g->code == -1) {
+                    return 0;
+                }
+                break;
+            default:
+                errno = EINVAL;
+                return 0;
         }
 
         g->x = x;
@@ -93,12 +147,13 @@ int tigrLoadGlyphs(TigrFont* font, int codepage) {
             return 0;
         }
 
-        if (h > rowh)
+        if (h > rowh) {
             rowh = h;
+        }
     }
 
     // Sort by code point.
-    for (i = 1; i < font->numGlyphs; i++) {
+    for (int i = 1; i < font->numGlyphs; i++) {
         int j = i;
         TigrGlyph g = font->glyphs[i];
         while (j > 0 && font->glyphs[j - 1].code > g.code) {
