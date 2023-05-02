@@ -36,7 +36,7 @@ jobs:
       if: startsWith(matrix.os, 'macos')
       shell: bash
       working-directory: ./ci
-      run: ./ci
+      run: ./ci 0
 
     - name: Run tests (Windows)
       if: startsWith(matrix.os, 'windows')
