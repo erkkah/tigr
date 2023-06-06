@@ -1210,23 +1210,23 @@ static void copy(State* s, const unsigned char* src, int len) {
         *dest++ = *src++;
 }
 
-static int build(State* s, unsigned* tree, unsigned char* lens, int symcount) {
-    unsigned n, codes[16], first[16], counts[16] = { 0 };
+static int build(State* s, unsigned* tree, unsigned char* lens, unsigned int symcount) {
+    unsigned int codes[16], first[16], counts[16] = { 0 };
 
     // Frequency count.
-    for (n = 0; n < symcount; n++)
+    for (unsigned int n = 0; n < symcount; n++)
         counts[lens[n]]++;
 
     // Distribute codes.
     counts[0] = codes[0] = first[0] = 0;
-    for (n = 1; n <= 15; n++) {
+    for (unsigned int n = 1; n <= 15; n++) {
         codes[n] = (codes[n - 1] + counts[n - 1]) << 1;
         first[n] = first[n - 1] + counts[n - 1];
     }
     CHECK(first[15] + counts[15] <= symcount);
 
     // Insert keys into the tree for each symbol.
-    for (n = 0; n < symcount; n++) {
+    for (unsigned int n = 0; n < symcount; n++) {
         int len = lens[n];
         if (len != 0) {
             unsigned code = codes[len]++, slot = first[len]++;
@@ -2826,8 +2826,9 @@ enum {
     NSKeyDownMask = 1 << NSKeyDown,
     NSKeyUp = 11,
     NSKeyUpMask = 1 << NSKeyUp,
-    NSAllEventMask = NSUIntegerMax,
 };
+
+NSUInteger NSAllEventMask = NSUIntegerMax;
 
 extern id NSApp;
 extern id const NSDefaultRunLoopMode;
@@ -2839,7 +2840,7 @@ bool terminated = false;
 
 static uint64_t tigrTimestamp = 0;
 
-void _tigrResetTime() {
+void _tigrResetTime(void) {
     tigrTimestamp = mach_absolute_time();
 }
 
@@ -2857,7 +2858,7 @@ TigrInternal* _tigrInternalCocoa(id window) {
 }
 
 // we gonna construct objective-c class by hand in runtime, so wow, so hacker!
-NSUInteger applicationShouldTerminate(id self, SEL _sel, id sender) {
+NSUInteger applicationShouldTerminate(id self, SEL sel, id sender) {
     terminated = true;
     return 0;
 }
@@ -2950,7 +2951,7 @@ static void _showPools(const char* context) {
 #define showPools(x)
 #endif
 
-static id pushPool() {
+static id pushPool(void) {
     id pool = objc_msgSend_id(class("NSAutoreleasePool"), sel("alloc"));
     return objc_msgSend_id(pool, sel("init"));
 }
@@ -2959,12 +2960,12 @@ static void popPool(id pool) {
     objc_msgSend_void(pool, sel("drain"));
 }
 
-void _tigrCleanupOSX() {
+void _tigrCleanupOSX(void) {
     showPools("cleanup");
     popPool(autoreleasePool);
 }
 
-void tigrInitOSX() {
+void tigrInitOSX(void) {
     if (tigrOSXInited)
         return;
 
@@ -3821,7 +3822,7 @@ int tigrReadChar(Tigr* bmp) {
     return c;
 }
 
-float tigrTime() {
+float tigrTime(void) {
     static mach_timebase_info_data_t timebaseInfo;
 
     if (timebaseInfo.denom == 0) {

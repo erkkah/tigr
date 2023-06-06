@@ -328,7 +328,7 @@ int tigrSaveImage(const char *fileName, Tigr *bmp);
 
 // Returns the amount of time elapsed since tigrTime was last called,
 // or zero on the first call.
-float tigrTime();
+float tigrTime(void);
 
 // Displays an error message and quits. (UTF-8)
 // 'bmp' can be NULL.
