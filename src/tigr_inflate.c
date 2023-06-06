@@ -65,23 +65,23 @@ static void copy(State* s, const unsigned char* src, int len) {
         *dest++ = *src++;
 }
 
-static int build(State* s, unsigned* tree, unsigned char* lens, int symcount) {
-    unsigned n, codes[16], first[16], counts[16] = { 0 };
+static int build(State* s, unsigned* tree, unsigned char* lens, unsigned int symcount) {
+    unsigned int codes[16], first[16], counts[16] = { 0 };
 
     // Frequency count.
-    for (n = 0; n < symcount; n++)
+    for (unsigned int n = 0; n < symcount; n++)
         counts[lens[n]]++;
 
     // Distribute codes.
     counts[0] = codes[0] = first[0] = 0;
-    for (n = 1; n <= 15; n++) {
+    for (unsigned int n = 1; n <= 15; n++) {
         codes[n] = (codes[n - 1] + counts[n - 1]) << 1;
         first[n] = first[n - 1] + counts[n - 1];
     }
     CHECK(first[15] + counts[15] <= symcount);
 
     // Insert keys into the tree for each symbol.
-    for (n = 0; n < symcount; n++) {
+    for (unsigned int n = 0; n < symcount; n++) {
         int len = lens[n];
         if (len != 0) {
             unsigned code = codes[len]++, slot = first[len]++;
