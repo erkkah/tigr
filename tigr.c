@@ -2944,7 +2944,7 @@ static id autoreleasePool = NULL;
 #ifdef DEBUG
 static void _showPools(const char* context) {
     fprintf(stderr, "NSAutoreleasePool@%s:\n", context);
-    objc_msgSend(class("NSAutoreleasePool"), sel("showPools"));
+    ((id (*)(id, SEL))objc_msgSend)(class("NSAutoreleasePool"), sel("showPools"));
 }
 #define showPools(x) _showPools((x))
 #else
