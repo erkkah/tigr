@@ -512,7 +512,7 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
     // -> https://comp.unix.programmer.narkive.com/eOnjkQ6L/xlib-xquerypointer-and-button4mask-button5mask#post2
     // Button4 = WheelUp / Button5 = WheelDown
     XEvent mouseButtonEvent;
-	if (XPending(win->dpy)) {
+	while (XPending(win->dpy)) {
 		XPeekEvent(win->dpy, &mouseButtonEvent);
 		if (mouseButtonEvent.xany.type == ButtonPress) {
 			if (mouseButtonEvent.xbutton.button == Button4 || mouseButtonEvent.xbutton.button == Button5) {
@@ -520,7 +520,9 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
 			}
 
             XNextEvent(win->dpy, &mouseButtonEvent);
-		}
+		} else {
+            break;
+        }
 	}
 
     static char prevKeys[32];
