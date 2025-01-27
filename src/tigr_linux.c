@@ -516,7 +516,7 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
 		XPeekEvent(win->dpy, &mouseButtonEvent);
 		if (mouseButtonEvent.xany.type == ButtonPress) {
 			if (mouseButtonEvent.xbutton.button == Button4 || mouseButtonEvent.xbutton.button == Button5) {
-                win->mouseWheel = (mouseButtonEvent.xbutton.button == Button4 ? 1 : -1);
+                win->mouseWheel += (mouseButtonEvent.xbutton.button == Button4 ? 1.0f : -1.0f);
 			}
 
             XNextEvent(win->dpy, &mouseButtonEvent);
