@@ -2335,7 +2335,7 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             return DefWindowProcW(hWnd, message, wParam, lParam);
         case WM_MOUSEWHEEL:
             if (win)
-                win->mouseWheel = (float)GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
+                win->mouseWheel += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
             return DefWindowProcW(hWnd, message, wParam, lParam);
         default:
             return DefWindowProcW(hWnd, message, wParam, lParam);
@@ -4960,7 +4960,7 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
 		XPeekEvent(win->dpy, &mouseButtonEvent);
 		if (mouseButtonEvent.xany.type == ButtonPress) {
 			if (mouseButtonEvent.xbutton.button == Button4 || mouseButtonEvent.xbutton.button == Button5) {
-                win->mouseWheel = (mouseButtonEvent.xbutton.button == Button4 ? 1 : -1);
+                win->mouseWheel += (mouseButtonEvent.xbutton.button == Button4 ? 1.0f : -1.0f);
 			}
 
             XNextEvent(win->dpy, &mouseButtonEvent);
