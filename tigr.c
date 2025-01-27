@@ -3818,7 +3818,7 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
 
 float tigrMouseWheel(Tigr* bmp) {
     // TODO
-    return 0;
+    return .0f;
 }
 
 int tigrKeyDown(Tigr* bmp, int key) {
@@ -4334,6 +4334,10 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
         points[i] = win->touchPoints[i];
     }
     return maxPoints < win->numTouchPoints ? maxPoints : win->numTouchPoints;
+}
+
+float tigrMouseWheel(Tigr* bmp) {
+    return .0f;
 }
 
 void tigrFree(Tigr* bmp) {
@@ -5850,6 +5854,10 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
         points[i] = win->touchPoints[i];
     }
     return maxPoints < win->numTouchPoints ? maxPoints : win->numTouchPoints;
+}
+
+float tigrMouseWheel(Tigr* bmp) {
+    return .0f;
 }
 
 void* tigrReadFile(const char* fileName, int* length) {

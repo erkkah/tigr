@@ -470,6 +470,10 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return maxPoints < win->numTouchPoints ? maxPoints : win->numTouchPoints;
 }
 
+float tigrMouseWheel(Tigr* bmp) {
+    return .0f;
+}
+
 void tigrFree(Tigr* bmp) {
     if (bmp->handle) {
         TigrInternal* win = tigrInternal(bmp);
