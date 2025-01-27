@@ -745,6 +745,10 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return maxPoints < win->numTouchPoints ? maxPoints : win->numTouchPoints;
 }
 
+float tigrMouseWheel(Tigr* bmp) {
+    return .0f;
+}
+
 void* tigrReadFile(const char* fileName, int* length) {
     if (length != 0) {
         *length = 0;
