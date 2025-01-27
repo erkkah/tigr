@@ -397,7 +397,7 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             return DefWindowProcW(hWnd, message, wParam, lParam);
         case WM_MOUSEWHEEL:
             if (win)
-                win->mouseWheel = (float)GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
+                win->mouseWheel += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
             return DefWindowProcW(hWnd, message, wParam, lParam);
         default:
             return DefWindowProcW(hWnd, message, wParam, lParam);
