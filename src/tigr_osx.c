@@ -1016,7 +1016,7 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
 
 float tigrMouseWheel(Tigr* bmp) {
     // TODO
-    return 0;
+    return .0f;
 }
 
 int tigrKeyDown(Tigr* bmp, int key) {
