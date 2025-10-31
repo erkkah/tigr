@@ -176,9 +176,9 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     if (flags & TIGR_FULLSCREEN) {
         // https://superuser.com/questions/1680077/does-x11-actually-have-a-native-fullscreen-mode
-        Atom wm_state   = XInternAtom (dpy, "_NET_WM_STATE", true );
-        Atom wm_fullscreen = XInternAtom (dpy, "_NET_WM_STATE_FULLSCREEN", true );
-        XChangeProperty(dpy, xwin, wm_state, XA_ATOM, 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
+        Atom wm_state = XInternAtom(dpy, "_NET_WM_STATE", true);
+        Atom wm_fullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", true);
+        XChangeProperty(dpy, xwin, wm_state, XA_ATOM, 32, PropModeReplace, (unsigned char*)&wm_fullscreen, 1);
     } else {
         // Wait for window to get mapped
         for (;;) {
@@ -512,18 +512,28 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
     // -> https://comp.unix.programmer.narkive.com/eOnjkQ6L/xlib-xquerypointer-and-button4mask-button5mask#post2
     // Button4 = WheelUp / Button5 = WheelDown
     XEvent mouseButtonEvent;
-	while (XPending(win->dpy)) {
-		XPeekEvent(win->dpy, &mouseButtonEvent);
-		if (mouseButtonEvent.xany.type == ButtonPress) {
-			if (mouseButtonEvent.xbutton.button == Button4 || mouseButtonEvent.xbutton.button == Button5) {
-                win->mouseWheel += (mouseButtonEvent.xbutton.button == Button4 ? 1.0f : -1.0f);
-			}
-
+    while (XPending(win->dpy)) {
+        XPeekEvent(win->dpy, &mouseButtonEvent);
+        if (mouseButtonEvent.xany.type == ButtonPress) {
+            switch (mouseButtonEvent.xbutton.button) {
+                case Button4:
+                    win->scrollDeltaY += 1;
+                    break;
+                case Button5:
+                    win->scrollDeltaY -= 1;
+                    break;
+                case Button6:
+                    win->scrollDeltaX += 1;
+                    break;
+                case Button7:
+                    win->scrollDeltaX -= 1;
+                    break;
+            }
             XNextEvent(win->dpy, &mouseButtonEvent);
-		} else {
+        } else {
             break;
         }
-	}
+    }
 
     static char prevKeys[32];
     char keys[32];
@@ -573,7 +583,8 @@ void tigrUpdate(Tigr* bmp) {
     TigrInternal* win = tigrInternal(bmp);
 
     memcpy(win->prev, win->keys, 256);
-    win->mouseWheel = 0;
+    win->scrollDeltaX = 0;
+    win->scrollDeltaY = 0;
 
     XGetWindowAttributes(win->dpy, win->win, &gwa);
 
@@ -652,13 +663,17 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
-float tigrMouseWheel(Tigr* bmp) {
+void tigrScrollWheel(Tigr* bmp, float* x, float* y) {
     TigrInternal* win;
-
     win = tigrInternal(bmp);
-    return win->mouseWheel;
+    if (x) {
+        *x = win->scrollDeltaX;
+    }
+    if (y) {
+        *y = win->scrollDeltaY;
+    }
 }
 
 #endif  // __linux__ && !__ANDROID__
 
-#endif // #ifndef TIGR_HEADLESS
+#endif  // #ifndef TIGR_HEADLESS

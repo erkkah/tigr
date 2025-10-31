@@ -144,7 +144,8 @@ typedef struct {
     TigrTouchPoint touchPoints[MAX_TOUCH_POINTS];
 #endif  // __ANDROID__ __IOS__
 #if defined(_WIN32) || defined(__linux__) || defined(__MACOS__)
-    float mouseWheel;
+    float scrollDeltaX;
+    float scrollDeltaY;
 #endif  // _WIN32 __linux__ __MACOS__
 } TigrInternal;
 // ----------------------------------------------------------
@@ -2128,7 +2129,8 @@ void tigrUpdate(Tigr* bmp) {
     }
 
     memcpy(win->prev, win->keys, 256);
-    win->mouseWheel = 0;
+    win->scrollDeltaX = 0;
+    win->scrollDeltaY = 0;
 
     // Run the message pump.
     while (PeekMessage(&msg, (HWND)bmp->handle, 0, 0, PM_REMOVE)) {
@@ -2335,7 +2337,11 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             return DefWindowProcW(hWnd, message, wParam, lParam);
         case WM_MOUSEWHEEL:
             if (win)
-                win->mouseWheel += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+                win->scrollDeltaY += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+        case WM_MOUSEHWHEEL:
+            if (win)
+                win->scrollDeltaX += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
             return DefWindowProcW(hWnd, message, wParam, lParam);
         default:
             return DefWindowProcW(hWnd, message, wParam, lParam);
@@ -2530,11 +2536,15 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
-float tigrMouseWheel(Tigr* bmp) {
+void tigrScrollWheel(Tigr* bmp, float* x, float* y) {
     TigrInternal* win;
-
     win = tigrInternal(bmp);
-    return win->mouseWheel;
+    if (x) {
+        *x = win->scrollDeltaX;
+    }
+    if (y) {
+        *y = win->scrollDeltaY;
+    }
 }
 
 static int tigrWinVK(int key) {
@@ -3615,6 +3625,14 @@ void _tigrOnCocoaEvent(id event, id window) {
                 win->mouseButtons &= ~4;
             break;
         }
+        case 22:  // NSScrollWheel
+        {
+            CGFloat deltaX = objc_msgSend_t(CGFloat)(event, sel("deltaX"));
+            win->scrollDeltaX += deltaX;
+            CGFloat deltaY = objc_msgSend_t(CGFloat)(event, sel("deltaY"));
+            win->scrollDeltaY += deltaY;
+            break;
+        }
         case 12:  // NSFlagsChanged
         {
             NSUInteger modifiers = objc_msgSend_t(NSUInteger)(event, sel("modifierFlags"));
@@ -3709,6 +3727,9 @@ void tigrUpdate(Tigr* bmp) {
         eventMask &= ~(NSKeyDownMask | NSKeyUpMask);
     }
 
+    win->scrollDeltaX = 0;
+    win->scrollDeltaY = 0;
+
     id event = 0;
     BOOL visible = 0;
 
@@ -3716,9 +3737,8 @@ void tigrUpdate(Tigr* bmp) {
     uint64_t passed = now - tigrTimestamp;
 
     do {
-        event =
-            objc_msgSend_t(id, NSUInteger, id, id, BOOL)(NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
-                                                         eventMask, nil, NSDefaultRunLoopMode, YES);
+        event = objc_msgSend_t(id, NSUInteger, id, id, BOOL)(
+            NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"), eventMask, nil, NSDefaultRunLoopMode, YES);
 
         if (event != 0) {
             _tigrOnCocoaEvent(event, window);
@@ -3816,9 +3836,15 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
-float tigrMouseWheel(Tigr* bmp) {
-    // TODO
-    return .0f;
+void tigrScrollWheel(Tigr* bmp, float* x, float* y) {
+    TigrInternal* win;
+    win = tigrInternal(bmp);
+    if (x) {
+        *x = win->scrollDeltaX;
+    }
+    if (y) {
+        *y = win->scrollDeltaY;
+    }
 }
 
 int tigrKeyDown(Tigr* bmp, int key) {
@@ -3857,8 +3883,8 @@ float tigrTime(void) {
     return (float)elapsed;
 }
 
-#endif // __MACOS__
-#endif // #ifndef TIGR_HEADLESS
+#endif  // __MACOS__
+#endif  // #ifndef TIGR_HEADLESS
 
 //////// End of inlined file: tigr_osx.c ////////
 
@@ -4620,9 +4646,9 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     if (flags & TIGR_FULLSCREEN) {
         // https://superuser.com/questions/1680077/does-x11-actually-have-a-native-fullscreen-mode
-        Atom wm_state   = XInternAtom (dpy, "_NET_WM_STATE", true );
-        Atom wm_fullscreen = XInternAtom (dpy, "_NET_WM_STATE_FULLSCREEN", true );
-        XChangeProperty(dpy, xwin, wm_state, XA_ATOM, 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
+        Atom wm_state = XInternAtom(dpy, "_NET_WM_STATE", true);
+        Atom wm_fullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", true);
+        XChangeProperty(dpy, xwin, wm_state, XA_ATOM, 32, PropModeReplace, (unsigned char*)&wm_fullscreen, 1);
     } else {
         // Wait for window to get mapped
         for (;;) {
@@ -4956,18 +4982,28 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
     // -> https://comp.unix.programmer.narkive.com/eOnjkQ6L/xlib-xquerypointer-and-button4mask-button5mask#post2
     // Button4 = WheelUp / Button5 = WheelDown
     XEvent mouseButtonEvent;
-	while (XPending(win->dpy)) {
-		XPeekEvent(win->dpy, &mouseButtonEvent);
-		if (mouseButtonEvent.xany.type == ButtonPress) {
-			if (mouseButtonEvent.xbutton.button == Button4 || mouseButtonEvent.xbutton.button == Button5) {
-                win->mouseWheel += (mouseButtonEvent.xbutton.button == Button4 ? 1.0f : -1.0f);
-			}
-
+    while (XPending(win->dpy)) {
+        XPeekEvent(win->dpy, &mouseButtonEvent);
+        if (mouseButtonEvent.xany.type == ButtonPress) {
+            switch (mouseButtonEvent.xbutton.button) {
+                case Button4:
+                    win->scrollDeltaY += 1;
+                    break;
+                case Button5:
+                    win->scrollDeltaY -= 1;
+                    break;
+                case Button6:
+                    win->scrollDeltaX += 1;
+                    break;
+                case Button7:
+                    win->scrollDeltaX -= 1;
+                    break;
+            }
             XNextEvent(win->dpy, &mouseButtonEvent);
-		} else {
+        } else {
             break;
         }
-	}
+    }
 
     static char prevKeys[32];
     char keys[32];
@@ -5017,7 +5053,8 @@ void tigrUpdate(Tigr* bmp) {
     TigrInternal* win = tigrInternal(bmp);
 
     memcpy(win->prev, win->keys, 256);
-    win->mouseWheel = 0;
+    win->scrollDeltaX = 0;
+    win->scrollDeltaY = 0;
 
     XGetWindowAttributes(win->dpy, win->win, &gwa);
 
@@ -5096,16 +5133,20 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
-float tigrMouseWheel(Tigr* bmp) {
+void tigrScrollWheel(Tigr* bmp, float* x, float* y) {
     TigrInternal* win;
-
     win = tigrInternal(bmp);
-    return win->mouseWheel;
+    if (x) {
+        *x = win->scrollDeltaX;
+    }
+    if (y) {
+        *y = win->scrollDeltaY;
+    }
 }
 
 #endif  // __linux__ && !__ANDROID__
 
-#endif // #ifndef TIGR_HEADLESS
+#endif  // #ifndef TIGR_HEADLESS
 
 //////// End of inlined file: tigr_linux.c ////////
 
