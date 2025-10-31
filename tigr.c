@@ -4992,10 +4992,10 @@ static void tigrProcessInput(TigrInternal* win, int winWidth, int winHeight) {
                 case Button5:
                     win->scrollDeltaY -= 1;
                     break;
-                case Button6:
+                case 6:
                     win->scrollDeltaX += 1;
                     break;
-                case Button7:
+                case 7:
                     win->scrollDeltaX -= 1;
                     break;
             }
