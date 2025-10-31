@@ -190,7 +190,8 @@ void tigrUpdate(Tigr* bmp) {
     }
 
     memcpy(win->prev, win->keys, 256);
-    win->mouseWheel = 0;
+    win->scrollDeltaX = 0;
+    win->scrollDeltaY = 0;
 
     // Run the message pump.
     while (PeekMessage(&msg, (HWND)bmp->handle, 0, 0, PM_REMOVE)) {
@@ -397,7 +398,11 @@ LRESULT CALLBACK tigrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
             return DefWindowProcW(hWnd, message, wParam, lParam);
         case WM_MOUSEWHEEL:
             if (win)
-                win->mouseWheel += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+                win->scrollDeltaY += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
+            return DefWindowProcW(hWnd, message, wParam, lParam);
+        case WM_MOUSEHWHEEL:
+            if (win)
+                win->scrollDeltaX += (float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA;
             return DefWindowProcW(hWnd, message, wParam, lParam);
         default:
             return DefWindowProcW(hWnd, message, wParam, lParam);
@@ -592,11 +597,15 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
-float tigrMouseWheel(Tigr* bmp) {
+void tigrScrollWheel(Tigr* bmp, float* x, float* y) {
     TigrInternal* win;
-
     win = tigrInternal(bmp);
-    return win->mouseWheel;
+    if (x) {
+        *x = win->scrollDeltaX;
+    }
+    if (y) {
+        *y = win->scrollDeltaY;
+    }
 }
 
 static int tigrWinVK(int key) {

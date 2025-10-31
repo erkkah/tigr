@@ -238,7 +238,8 @@ typedef enum {
     TCP_UTF32 = 12001
 } TCodepage;
 
-// Loads a font.
+// Loads a font from a bitmap font sheet.
+// The loaded font takes ownership of the provided bitmap.
 //
 // Codepages:
 //
@@ -254,7 +255,7 @@ typedef enum {
 //
 TigrFont *tigrLoadFont(Tigr *bitmap, int codepage);
 
-// Frees a font.
+// Frees a font and associated font sheet.
 void tigrFreeFont(TigrFont *font);
 
 // Prints UTF-8 text onto a bitmap.
@@ -297,8 +298,11 @@ typedef struct {
 // Returns number of touch points read.
 int tigrTouch(Tigr *bmp, TigrTouchPoint* points, int maxPoints);
 
-// Returns mouse wheel value for a window.
-float tigrMouseWheel(Tigr* bmp);
+// Reads the delta of the scroll "wheel" in somewhat platform neutral
+// units where 1.0 corresponds to a "notch". The actual correlation between
+// physical movement and this number varies between platforms, input methods
+// and settings.
+void tigrScrollWheel(Tigr* bmp, float* x, float *y);
 
 // Reads the keyboard for a window.
 // Returns non-zero if a key is pressed/held.

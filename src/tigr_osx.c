@@ -813,6 +813,14 @@ void _tigrOnCocoaEvent(id event, id window) {
                 win->mouseButtons &= ~4;
             break;
         }
+        case 22:  // NSScrollWheel
+        {
+            CGFloat deltaX = objc_msgSend_t(CGFloat)(event, sel("deltaX"));
+            win->scrollDeltaX += deltaX;
+            CGFloat deltaY = objc_msgSend_t(CGFloat)(event, sel("deltaY"));
+            win->scrollDeltaY += deltaY;
+            break;
+        }
         case 12:  // NSFlagsChanged
         {
             NSUInteger modifiers = objc_msgSend_t(NSUInteger)(event, sel("modifierFlags"));
@@ -907,6 +915,9 @@ void tigrUpdate(Tigr* bmp) {
         eventMask &= ~(NSKeyDownMask | NSKeyUpMask);
     }
 
+    win->scrollDeltaX = 0;
+    win->scrollDeltaY = 0;
+
     id event = 0;
     BOOL visible = 0;
 
@@ -914,9 +925,8 @@ void tigrUpdate(Tigr* bmp) {
     uint64_t passed = now - tigrTimestamp;
 
     do {
-        event =
-            objc_msgSend_t(id, NSUInteger, id, id, BOOL)(NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"),
-                                                         eventMask, nil, NSDefaultRunLoopMode, YES);
+        event = objc_msgSend_t(id, NSUInteger, id, id, BOOL)(
+            NSApp, sel("nextEventMatchingMask:untilDate:inMode:dequeue:"), eventMask, nil, NSDefaultRunLoopMode, YES);
 
         if (event != 0) {
             _tigrOnCocoaEvent(event, window);
@@ -1014,9 +1024,15 @@ int tigrTouch(Tigr* bmp, TigrTouchPoint* points, int maxPoints) {
     return buttons ? 1 : 0;
 }
 
-float tigrMouseWheel(Tigr* bmp) {
-    // TODO
-    return .0f;
+void tigrScrollWheel(Tigr* bmp, float* x, float* y) {
+    TigrInternal* win;
+    win = tigrInternal(bmp);
+    if (x) {
+        *x = win->scrollDeltaX;
+    }
+    if (y) {
+        *y = win->scrollDeltaY;
+    }
 }
 
 int tigrKeyDown(Tigr* bmp, int key) {
@@ -1055,5 +1071,5 @@ float tigrTime(void) {
     return (float)elapsed;
 }
 
-#endif // __MACOS__
-#endif // #ifndef TIGR_HEADLESS
+#endif  // __MACOS__
+#endif  // #ifndef TIGR_HEADLESS
