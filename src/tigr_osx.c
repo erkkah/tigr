@@ -3,12 +3,12 @@
 // originally based on https://github.com/jimon/osx_app_in_plain_c
 
 #include "tigr_internal.h"
+
+#if __MACOS__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #include "tigr_objc.h"
 #pragma clang diagnostic pop
-
-#if __MACOS__
 
 #include <assert.h>
 #include <limits.h>
