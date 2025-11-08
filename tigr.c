@@ -2837,12 +2837,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #include <objc/objc.h>
 #include <objc/runtime.h>
 
-#ifdef __OBJC__
-#import <Cocoa/Cocoa.h>
-#else
-// this is how they are defined originally
 #include <CoreGraphics/CGBase.h>
 #include <CoreGraphics/CGGeometry.h>
+
 typedef CGPoint NSPoint;
 typedef CGSize NSSize;
 typedef CGRect NSRect;
@@ -2860,15 +2857,10 @@ extern id NSApp;
 extern id const NSDefaultRunLoopMode;
 
 #define NSApplicationActivationPolicyRegular 0
-#endif
 
 bool terminated = false;
 
-static uint64_t tigrTimestamp = 0;
-
-void _tigrResetTime(void) {
-    tigrTimestamp = mach_absolute_time();
-}
+static double _tigrTimestamp = 0;
 
 double _currentMediaTime() {
     uint64_t now = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
@@ -2893,7 +2885,6 @@ TigrInternal* _tigrInternalFromWindow(id window) {
     return _tigrInternalFromWindowDelegate(wdg);
 }
 
-// we gonna construct objective-c class by hand in runtime, so wow, so hacker!
 NSUInteger applicationShouldTerminate(id self, SEL sel, id sender) {
     terminated = true;
     return 0;
@@ -3776,8 +3767,8 @@ void tigrUpdate(Tigr* bmp) {
     id event = 0;
     BOOL visible = 0;
 
-    uint64_t now = mach_absolute_time();
-    uint64_t passed = now - tigrTimestamp;
+    double now = _currentMediaTime();
+    double passed = now - _tigrTimestamp;
 
     do {
         event = objc_msgSend_t(id, NSUInteger, id, id, BOOL)(
@@ -3793,7 +3784,7 @@ void tigrUpdate(Tigr* bmp) {
     // The event processing loop above blocks during resize, which causes updates to freeze
     // but real time keeps ticking. We pretend that the event processing took no time
     // to avoid huge jumps in tigrTime.
-    tigrTimestamp = mach_absolute_time() - passed;
+    _tigrTimestamp = _currentMediaTime() - passed;
 
     objc_msgSend_void(NSApp, sel("updateWindows"));
     objc_msgSend_void(openGLContext, sel("update"));
@@ -3932,17 +3923,14 @@ int tigrReadChar(Tigr* bmp) {
 }
 
 float tigrTime(void) {
-    static mach_timebase_info_data_t timebaseInfo;
+    double elapsed = 0;
 
-    if (timebaseInfo.denom == 0) {
-        mach_timebase_info(&timebaseInfo);
-        tigrTimestamp = mach_absolute_time();
-        return 0.0f;
+    double now = _currentMediaTime();
+    if (_tigrTimestamp != 0) {
+        elapsed = now - _tigrTimestamp;
     }
+    _tigrTimestamp = now;
 
-    uint64_t current_time = mach_absolute_time();
-    double elapsed = (double)(current_time - tigrTimestamp) * timebaseInfo.numer / (timebaseInfo.denom * 1000000000.0);
-    tigrTimestamp = current_time;
     return (float)elapsed;
 }
 
