@@ -4557,6 +4557,10 @@ static GLXFBConfig fbConfig;
 
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = 0;
 
+static void tearDownX11Stuff() {
+    XCloseDisplay(dpy);
+}
+
 static void initX11Stuff() {
     static int done = 0;
     if (!done) {
@@ -4587,6 +4591,7 @@ static void initX11Stuff() {
             tigrError(0, "Failed to choose FB config");
         }
         fbConfig = fbc[0];
+        XFree(fbc);
 
         vi = glXGetVisualFromFBConfig(dpy, fbConfig);
         if (vi == NULL) {
@@ -4607,6 +4612,8 @@ static void initX11Stuff() {
         }
 
         wmDeleteMessage = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+
+        atexit(tearDownX11Stuff);
 
         done = 1;
     }
@@ -4748,7 +4755,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
 
     XSetWMProtocols(dpy, xwin, &wmDeleteMessage, 1);
 
-    glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
     int contextAttributes[] = { GLX_CONTEXT_MAJOR_VERSION_ARB, 3, GLX_CONTEXT_MINOR_VERSION_ARB, 3, None };
     glc = glXCreateContextAttribsARB(dpy, fbConfig, NULL, GL_TRUE, contextAttributes);
     glXMakeCurrent(dpy, xwin, glc);
