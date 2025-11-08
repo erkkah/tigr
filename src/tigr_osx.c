@@ -971,7 +971,9 @@ void tigrUpdate(Tigr* bmp) {
     // The event processing loop above blocks during resize, which causes updates to freeze
     // but real time keeps ticking. We pretend that the event processing took no time
     // to avoid huge jumps in tigrTime.
-    _tigrTimestamp = _currentMediaTime() - passed;
+    if (_tigrTimestamp != 0) {
+        _tigrTimestamp = _currentMediaTime() - passed;
+    }
 
     objc_msgSend_void(NSApp, sel("updateWindows"));
     objc_msgSend_void(openGLContext, sel("update"));
@@ -1002,7 +1004,7 @@ void tigrUpdate(Tigr* bmp) {
             break;
         }
         double now = _currentMediaTime();
-        double passed =  now - lastFrameTime;
+        double passed = now - lastFrameTime;
         // ..or it's time to cap the wait at 60 fps
         if (passed > cap) {
             win->frameTime = now;
