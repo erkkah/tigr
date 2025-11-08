@@ -132,14 +132,14 @@ void tigrWinUpdateWidgets(Tigr* bmp, int dw, int dh) {
                 str[1] = 0;
                 break;  // "_" (minimize)
             case 1:
-                str[0] = 0xEF;
-                str[1] = 0xBF;
-                str[2] = 0xBD;
+                str[0] = (char)0xEF;
+                str[1] = (char)0xBF;
+                str[2] = (char)0xBD;
                 str[3] = 0;
                 break;  // "[]" (maximize)
             case 2:
-                str[0] = 0xC3;
-                str[1] = 0x97;
+                str[0] = (char)0xC3;
+                str[1] = (char)0x97;
                 str[2] = 0;
                 break;  // "x" (close)
         }
