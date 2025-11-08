@@ -133,6 +133,7 @@ typedef struct {
 #if defined(__MACOS__)
     int mouseInView;
     int mouseButtons;
+    double frameTime;
 #endif  // __MACOS__
 #if defined(__linux__) || defined(__IOS__)
     int mouseButtons;
@@ -2869,7 +2870,19 @@ void _tigrResetTime(void) {
     tigrTimestamp = mach_absolute_time();
 }
 
-TigrInternal* _tigrInternalCocoa(id window) {
+double _currentMediaTime() {
+    uint64_t now = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+    double current = now * 1.0E-9;
+    return current;
+}
+
+TigrInternal* _tigrInternalFromWindowDelegate(id wdg) {
+    Tigr* bmp = 0;
+    object_getInstanceVariable(wdg, "tigrHandle", (void**)&bmp);
+    return bmp ? tigrInternal(bmp) : NULL;
+}
+
+TigrInternal* _tigrInternalFromWindow(id window) {
     if (!window)
         return NULL;
 
@@ -2877,9 +2890,7 @@ TigrInternal* _tigrInternalCocoa(id window) {
     if (!wdg)
         return NULL;
 
-    Tigr* bmp = 0;
-    object_getInstanceVariable(wdg, "tigrHandle", (void**)&bmp);
-    return bmp ? tigrInternal(bmp) : NULL;
+    return _tigrInternalFromWindowDelegate(wdg);
 }
 
 // we gonna construct objective-c class by hand in runtime, so wow, so hacker!
@@ -2923,9 +2934,18 @@ void windowDidBecomeKey(id self, SEL _sel, id notification) {
     }
 }
 
+void onFrame(id self, SEL _sel, id displayLink) {
+    double timestamp = objc_msgSend_t(double)(displayLink, sel("timestamp"));
+    TigrInternal* win = _tigrInternalFromWindowDelegate(self);
+    if (win == NULL) {
+        return;
+    }
+    win->frameTime = timestamp;
+}
+
 void mouseEntered(id self, SEL _sel, id event) {
     id window = objc_msgSend_id(event, sel("window"));
-    TigrInternal* win = _tigrInternalCocoa(window);
+    TigrInternal* win = _tigrInternalFromWindow(window);
     if (win) {
         win->mouseInView = 1;
         if (win->flags & TIGR_NOCURSOR) {
@@ -2936,7 +2956,7 @@ void mouseEntered(id self, SEL _sel, id event) {
 
 void mouseExited(id self, SEL _sel, id event) {
     id window = objc_msgSend_id(event, sel("window"));
-    TigrInternal* win = _tigrInternalCocoa(window);
+    TigrInternal* win = _tigrInternalFromWindow(window);
     if (win) {
         win->mouseInView = 0;
         if (win->flags & TIGR_NOCURSOR) {
@@ -3116,6 +3136,7 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     addMethod(WindowDelegateClass, "windowDidBecomeKey:", windowDidBecomeKey, "v@:@");
     addMethod(WindowDelegateClass, "mouseEntered:", mouseEntered, "v@:@");
     addMethod(WindowDelegateClass, "mouseExited:", mouseExited, "v@:@");
+    addMethod(WindowDelegateClass, "onFrame:", onFrame, "v@:@");
 
     id wdgAlloc = objc_msgSend_id((id)WindowDelegateClass, sel("alloc"));
     id wdg = objc_msgSend_id(wdgAlloc, sel("init"));
@@ -3133,6 +3154,20 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     objc_msgSend_void_id(window, sel("setDelegate:"), wdg);
 
     id contentView = objc_msgSend_id(window, sel("contentView"));
+
+    objc_msgSend_void_bool(contentView, sel("setWantsLayer:"), NO);
+
+    bool useDisplayLink = objc_msgSend_t(bool, SEL)(class("NSView"), sel("instancesRespondToSelector:"),
+                                                    sel("displayLinkWithTarget:selector:"));
+
+    if (useDisplayLink) {
+        // Use display link to pace frames, if possible
+        id link =
+            objc_msgSend_t(id, id, SEL)(contentView, sel("displayLinkWithTarget:selector:"), wdg, sel("onFrame:"));
+        id runLoop = objc_msgSend_id(class("NSRunLoop"), sel("currentRunLoop"));
+        objc_msgSend_t(void, id, id)(link, sel("addToRunLoop:forMode:"), runLoop, NSDefaultRunLoopMode);
+        objc_msgSend_void_bool(link, sel("setPaused:"), NO);
+    }
 
     int wantsHighRes = (flags & TIGR_RETINA);
     objc_msgSend_void_bool(contentView, sel("setWantsBestResolutionOpenGLSurface:"), wantsHighRes);
@@ -3220,10 +3255,18 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     win->gl.glContext = openGLContext;
     win->mouseButtons = 0;
     win->mouseInView = 0;
+    win->frameTime = 0;
 
     tigrPosition(bmp, win->scale, bmp->w, bmp->h, win->pos);
 
+    GLint swapInterval = 1;
+    NSInteger NSOpenGLCPSwapInterval = 222;
+
+    objc_msgSend_t(void, GLint*, NSInteger)(openGLContext, sel("setValues:forParameter:"), &swapInterval,
+                                            NSOpenGLCPSwapInterval);
+
     objc_msgSend_void(openGLContext, sel("makeCurrentContext"));
+
     tigrGAPICreate(bmp);
 
     return bmp;
@@ -3584,7 +3627,7 @@ void _tigrOnCocoaEvent(id event, id window) {
     if (!event)
         return;
 
-    TigrInternal* win = _tigrInternalCocoa(window);
+    TigrInternal* win = _tigrInternalFromWindow(window);
     if (!win)  // just pipe the event
     {
         objc_msgSend_void_id(NSApp, sel("sendEvent:"), event);
@@ -3752,7 +3795,6 @@ void tigrUpdate(Tigr* bmp) {
     // to avoid huge jumps in tigrTime.
     tigrTimestamp = mach_absolute_time() - passed;
 
-    // do runloop stuff
     objc_msgSend_void(NSApp, sel("updateWindows"));
     objc_msgSend_void(openGLContext, sel("update"));
     tigrGAPIBegin(bmp);
@@ -3768,6 +3810,27 @@ void tigrUpdate(Tigr* bmp) {
     tigrGAPIPresent(bmp, windowSize.width, windowSize.height);
     objc_msgSend_void(openGLContext, sel("flushBuffer"));
     tigrGAPIEnd(bmp);
+
+    id runLoop = objc_msgSend_id(class("NSRunLoop"), sel("currentRunLoop"));
+    id until = objc_msgSend_t(id, float)(class("NSDate"), sel("dateWithTimeIntervalSinceNow:"), 0.005f);
+    double lastFrameTime = win->frameTime;
+    static const double cap = 1.0 / 60;
+
+    while (win->frameTime <= lastFrameTime) {
+        // Run the event loop for 5ms at a time..
+        objc_msgSend_t(void, id, id)(runLoop, sel("runMode:beforeDate:"), NSDefaultRunLoopMode, until);
+        // ..until we get a frame callback..
+        if (win->frameTime > lastFrameTime) {
+            break;
+        }
+        double now = _currentMediaTime();
+        double passed =  now - lastFrameTime;
+        // ..or it's time to cap the wait at 60 fps
+        if (passed > cap) {
+            win->frameTime = now;
+            break;
+        }
+    }
 }
 
 int tigrGAPIBegin(Tigr* bmp) {
