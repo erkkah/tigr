@@ -12,4 +12,4 @@ else
 endif
 
 ci : ci.c ../tigr.c
-	gcc $^ -o $@$(EXT) $(CFLAGS) $(LDFLAGS)
+	gcc -Wall -pedantic $^ -o $@$(EXT) $(CFLAGS) $(LDFLAGS)

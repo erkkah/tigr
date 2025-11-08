@@ -2758,6 +2758,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 // originally based on https://github.com/jimon/osx_app_in_plain_c
 
 //#include "tigr_internal.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 //////// Start of inlined file: tigr_objc.h ////////
 
 #ifndef TIGR_OBJC_H
@@ -2817,6 +2819,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 //////// End of inlined file: tigr_objc.h ////////
 
+#pragma clang diagnostic pop
 
 #if __MACOS__
 
@@ -2862,7 +2865,7 @@ bool terminated = false;
 
 static double _tigrTimestamp = 0;
 
-double _currentMediaTime() {
+double _currentMediaTime(void) {
     uint64_t now = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
     double current = now * 1.0E-9;
     return current;

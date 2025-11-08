@@ -3,7 +3,10 @@
 // originally based on https://github.com/jimon/osx_app_in_plain_c
 
 #include "tigr_internal.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #include "tigr_objc.h"
+#pragma clang diagnostic pop
 
 #if __MACOS__
 
@@ -49,7 +52,7 @@ bool terminated = false;
 
 static double _tigrTimestamp = 0;
 
-double _currentMediaTime() {
+double _currentMediaTime(void) {
     uint64_t now = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
     double current = now * 1.0E-9;
     return current;
