@@ -2356,7 +2356,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     HWND hWnd;
     DWORD dwStyle;
     RECT rc;
-    DWORD err;
     Tigr* bmp;
     TigrInternal* win;
 #ifndef TIGR_DO_NOT_PRESERVE_WINDOW_POSITION
@@ -2405,7 +2404,6 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
     // Make a window.
     hWnd = CreateWindowW(L"TIGR", wtitle, dwStyle, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top,
                          NULL, NULL, wcex.hInstance, NULL);
-    err = GetLastError();
     if (!hWnd)
         ExitProcess(1);
 
