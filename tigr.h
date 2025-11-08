@@ -287,6 +287,9 @@ typedef enum {
 } TKey;
 
 // Returns mouse input for a window.
+// The value set to "buttons" is a bit set where bits 0, 1 and 2
+// corresponds to the left, right and middle buttons.
+// A set bit indicates that a button is held.
 void tigrMouse(Tigr *bmp, int *x, int *y, int *buttons);
 
 typedef struct {
