@@ -126,6 +126,7 @@ typedef struct {
 #if defined(__MACOS__)
     int mouseInView;
     int mouseButtons;
+    double frameTime;
 #endif  // __MACOS__
 #if defined(__linux__) || defined(__IOS__)
     int mouseButtons;
