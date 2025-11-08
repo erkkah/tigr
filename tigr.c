@@ -2758,6 +2758,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 // originally based on https://github.com/jimon/osx_app_in_plain_c
 
 //#include "tigr_internal.h"
+
+#if __MACOS__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 //////// Start of inlined file: tigr_objc.h ////////
@@ -2820,8 +2822,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 //////// End of inlined file: tigr_objc.h ////////
 
 #pragma clang diagnostic pop
-
-#if __MACOS__
 
 #include <assert.h>
 #include <limits.h>
