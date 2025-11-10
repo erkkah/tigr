@@ -14,6 +14,9 @@
 // Graphics configuration.
 #ifndef TIGR_HEADLESS
 #define TIGR_GAPI_GL
+
+// Calculates the biggest scale that a bitmap can fit into an area at.
+int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH);
 #endif
 
 // Creates a new bitmap, with extra payload bytes.
@@ -21,9 +24,6 @@ Tigr* tigrBitmap2(int w, int h, int extra);
 
 // Resizes an existing bitmap.
 void tigrResize(Tigr* bmp, int w, int h);
-
-// Calculates the biggest scale that a bitmap can fit into an area at.
-int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH);
 
 // Calculates a new scale, taking minimum-scale flags into account.
 int tigrEnforceScale(int scale, int flags);
@@ -326,6 +326,7 @@ void tigrResize(Tigr* bmp, int w, int h) {
     bmp->h = h;
 }
 
+#ifndef TIGR_HEADLESS
 int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH) {
     if (bmpW == 0 || bmpH == 0) {
         tigrError(0, "Invalid bitmap size, (%dx%d)", bmpW, bmpH);
@@ -343,6 +344,7 @@ int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH) {
     }
     return (scale > 1) ? scale : 1;
 }
+#endif // TIGR_HEADLESS
 
 int tigrEnforceScale(int scale, int flags) {
     if ((flags & TIGR_4X) && scale < 4)

@@ -70,6 +70,7 @@ void tigrResize(Tigr* bmp, int w, int h) {
     bmp->h = h;
 }
 
+#ifndef TIGR_HEADLESS
 int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH) {
     if (bmpW == 0 || bmpH == 0) {
         tigrError(0, "Invalid bitmap size, (%dx%d)", bmpW, bmpH);
@@ -87,6 +88,7 @@ int tigrCalcScale(int bmpW, int bmpH, int areaW, int areaH) {
     }
     return (scale > 1) ? scale : 1;
 }
+#endif // TIGR_HEADLESS
 
 int tigrEnforceScale(int scale, int flags) {
     if ((flags & TIGR_4X) && scale < 4)
