@@ -4735,7 +4735,10 @@ Tigr* tigrWindow(int w, int h, const char* title, int flags) {
         // Reset size if we did not get the window size we wanted above.
         XWindowAttributes wa;
         XGetWindowAttributes(dpy, xwin, &wa);
-        scale = tigrCalcScale(w, h, wa.width, wa.height);
+        // Keep the scale when TIGR_AUTO is set, unless it is enforced
+        if ((flags & TIGR_AUTO) == 0) {
+          scale = tigrCalcScale(w, h, wa.width, wa.height);
+        }
         scale = tigrEnforceScale(scale, flags);
         XResizeWindow(dpy, xwin, w * scale, h * scale);
     }
